@@ -1,0 +1,3 @@
+[console_scripts]
+nav_through_pose = nav_to_goal.nav_through_pose:main
+nav_to_pose = nav_to_goal.nav_to_pose:main

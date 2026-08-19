@@ -1,0 +1,26 @@
+[0.266s] Invoking command in '/home/rokey/cobot3_ws/src/nova_carter/nav_to_goal': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/rokey/cobot3_ws/build/nav_to_goal/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages: /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../build/nav_to_goal build --build-base /home/rokey/cobot3_ws/build/nav_to_goal/build install --record /home/rokey/cobot3_ws/build/nav_to_goal/install.log --install-scripts $base/lib/nav_to_goal --single-version-externally-managed install_data
+[0.352s] running egg_info
+[0.356s] writing ../../../build/nav_to_goal/nav_to_goal.egg-info/PKG-INFO
+[0.356s] writing dependency_links to ../../../build/nav_to_goal/nav_to_goal.egg-info/dependency_links.txt
+[0.356s] writing entry points to ../../../build/nav_to_goal/nav_to_goal.egg-info/entry_points.txt
+[0.356s] writing requirements to ../../../build/nav_to_goal/nav_to_goal.egg-info/requires.txt
+[0.356s] writing top-level names to ../../../build/nav_to_goal/nav_to_goal.egg-info/top_level.txt
+[0.364s] reading manifest file '../../../build/nav_to_goal/nav_to_goal.egg-info/SOURCES.txt'
+[0.364s] adding license file 'LICENSE'
+[0.364s] writing manifest file '../../../build/nav_to_goal/nav_to_goal.egg-info/SOURCES.txt'
+[0.364s] running build
+[0.364s] running build_py
+[0.365s] copying nav_to_goal/nav_through_pose.py -> /home/rokey/cobot3_ws/build/nav_to_goal/build/lib/nav_to_goal
+[0.365s] running install
+[0.367s] running install_lib
+[0.371s] copying /home/rokey/cobot3_ws/build/nav_to_goal/build/lib/nav_to_goal/nav_through_pose.py -> /home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal
+[0.372s] byte-compiling /home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal/nav_through_pose.py to nav_through_pose.cpython-312.pyc
+[0.372s] running install_data
+[0.372s] running install_egg_info
+[0.377s] removing '/home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal-0.0.0-py3.12.egg-info' (and everything under it)
+[0.377s] Copying ../../../build/nav_to_goal/nav_to_goal.egg-info to /home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal-0.0.0-py3.12.egg-info
+[0.378s] running install_scripts
+[0.413s] Installing nav_through_pose script to /home/rokey/cobot3_ws/install/nav_to_goal/lib/nav_to_goal
+[0.413s] Installing nav_to_pose script to /home/rokey/cobot3_ws/install/nav_to_goal/lib/nav_to_goal
+[0.413s] writing list of installed files to '/home/rokey/cobot3_ws/build/nav_to_goal/install.log'
+[0.425s] Invoked command in '/home/rokey/cobot3_ws/src/nova_carter/nav_to_goal' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/rokey/cobot3_ws/build/nav_to_goal/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages: /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../build/nav_to_goal build --build-base /home/rokey/cobot3_ws/build/nav_to_goal/build install --record /home/rokey/cobot3_ws/build/nav_to_goal/install.log --install-scripts $base/lib/nav_to_goal --single-version-externally-managed install_data

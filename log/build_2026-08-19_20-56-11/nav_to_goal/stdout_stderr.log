@@ -1,0 +1,23 @@
+running egg_info
+writing ../../../build/nav_to_goal/nav_to_goal.egg-info/PKG-INFO
+writing dependency_links to ../../../build/nav_to_goal/nav_to_goal.egg-info/dependency_links.txt
+writing entry points to ../../../build/nav_to_goal/nav_to_goal.egg-info/entry_points.txt
+writing requirements to ../../../build/nav_to_goal/nav_to_goal.egg-info/requires.txt
+writing top-level names to ../../../build/nav_to_goal/nav_to_goal.egg-info/top_level.txt
+reading manifest file '../../../build/nav_to_goal/nav_to_goal.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file '../../../build/nav_to_goal/nav_to_goal.egg-info/SOURCES.txt'
+running build
+running build_py
+copying nav_to_goal/nav_to_pose.py -> /home/rokey/cobot3_ws/build/nav_to_goal/build/lib/nav_to_goal
+running install
+running install_lib
+copying /home/rokey/cobot3_ws/build/nav_to_goal/build/lib/nav_to_goal/nav_to_pose.py -> /home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal
+byte-compiling /home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal/nav_to_pose.py to nav_to_pose.cpython-312.pyc
+running install_data
+running install_egg_info
+removing '/home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal-0.0.0-py3.12.egg-info' (and everything under it)
+Copying ../../../build/nav_to_goal/nav_to_goal.egg-info to /home/rokey/cobot3_ws/install/nav_to_goal/lib/python3.12/site-packages/nav_to_goal-0.0.0-py3.12.egg-info
+running install_scripts
+Installing nav_to_pose script to /home/rokey/cobot3_ws/install/nav_to_goal/lib/nav_to_goal
+writing list of installed files to '/home/rokey/cobot3_ws/build/nav_to_goal/install.log'
