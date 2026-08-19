@@ -3,10 +3,10 @@
 PC A (이 파일)
   1. 파란/초록 큐브 중 하나를 Pick 영역에 무작위 배치
   2. Wrist Camera RGB 영상을 /rgb (sensor_msgs/Image)로 발행
-  3. PC B가 보낸 /color_id (std_msgs/Int32)를 수신
-  4. 1=파란 마커, 2=초록 마커 위치에 Place
+  3. 무작위 선택 시 저장한 실제 색상 ID를 이용해 Place 위치 결정
+  4. 1=파란 마커, 2=초록 마커 위치에 Pick & Place
 
-실행 전 PC A와 PC B에서 ROS_DOMAIN_ID를 같은 값(기본 50)으로 맞춘다.
+PC B 색상 감지와 /color_id 구독은 아직 사용하지 않는 PC A 단독 검증 버전이다.
 """
 
 import os
@@ -45,9 +45,6 @@ from isaacsim.sensors.camera import Camera
 enable_extension("isaacsim.ros2.bridge")
 simulation_app.update()
 
-import rclpy
-from std_msgs.msg import Int32
-
 
 # ══════════════════════════════════════════════════════════════
 #  경로
@@ -64,7 +61,6 @@ DESCRIPTION_PATH = str(M0609_DIR / "descriptor/m0609_description.yaml")
 #  ROS 2 / 카메라 설정
 # ══════════════════════════════════════════════════════════════
 RGB_TOPIC      = "/rgb"
-COLOR_ID_TOPIC = "/color_id"
 CAMERA_FPS     = 15
 CAMERA_RESOLUTION = (640, 480)
 
@@ -270,9 +266,9 @@ def lerp(start, goal, alpha):
 class PickPlaceFSM:
     """APPROACH 후 색상 결과가 올 때까지 기다리는 Pick & Place 상태 기계."""
 
-    NAMES = ["APPROACH", "WAIT_COLOR", "DESCEND", "GRASP", "LIFT",
+    NAMES = ["APPROACH", "SELECT_PLACE", "DESCEND", "GRASP", "LIFT",
              "MOVE", "LOWER", "RELEASE", "DONE"]
-    WAIT_COLOR_STATE = 1
+    SELECT_PLACE_STATE = 1
     GRIPPER_STATES = {3: "close", 7: "open"}
     DONE_STATE = 8
 
@@ -290,7 +286,7 @@ class PickPlaceFSM:
         unknown_place = np.array([px, py])
         self.waypoints = [
             np.array([px, py, APPROACH_HEIGHT]),       # 0 APPROACH
-            np.array([px, py, APPROACH_HEIGHT]),       # 1 WAIT_COLOR
+            np.array([px, py, APPROACH_HEIGHT]),       # 1 SELECT_PLACE
             np.array([px, py, PICK_Z]),                # 2 DESCEND
             np.array([px, py, PICK_Z]),                # 3 GRASP
             np.array([px, py, LIFT_HEIGHT]),           # 4 LIFT
@@ -314,8 +310,8 @@ class PickPlaceFSM:
         label = "BLUE" if color_id == 1 else "GREEN"
         print(f"   color result {color_id} ({label}) -> place {vec(self.place_xy)}")
 
-        # WAIT_COLOR 상태에서 대기하고 있었다면 바로 다음 단계로 진행한다.
-        if self.state == self.WAIT_COLOR_STATE:
+        # SELECT_PLACE 상태에서 선택이 끝나면 바로 다음 단계로 진행한다.
+        if self.state == self.SELECT_PLACE_STATE:
             self._next()
         return True
 
@@ -342,12 +338,12 @@ class PickPlaceFSM:
         if self.state >= self.DONE_STATE:
             return
 
-        # 카메라는 APPROACH 도착 후 큐브를 보게 된다. 유효한 결과 전에는 정지한다.
-        if self.state == self.WAIT_COLOR_STATE and self.color_id not in (1, 2):
+        # Place 색상 선택 전에는 현재 위치에서 정지한다.
+        if self.state == self.SELECT_PLACE_STATE and self.color_id not in (1, 2):
             if self.start is None:
                 self.start = get_tcp_pose(self._robot)
                 self.goal = self.waypoints[self.state]
-                print("   [1] WAIT_COLOR  waiting for /color_id (1=blue, 2=green)")
+                print("   [1] SELECT_PLACE  waiting for internal color id")
             return
 
         # 단계에 처음 들어온 순간 시작점과 스텝 수를 정한다
@@ -359,7 +355,7 @@ class PickPlaceFSM:
             if self.state in self.GRIPPER_STATES:
                 self.n_steps = GRIPPER_WAIT
                 dist = 0.0
-            elif self.state == self.WAIT_COLOR_STATE:
+            elif self.state == self.SELECT_PLACE_STATE:
                 self.n_steps = HOLD_STEPS
                 dist = 0.0
             else:
@@ -660,37 +656,6 @@ def start_rgb_publisher():
     return camera, writer
 
 
-class ColorIdSubscriber:
-    """Isaac Sim 메인 루프를 막지 않는 rclpy Int32 구독기."""
-
-    def __init__(self):
-        if not rclpy.ok():
-            rclpy.init(args=None)
-        self.node = rclpy.create_node("m0609_color_id_receiver")
-        self.latest = 0
-        self.subscription = self.node.create_subscription(
-            Int32, COLOR_ID_TOPIC, self._callback, 10
-        )
-        print(f"   subscribe    {COLOR_ID_TOPIC}")
-
-    def _callback(self, msg):
-        if msg.data in (1, 2):
-            self.latest = int(msg.data)
-
-    def spin_once(self):
-        rclpy.spin_once(self.node, timeout_sec=0.0)
-
-    def take(self):
-        value = self.latest
-        self.latest = 0
-        return value
-
-    def close(self):
-        self.node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
-
-
 # ══════════════════════════════════════════════════════════════
 #  출력
 # ══════════════════════════════════════════════════════════════
@@ -797,7 +762,6 @@ def main():
 
     section("ROS 2")
     camera, rgb_writer = start_rgb_publisher()
-    color_sub = ColorIdSubscriber()
 
     section("RUN")
     print("   press Play in the viewport\n")
@@ -824,13 +788,11 @@ def main():
             print()
 
         if is_playing:
-            color_sub.spin_once()
-            received_id = color_sub.take()
-            # APPROACH 이전의 화면에서 생긴 오래된 판정은 사용하지 않는다.
-            if (received_id in (1, 2)
-                    and fsm.state == fsm.WAIT_COLOR_STATE):
-                if fsm.set_color_id(received_id) and received_id != actual_cube_id:
-                    print(f"   WARNING      detector={received_id}, actual={actual_cube_id}")
+            # PC A 단독 검증: 무작위 배치 때 저장한 실제 큐브 색상을 사용한다.
+            # PC B 연동 단계에서는 actual_cube_id 대신 /color_id 수신값을 넣는다.
+            if (fsm.state == fsm.SELECT_PLACE_STATE
+                    and fsm.color_id == 0):
+                fsm.set_color_id(actual_cube_id)
 
             # 팔 — 이번 스텝의 목표를 보간으로 구해 IK 로 푼다
             target_tcp = fsm.current_target()
@@ -854,7 +816,6 @@ def main():
 
         was_playing = is_playing
 
-    color_sub.close()
     rgb_writer.detach()
     simulation_app.close()
 
