@@ -1,0 +1,31 @@
+running egg_info
+creating ../../build/m0609/m0609.egg-info
+writing ../../build/m0609/m0609.egg-info/PKG-INFO
+writing dependency_links to ../../build/m0609/m0609.egg-info/dependency_links.txt
+writing requirements to ../../build/m0609/m0609.egg-info/requires.txt
+writing top-level names to ../../build/m0609/m0609.egg-info/top_level.txt
+writing manifest file '../../build/m0609/m0609.egg-info/SOURCES.txt'
+reading manifest file '../../build/m0609/m0609.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file '../../build/m0609/m0609.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/rokey/cobot3_ws/build/m0609/build
+creating /home/rokey/cobot3_ws/build/m0609/build/lib
+creating /home/rokey/cobot3_ws/build/m0609/build/lib/m0609
+copying m0609/__init__.py -> /home/rokey/cobot3_ws/build/m0609/build/lib/m0609
+running install
+running install_lib
+creating /home/rokey/cobot3_ws/install/m0609/lib/python3.12/site-packages/m0609
+copying /home/rokey/cobot3_ws/build/m0609/build/lib/m0609/__init__.py -> /home/rokey/cobot3_ws/install/m0609/lib/python3.12/site-packages/m0609
+byte-compiling /home/rokey/cobot3_ws/install/m0609/lib/python3.12/site-packages/m0609/__init__.py to __init__.cpython-312.pyc
+running install_data
+creating /home/rokey/cobot3_ws/install/m0609/share/ament_index
+creating /home/rokey/cobot3_ws/install/m0609/share/ament_index/resource_index
+creating /home/rokey/cobot3_ws/install/m0609/share/ament_index/resource_index/packages
+copying resource/m0609 -> /home/rokey/cobot3_ws/install/m0609/share/ament_index/resource_index/packages
+copying package.xml -> /home/rokey/cobot3_ws/install/m0609/share/m0609
+running install_egg_info
+Copying ../../build/m0609/m0609.egg-info to /home/rokey/cobot3_ws/install/m0609/lib/python3.12/site-packages/m0609-0.0.0-py3.12.egg-info
+running install_scripts
+writing list of installed files to '/home/rokey/cobot3_ws/build/m0609/install.log'

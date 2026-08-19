@@ -1,0 +1,15 @@
+LICENSE
+package.xml
+setup.cfg
+setup.py
+../../build/m0609/m0609.egg-info/PKG-INFO
+../../build/m0609/m0609.egg-info/SOURCES.txt
+../../build/m0609/m0609.egg-info/dependency_links.txt
+../../build/m0609/m0609.egg-info/requires.txt
+../../build/m0609/m0609.egg-info/top_level.txt
+../../build/m0609/m0609.egg-info/zip-safe
+m0609/__init__.py
+resource/m0609
+test/test_copyright.py
+test/test_flake8.py
+test/test_pep257.py
