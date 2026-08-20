@@ -1,0 +1,39 @@
+[0.624s] Invoking command in '/home/injae/cobot3_ws/src/cobot3': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/injae/cobot3_ws/build/cobot3/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/cobot3 build --build-base /home/injae/cobot3_ws/build/cobot3/build install --record /home/injae/cobot3_ws/build/cobot3/install.log --install-scripts $base/lib/cobot3 --single-version-externally-managed install_data
+[0.855s] running egg_info
+[0.856s] creating ../../build/cobot3/cobot3.egg-info
+[0.874s] writing ../../build/cobot3/cobot3.egg-info/PKG-INFO
+[0.874s] writing dependency_links to ../../build/cobot3/cobot3.egg-info/dependency_links.txt
+[0.874s] writing entry points to ../../build/cobot3/cobot3.egg-info/entry_points.txt
+[0.874s] writing requirements to ../../build/cobot3/cobot3.egg-info/requires.txt
+[0.874s] writing top-level names to ../../build/cobot3/cobot3.egg-info/top_level.txt
+[0.874s] writing manifest file '../../build/cobot3/cobot3.egg-info/SOURCES.txt'
+[0.910s] reading manifest file '../../build/cobot3/cobot3.egg-info/SOURCES.txt'
+[0.910s] writing manifest file '../../build/cobot3/cobot3.egg-info/SOURCES.txt'
+[0.911s] running build
+[0.911s] running build_py
+[0.911s] creating /home/injae/cobot3_ws/build/cobot3/build
+[0.911s] creating /home/injae/cobot3_ws/build/cobot3/build/lib
+[0.911s] creating /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3
+[0.911s] copying cobot3/__init__.py -> /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3
+[0.911s] copying cobot3/color_detector_node.py -> /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3
+[0.911s] running install
+[0.916s] running install_lib
+[0.935s] creating /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3
+[0.935s] copying /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3/__init__.py -> /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3
+[0.935s] copying /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3/color_detector_node.py -> /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3
+[0.935s] byte-compiling /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3/__init__.py to __init__.cpython-312.pyc
+[0.935s] byte-compiling /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3/color_detector_node.py to color_detector_node.cpython-312.pyc
+[0.937s] running install_data
+[0.937s] creating /home/injae/cobot3_ws/install/cobot3/share/ament_index
+[0.937s] creating /home/injae/cobot3_ws/install/cobot3/share/ament_index/resource_index
+[0.937s] creating /home/injae/cobot3_ws/install/cobot3/share/ament_index/resource_index/packages
+[0.937s] copying resource/cobot3 -> /home/injae/cobot3_ws/install/cobot3/share/ament_index/resource_index/packages
+[0.937s] copying package.xml -> /home/injae/cobot3_ws/install/cobot3/share/cobot3
+[0.937s] creating /home/injae/cobot3_ws/install/cobot3/share/cobot3/launch
+[0.937s] copying launch/color_detector.launch.py -> /home/injae/cobot3_ws/install/cobot3/share/cobot3/launch
+[0.937s] running install_egg_info
+[0.956s] Copying ../../build/cobot3/cobot3.egg-info to /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3-0.1.0-py3.12.egg-info
+[0.957s] running install_scripts
+[1.070s] Installing m0609_color_detector script to /home/injae/cobot3_ws/install/cobot3/lib/cobot3
+[1.070s] writing list of installed files to '/home/injae/cobot3_ws/build/cobot3/install.log'
+[1.093s] Invoked command in '/home/injae/cobot3_ws/src/cobot3' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/injae/cobot3_ws/build/cobot3/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/cobot3 build --build-base /home/injae/cobot3_ws/build/cobot3/build install --record /home/injae/cobot3_ws/build/cobot3/install.log --install-scripts $base/lib/cobot3 --single-version-externally-managed install_data

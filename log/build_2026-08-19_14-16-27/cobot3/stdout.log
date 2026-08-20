@@ -1,0 +1,37 @@
+running egg_info
+creating ../../build/cobot3/cobot3.egg-info
+writing ../../build/cobot3/cobot3.egg-info/PKG-INFO
+writing dependency_links to ../../build/cobot3/cobot3.egg-info/dependency_links.txt
+writing entry points to ../../build/cobot3/cobot3.egg-info/entry_points.txt
+writing requirements to ../../build/cobot3/cobot3.egg-info/requires.txt
+writing top-level names to ../../build/cobot3/cobot3.egg-info/top_level.txt
+writing manifest file '../../build/cobot3/cobot3.egg-info/SOURCES.txt'
+reading manifest file '../../build/cobot3/cobot3.egg-info/SOURCES.txt'
+writing manifest file '../../build/cobot3/cobot3.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/injae/cobot3_ws/build/cobot3/build
+creating /home/injae/cobot3_ws/build/cobot3/build/lib
+creating /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3
+copying cobot3/__init__.py -> /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3
+copying cobot3/m0609_color_detector.py -> /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3
+running install
+running install_lib
+creating /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3
+copying /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3/__init__.py -> /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3
+copying /home/injae/cobot3_ws/build/cobot3/build/lib/cobot3/m0609_color_detector.py -> /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3
+byte-compiling /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3/__init__.py to __init__.cpython-312.pyc
+byte-compiling /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3/m0609_color_detector.py to m0609_color_detector.cpython-312.pyc
+running install_data
+creating /home/injae/cobot3_ws/install/cobot3/share/ament_index
+creating /home/injae/cobot3_ws/install/cobot3/share/ament_index/resource_index
+creating /home/injae/cobot3_ws/install/cobot3/share/ament_index/resource_index/packages
+copying resource/cobot3 -> /home/injae/cobot3_ws/install/cobot3/share/ament_index/resource_index/packages
+copying package.xml -> /home/injae/cobot3_ws/install/cobot3/share/cobot3
+creating /home/injae/cobot3_ws/install/cobot3/share/cobot3/launch
+copying launch/color_detector.launch.py -> /home/injae/cobot3_ws/install/cobot3/share/cobot3/launch
+running install_egg_info
+Copying ../../build/cobot3/cobot3.egg-info to /home/injae/cobot3_ws/install/cobot3/lib/python3.12/site-packages/cobot3-0.1.0-py3.12.egg-info
+running install_scripts
+Installing m0609_color_detector script to /home/injae/cobot3_ws/install/cobot3/lib/cobot3
+writing list of installed files to '/home/injae/cobot3_ws/build/cobot3/install.log'

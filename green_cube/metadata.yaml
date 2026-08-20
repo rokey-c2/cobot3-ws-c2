@@ -1,0 +1,44 @@
+rosbag2_bagfile_information:
+  version: 9
+  storage_identifier: mcap
+  duration:
+    nanoseconds: 43352269977
+  starting_time:
+    nanoseconds_since_epoch: 1787114650598712632
+  message_count: 1693
+  topics_with_message_count:
+    - topic_metadata:
+        name: /rgb
+        type: sensor_msgs/msg/Image
+        serialization_format: cdr
+        offered_qos_profiles:
+          - history: unknown
+            depth: 0
+            reliability: reliable
+            durability: volatile
+            deadline:
+              sec: 9223372036
+              nsec: 854775807
+            lifespan:
+              sec: 9223372036
+              nsec: 854775807
+            liveliness: automatic
+            liveliness_lease_duration:
+              sec: 9223372036
+              nsec: 854775807
+            avoid_ros_namespace_conventions: false
+        type_description_hash: RIHS01_d31d41a9a4c4bc8eae9be757b0beed306564f7526c88ea6a4588fb9582527d47
+      message_count: 1693
+  compression_format: ""
+  compression_mode: ""
+  relative_file_paths:
+    - green_cube_0.mcap
+  files:
+    - path: green_cube_0.mcap
+      starting_time:
+        nanoseconds_since_epoch: 1787114650598712632
+      duration:
+        nanoseconds: 43352269977
+      message_count: 1693
+  custom_data: ~
+  ros_distro: jazzy

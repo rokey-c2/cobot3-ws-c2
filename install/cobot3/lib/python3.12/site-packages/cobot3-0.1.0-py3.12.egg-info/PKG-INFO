@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: cobot3
+Version: 0.1.0
+Summary: Subscribes to a camera image topic and publishes a detected cube color (blue=1, green=2)
+Maintainer: injae
+Maintainer-email: il1282113@gmail.com
+License: Apache-2.0

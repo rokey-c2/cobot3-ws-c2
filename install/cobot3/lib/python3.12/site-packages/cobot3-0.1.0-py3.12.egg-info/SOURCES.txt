@@ -1,0 +1,14 @@
+package.xml
+setup.cfg
+setup.py
+../../build/cobot3/cobot3.egg-info/PKG-INFO
+../../build/cobot3/cobot3.egg-info/SOURCES.txt
+../../build/cobot3/cobot3.egg-info/dependency_links.txt
+../../build/cobot3/cobot3.egg-info/entry_points.txt
+../../build/cobot3/cobot3.egg-info/requires.txt
+../../build/cobot3/cobot3.egg-info/top_level.txt
+../../build/cobot3/cobot3.egg-info/zip-safe
+cobot3/__init__.py
+cobot3/m0609_color_detector.py
+launch/color_detector.launch.py
+resource/cobot3

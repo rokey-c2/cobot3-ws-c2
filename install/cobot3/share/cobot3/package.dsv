@@ -1,0 +1,6 @@
+source;share/cobot3/hook/pythonpath.ps1
+source;share/cobot3/hook/pythonpath.dsv
+source;share/cobot3/hook/pythonpath.sh
+source;share/cobot3/hook/ament_prefix_path.ps1
+source;share/cobot3/hook/ament_prefix_path.dsv
+source;share/cobot3/hook/ament_prefix_path.sh

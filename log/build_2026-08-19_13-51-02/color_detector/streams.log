@@ -1,0 +1,39 @@
+[0.724s] Invoking command in '/home/injae/cobot3_ws/src/color_detector': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/injae/cobot3_ws/build/color_detector/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/color_detector build --build-base /home/injae/cobot3_ws/build/color_detector/build install --record /home/injae/cobot3_ws/build/color_detector/install.log --install-scripts $base/lib/color_detector --single-version-externally-managed install_data
+[0.933s] running egg_info
+[0.933s] creating ../../build/color_detector/color_detector.egg-info
+[0.950s] writing ../../build/color_detector/color_detector.egg-info/PKG-INFO
+[0.950s] writing dependency_links to ../../build/color_detector/color_detector.egg-info/dependency_links.txt
+[0.950s] writing entry points to ../../build/color_detector/color_detector.egg-info/entry_points.txt
+[0.950s] writing requirements to ../../build/color_detector/color_detector.egg-info/requires.txt
+[0.950s] writing top-level names to ../../build/color_detector/color_detector.egg-info/top_level.txt
+[0.950s] writing manifest file '../../build/color_detector/color_detector.egg-info/SOURCES.txt'
+[0.983s] reading manifest file '../../build/color_detector/color_detector.egg-info/SOURCES.txt'
+[0.984s] writing manifest file '../../build/color_detector/color_detector.egg-info/SOURCES.txt'
+[0.984s] running build
+[0.984s] running build_py
+[0.984s] creating /home/injae/cobot3_ws/build/color_detector/build
+[0.984s] creating /home/injae/cobot3_ws/build/color_detector/build/lib
+[0.984s] creating /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector
+[0.984s] copying color_detector/__init__.py -> /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector
+[0.984s] copying color_detector/color_detector_node.py -> /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector
+[0.984s] running install
+[0.989s] running install_lib
+[1.006s] creating /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector
+[1.006s] copying /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector/__init__.py -> /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector
+[1.006s] copying /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector/color_detector_node.py -> /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector
+[1.006s] byte-compiling /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector/__init__.py to __init__.cpython-312.pyc
+[1.006s] byte-compiling /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector/color_detector_node.py to color_detector_node.cpython-312.pyc
+[1.007s] running install_data
+[1.007s] creating /home/injae/cobot3_ws/install/color_detector/share/ament_index
+[1.007s] creating /home/injae/cobot3_ws/install/color_detector/share/ament_index/resource_index
+[1.008s] creating /home/injae/cobot3_ws/install/color_detector/share/ament_index/resource_index/packages
+[1.008s] copying resource/color_detector -> /home/injae/cobot3_ws/install/color_detector/share/ament_index/resource_index/packages
+[1.008s] copying package.xml -> /home/injae/cobot3_ws/install/color_detector/share/color_detector
+[1.008s] creating /home/injae/cobot3_ws/install/color_detector/share/color_detector/launch
+[1.008s] copying launch/color_detector.launch.py -> /home/injae/cobot3_ws/install/color_detector/share/color_detector/launch
+[1.008s] running install_egg_info
+[1.025s] Copying ../../build/color_detector/color_detector.egg-info to /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector-0.1.0-py3.12.egg-info
+[1.026s] running install_scripts
+[1.128s] Installing color_detector_node script to /home/injae/cobot3_ws/install/color_detector/lib/color_detector
+[1.128s] writing list of installed files to '/home/injae/cobot3_ws/build/color_detector/install.log'
+[1.147s] Invoked command in '/home/injae/cobot3_ws/src/color_detector' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/injae/cobot3_ws/build/color_detector/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/color_detector build --build-base /home/injae/cobot3_ws/build/color_detector/build install --record /home/injae/cobot3_ws/build/color_detector/install.log --install-scripts $base/lib/color_detector --single-version-externally-managed install_data

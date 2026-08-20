@@ -1,0 +1,2 @@
+[console_scripts]
+m0609_color_detector = cobot3.m0609_color_detector:main

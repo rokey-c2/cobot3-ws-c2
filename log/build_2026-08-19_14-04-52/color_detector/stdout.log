@@ -1,0 +1,22 @@
+running egg_info
+writing ../../build/color_detector/color_detector.egg-info/PKG-INFO
+writing dependency_links to ../../build/color_detector/color_detector.egg-info/dependency_links.txt
+writing entry points to ../../build/color_detector/color_detector.egg-info/entry_points.txt
+writing requirements to ../../build/color_detector/color_detector.egg-info/requires.txt
+writing top-level names to ../../build/color_detector/color_detector.egg-info/top_level.txt
+reading manifest file '../../build/color_detector/color_detector.egg-info/SOURCES.txt'
+writing manifest file '../../build/color_detector/color_detector.egg-info/SOURCES.txt'
+running build
+running build_py
+copying color_detector/color_detector_node.py -> /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector
+running install
+running install_lib
+copying /home/injae/cobot3_ws/build/color_detector/build/lib/color_detector/color_detector_node.py -> /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector
+byte-compiling /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector/color_detector_node.py to color_detector_node.cpython-312.pyc
+running install_data
+running install_egg_info
+removing '/home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector-0.1.0-py3.12.egg-info' (and everything under it)
+Copying ../../build/color_detector/color_detector.egg-info to /home/injae/cobot3_ws/install/color_detector/lib/python3.12/site-packages/color_detector-0.1.0-py3.12.egg-info
+running install_scripts
+Installing color_detector_node script to /home/injae/cobot3_ws/install/color_detector/lib/color_detector
+writing list of installed files to '/home/injae/cobot3_ws/build/color_detector/install.log'
