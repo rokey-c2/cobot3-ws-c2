@@ -1,11 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# ROS2 build artifacts
 build/
 install/
 log/
-__pycache__/
-*.pyc
+
+# Frontend
+node_modules/
+dist/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Environment / secrets
+.env
+*.env
+
+# Isaac Sim / Omniverse local cache & logs
+.cache/
+.omniverse/
+*.log
+
+# Large/local simulation assets
+# Keep these outside Git unless the team explicitly decides otherwise.
 *.usd
-.claude/
-*.onnx
-*.pt
-*.pth
-Collected_*/
+*.usda
+*.usdc
+*.urdf
+*.dae
+*.stl
+*.obj
+*.fbx
+
+# Keep empty asset directories in Git
+!isaac_sim/usd/.gitkeep
+!isaac_sim/assets/**/.gitkeep
