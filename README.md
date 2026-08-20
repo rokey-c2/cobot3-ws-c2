@@ -2,7 +2,7 @@
 
 ## MVP Flow
 Input Zone
-→ ForkliftB AMR 2대 교대
+→ ForkliftB AMR
 → Doosan P3020
 → Main Conveyor
 → Wheel Sorter
@@ -10,13 +10,13 @@ Input Zone
 → P3020 A/B 적재
 → Box Full
 → 출고 ForkliftB
-→ 배송지 A/B
+→ 배송지
 
-## 장비 구성
-- ForkliftB AMR × 6
-  - 입고 2대
-  - 출고 A 2대
-  - 출고 B 2대
+## 장비 구성()
+- ForkliftB AMR × 3
+  - 입고 1대
+  - 출고 A 1대
+  - 출고 B 1대
 - Doosan P3020 × 3
   - 입고 1대
   - A 적재 1대
