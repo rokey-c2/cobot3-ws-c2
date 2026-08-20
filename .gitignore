@@ -31,14 +31,14 @@ dist/
 
 # Large/local simulation assets
 # Keep these outside Git unless the team explicitly decides otherwise.
-*.usd
-*.usda
-*.usdc
-*.urdf
-*.dae
-*.stl
-*.obj
-*.fbx
+# *.usd
+# *.usda
+# *.usdc
+# *.urdf
+# *.dae
+# *.stl
+# *.obj
+# *.fbx
 
 # Keep empty asset directories in Git
 !isaac_sim/usd/.gitkeep
