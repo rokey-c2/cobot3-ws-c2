@@ -12,6 +12,7 @@ from isaacsim.core.api import World
 from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import is_stage_loading, open_stage
 import omni.graph.core as og
+import omni.usd
 
 from project_config.robot_config import (
     IW_HUB_USD,
@@ -39,6 +40,18 @@ def _load_world_stage():
     open_stage(str(WORLD_USD))
     while is_stage_loading():
         simulation_app.update()
+
+    # The collected P3020 world still contains an older ForkliftB prim.
+    # Remove every ForkliftB prim before the IW Hub is spawned.
+    stage = omni.usd.get_context().get_stage()
+    forklift_paths = [
+        prim.GetPath()
+        for prim in stage.Traverse()
+        if "forklift" in prim.GetName().lower()
+    ]
+    for prim_path in sorted(forklift_paths, key=str, reverse=True):
+        stage.RemovePrim(prim_path)
+        print(f"[WORLD] removed legacy ForkliftB prim: {prim_path}")
 
 
 def _create_clock_graph():
@@ -110,4 +123,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

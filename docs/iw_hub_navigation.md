@@ -89,4 +89,4 @@ ros2 topic pub --once /amr_a/emergency_stop std_msgs/msg/Bool "{data: false}"
 - 정적 지도는 40 m × 40 m 경계 지도이며 실제 장애물은 LiDAR costmap에 반영한다.
 - `spawn_xyz`, footprint, LiDAR 높이는 실제 월드 배치 확인 후 조정한다.
 - ForkliftB 코드는 이 실행 경로와 로봇 registry에서 사용하지 않는다.
-
+- 저장된 P3020 월드 안의 기존 ForkliftB prim도 시작할 때 자동 제거한다.
