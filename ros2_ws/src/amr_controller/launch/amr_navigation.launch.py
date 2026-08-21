@@ -1,9 +1,8 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import PathJoinSubstitution
 
 
 def generate_launch_description():
@@ -21,7 +20,7 @@ def generate_launch_description():
                 "navigation.yaml",
             ]
         ),
-        description="Goal navigator parameter file",
+        description="Simple goal navigator parameter file",
     )
 
     navigator_node = Node(
@@ -32,11 +31,20 @@ def generate_launch_description():
         output="screen",
         parameters=[LaunchConfiguration("params_file")],
     )
+    velocity_mux_node = Node(
+        package="amr_controller",
+        executable="velocity_mux",
+        namespace=LaunchConfiguration("namespace"),
+        name="velocity_mux",
+        output="screen",
+        parameters=[{"navigation_enabled_on_start": True}],
+    )
 
     return LaunchDescription(
         [
             namespace_argument,
             params_argument,
             navigator_node,
+            velocity_mux_node,
         ]
     )

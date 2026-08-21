@@ -9,7 +9,7 @@ PACKAGE_NAME = "amr_controller"
 
 setup(
     name=PACKAGE_NAME,
-    version="0.2.0",
+    version="0.3.0",
     packages=find_packages(),
     data_files=[
         (
@@ -32,10 +32,8 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="rokey-c2",
-    maintainer_email=(
-        "rokey-c2@users.noreply.github.com"
-    ),
-    description="Forklift AMR ROS 2 goal navigation controller",
+    maintainer_email="rokey-c2@users.noreply.github.com",
+    description="ForkliftB ROS 2 Nav2 navigation and safety command mux",
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
@@ -46,6 +44,14 @@ setup(
             (
                 "goal_navigator = "
                 "amr_controller.goal_navigator:main"
+            ),
+            (
+                "static_map_publisher = "
+                "amr_controller.static_map_publisher:main"
+            ),
+            (
+                "velocity_mux = "
+                "amr_controller.velocity_mux:main"
             ),
         ],
     },

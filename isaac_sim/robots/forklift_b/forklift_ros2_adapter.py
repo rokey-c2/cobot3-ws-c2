@@ -1,38 +1,46 @@
-"""Isaac Sim ForkliftB와 ROS 2 토픽을 연결한다.
+"""Isaac Sim ForkliftB와 ROS 2 주행, odometry, clock을 연결한다.
 
 구독:
-    /<namespace>/cmd_vel  (geometry_msgs/Twist)
-    /<namespace>/fork_up (std_msgs/Bool)
+    /<namespace>/drive_cmd_vel  (geometry_msgs/Twist)
+    /<namespace>/fork_up       (std_msgs/Bool)
 
 발행:
-    /<namespace>/odom     (nav_msgs/Odometry)
-    /tf                   (tf2_msgs/TFMessage)
+    /<namespace>/odom          (nav_msgs/Odometry)
+    /clock                     (rosgraph_msgs/Clock)
+    /tf                        (tf2_msgs/TFMessage)
 """
 
 import math
 import time
 
 import rclpy
+from builtin_interfaces.msg import Time
 from geometry_msgs.msg import TransformStamped, Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rosgraph_msgs.msg import Clock
 from std_msgs.msg import Bool
 from tf2_msgs.msg import TFMessage
 
 
 COMMAND_TIMEOUT_SECONDS = 0.5
+LIDAR_MOUNT_X = 0.0
+LIDAR_MOUNT_Y = 0.0
+LIDAR_MOUNT_Z = 2.0
 
 
 class ForkliftRos2Adapter:
-    """ROS 2 명령을 Forklift에 적용하고 시뮬레이션 자세를 발행한다."""
+    """ROS 2 명령을 Forklift에 적용하고 시뮬레이션 상태를 발행한다."""
 
     def __init__(
         self,
         forklift_controller,
         namespace="amr_a",
+        simulation_time_provider=None,
     ):
         self.forklift_controller = forklift_controller
         self.robot = forklift_controller.robot
+        self.simulation_time_provider = simulation_time_provider
 
         if not rclpy.ok():
             rclpy.init(args=None)
@@ -40,6 +48,7 @@ class ForkliftRos2Adapter:
         self.namespace = namespace.strip("/")
         self.odom_frame = f"{self.namespace}/odom"
         self.base_frame = f"{self.namespace}/base_link"
+        self.lidar_frame = f"{self.namespace}/lidar_link"
 
         self.node = Node(
             node_name="forklift_ros2_adapter",
@@ -48,7 +57,7 @@ class ForkliftRos2Adapter:
 
         self.cmd_vel_subscription = self.node.create_subscription(
             Twist,
-            "cmd_vel",
+            "drive_cmd_vel",
             self.cmd_vel_callback,
             10,
         )
@@ -64,7 +73,11 @@ class ForkliftRos2Adapter:
             "odom",
             10,
         )
-        # /tf는 namespace 아래가 아니라 ROS 전체 공용 토픽으로 발행한다.
+        self.clock_publisher = self.node.create_publisher(
+            Clock,
+            "/clock",
+            10,
+        )
         self.tf_publisher = self.node.create_publisher(
             TFMessage,
             "/tf",
@@ -78,16 +91,12 @@ class ForkliftRos2Adapter:
 
         topic_prefix = f"/{self.namespace}"
         print("[ROS2] Forklift ROS2 Adapter 시작")
-        print(f"[ROS2] 구독: {topic_prefix}/cmd_vel")
+        print(f"[ROS2] 구독: {topic_prefix}/drive_cmd_vel")
         print(f"[ROS2] 구독: {topic_prefix}/fork_up")
-        print(f"[ROS2] 발행: {topic_prefix}/odom")
-        print(
-            f"[ROS2] TF: {self.odom_frame} -> "
-            f"{self.base_frame}"
-        )
+        print(f"[ROS2] 발행: {topic_prefix}/odom, /clock, /tf")
 
     def cmd_vel_callback(self, message):
-        """가장 최근의 주행 명령을 저장한다."""
+        """가장 최근의 최종 주행 명령을 저장한다."""
 
         self.linear_velocity = float(message.linear.x)
         self.angular_velocity = float(message.angular.z)
@@ -113,14 +122,24 @@ class ForkliftRos2Adapter:
         cos_yaw = 1.0 - 2.0 * (y * y + z * z)
         return math.atan2(sin_yaw, cos_yaw)
 
-    def publish_odometry(self):
-        """Isaac World 자세를 odom과 TF로 발행한다."""
+    def simulation_stamp(self):
+        """현재 Isaac 시뮬레이션 시간을 ROS Time으로 변환한다."""
+
+        if self.simulation_time_provider is None:
+            return self.node.get_clock().now().to_msg()
+
+        seconds = max(0.0, float(self.simulation_time_provider()))
+        whole_seconds = int(seconds)
+        nanoseconds = int((seconds - whole_seconds) * 1_000_000_000)
+        return Time(sec=whole_seconds, nanosec=nanoseconds)
+
+    def publish_simulation_state(self):
+        """Isaac 자세를 /clock, odom, TF로 같은 timestamp에 발행한다."""
 
         position, orientation = self.robot.get_world_pose()
         linear_world = self.robot.get_linear_velocity()
         angular_world = self.robot.get_angular_velocity()
 
-        # Isaac quaternion 순서는 w, x, y, z이다.
         quat_w = float(orientation[0])
         quat_x = float(orientation[1])
         quat_y = float(orientation[2])
@@ -133,13 +152,13 @@ class ForkliftRos2Adapter:
             quat_z,
         )
 
-        # Isaac의 World 속도를 base_link 좌표계 속도로 변환한다.
         world_vx = float(linear_world[0])
         world_vy = float(linear_world[1])
         body_vx = math.cos(yaw) * world_vx + math.sin(yaw) * world_vy
         body_vy = -math.sin(yaw) * world_vx + math.cos(yaw) * world_vy
 
-        stamp = self.node.get_clock().now().to_msg()
+        stamp = self.simulation_stamp()
+        self.clock_publisher.publish(Clock(clock=stamp))
 
         odom_message = Odometry()
         odom_message.header.stamp = stamp
@@ -157,24 +176,36 @@ class ForkliftRos2Adapter:
         odom_message.twist.twist.angular.z = float(angular_world[2])
         self.odom_publisher.publish(odom_message)
 
-        transform = TransformStamped()
-        transform.header.stamp = stamp
-        transform.header.frame_id = self.odom_frame
-        transform.child_frame_id = self.base_frame
-        transform.transform.translation.x = float(position[0])
-        transform.transform.translation.y = float(position[1])
-        transform.transform.translation.z = float(position[2])
-        transform.transform.rotation.x = quat_x
-        transform.transform.rotation.y = quat_y
-        transform.transform.rotation.z = quat_z
-        transform.transform.rotation.w = quat_w
-        self.tf_publisher.publish(TFMessage(transforms=[transform]))
+        odom_to_base = TransformStamped()
+        odom_to_base.header.stamp = stamp
+        odom_to_base.header.frame_id = self.odom_frame
+        odom_to_base.child_frame_id = self.base_frame
+        odom_to_base.transform.translation.x = float(position[0])
+        odom_to_base.transform.translation.y = float(position[1])
+        odom_to_base.transform.translation.z = float(position[2])
+        odom_to_base.transform.rotation.x = quat_x
+        odom_to_base.transform.rotation.y = quat_y
+        odom_to_base.transform.rotation.z = quat_z
+        odom_to_base.transform.rotation.w = quat_w
+
+        base_to_lidar = TransformStamped()
+        base_to_lidar.header.stamp = stamp
+        base_to_lidar.header.frame_id = self.base_frame
+        base_to_lidar.child_frame_id = self.lidar_frame
+        base_to_lidar.transform.translation.x = LIDAR_MOUNT_X
+        base_to_lidar.transform.translation.y = LIDAR_MOUNT_Y
+        base_to_lidar.transform.translation.z = LIDAR_MOUNT_Z
+        base_to_lidar.transform.rotation.w = 1.0
+
+        self.tf_publisher.publish(
+            TFMessage(transforms=[odom_to_base, base_to_lidar])
+        )
 
     def update(self):
-        """ROS 2 콜백, 안전 정지, odometry 발행을 한 프레임 처리한다."""
+        """ROS 콜백, 안전 정지, 시뮬레이션 상태를 한 프레임 처리한다."""
 
         rclpy.spin_once(self.node, timeout_sec=0.0)
-        self.publish_odometry()
+        self.publish_simulation_state()
 
         if not self.has_received_command:
             self.forklift_controller.stop()
