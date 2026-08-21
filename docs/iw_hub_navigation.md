@@ -1,9 +1,11 @@
-# IW Hub 단일 AMR 자율주행
+# IW Hub 단일 AMR 컨테이너 운반
 
 이 구성은 저장된 물류 월드를 불러오지 않고 빈 테스트 월드에서
 Idealworks IW Hub 한 대(`amr_a`)만 실행한다. Isaac Sim 5.1에서
 odometry, RTX LiDAR, simulation clock을 발행하고 ROS 2 Jazzy Nav2가
 목표 경로 계획, LiDAR 장애물 반영, 충돌 정지, 속도 명령 중재를 담당한다.
+박스를 담은 컨테이너는 IW Hub 리프트의 실제 변위를 추종하며, 목표에서
+리프트가 완전히 내려오면 AMR에서 분리되어 월드에 배치된다.
 
 ## 데이터 흐름
 
@@ -16,6 +18,7 @@ odometry, RTX LiDAR, simulation clock을 발행하고 ROS 2 Jazzy Nav2가
 | Isaac → ROS 2 | `/amr_a/scan` | RTX 2D LiDAR |
 | ROS 2 → Isaac | `/amr_a/drive_cmd_vel` | 안전 중재 후 최종 속도 |
 | ROS 2 → Isaac | `/amr_a/lift_cmd` | lift joint command |
+| ROS 2 | `/amr_a/container_mission_state` | 리프트/운반/배치 미션 상태 |
 
 ## 1. 의존성 설치와 빌드
 
@@ -46,7 +49,7 @@ cd ~/collaboration/cobot3-ws-c2
 ./scripts/run_ros2.sh
 ```
 
-## 3. 자율주행 시작과 목표 전송
+## 3. 컨테이너 리프트·운반·배치
 
 기본 장애물 회피 실험 배치는 다음과 같다.
 
@@ -60,11 +63,26 @@ Isaac Sim과 Nav2를 실행한 뒤 세 번째 터미널에서 실험 스크립�
 
 ```bash
 cd ~/collaboration/cobot3-ws-c2
-./scripts/test_iw_hub_avoidance.sh
+./scripts/test_iw_hub_container_mission.sh
 ```
 
-직선 경로 중앙의 빨간 장애물을 RTX LiDAR가 감지하고, Nav2 global/local
-costmap에 반영하여 IW Hub가 장애물 옆으로 우회하는지 확인한다.
+미션 순서는 다음과 같다.
+
+1. 시작점 `(1.5, 0.0)`에서 박스 컨테이너를 `0.30 m` 들어 올린다.
+2. 컨테이너를 든 상태로 Nav2 목표 `(6.0, 0.0)`을 전송한다.
+3. 중앙의 빨간 장애물을 우회해 목표에 도착한다.
+4. 리프트를 `0.00 m`까지 내리고 컨테이너를 목표 위치에 배치한다.
+
+컨테이너 크기는 기존 loaded footprint 안에 들어오며, 바닥은 2D LiDAR
+스캔면 위에 있어 자기 화물을 장애물로 오인하지 않는다. 운반물은 접촉
+마찰이 아니라 리프트 프림의 월드 변위를 추종하므로 회전과 우회 중에도
+미끄러지지 않는다.
+
+주행만 별도로 재검증할 때는 아래 스크립트를 사용한다.
+
+```bash
+./scripts/test_iw_hub_avoidance.sh
+```
 
 ### 목표를 직접 전송하는 방법
 
@@ -93,6 +111,7 @@ ros2 topic echo /amr_a/scan --once
 ros2 topic echo /amr_a/odom --once
 ros2 run tf2_ros tf2_echo map amr_a/base_link
 ros2 action list | grep /amr_a/navigate_to_pose
+ros2 topic echo /amr_a/container_mission_state
 ```
 
 비상정지와 해제:
@@ -105,8 +124,9 @@ ros2 topic pub --once /amr_a/emergency_stop std_msgs/msg/Bool "{data: false}"
 ## 현재 범위
 
 - IW Hub `amr_a` 한 대부터 검증한다.
+- 박스 컨테이너도 한 개만 생성한다.
 - 세계 좌표와 odometry가 같다는 전제로 `map → amr_a/odom`을 identity로 둔다.
 - 정적 지도는 40 m × 40 m 경계 지도이며 실제 장애물은 LiDAR costmap에 반영한다.
-- `spawn_xyz`, footprint, LiDAR 높이는 실제 월드 배치 확인 후 조정한다.
+- 컨테이너 외곽은 현재 Nav2 footprint 안에 들어오도록 제한한다.
 - ForkliftB 코드는 이 실행 경로와 로봇 registry에서 사용하지 않는다.
 - P3020, 컨베이어, ForkliftB와 다른 AMR은 생성하지 않는다.

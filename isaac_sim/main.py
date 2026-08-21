@@ -15,6 +15,7 @@ import omni.graph.core as og
 import numpy as np
 
 from project_config.robot_config import (
+    CARGO_REGISTRY,
     IW_HUB_USD,
     ROBOT_REGISTRY,
     TEST_OBSTACLES,
@@ -28,6 +29,7 @@ simulation_app.update()
 
 from robots.iw_hub.iw_hub_agent import IwHubAgent
 from sensors.lidar_sensor import IwHubLidarRos2Publisher
+from cargo.container_payload import CargoContainerPayload
 
 
 def _create_clock_graph():
@@ -94,6 +96,19 @@ def main():
     for agent in agents:
         agent.post_reset()
 
+    agents_by_name = {agent.name: agent for agent in agents}
+    cargo_payloads = []
+    for config in CARGO_REGISTRY:
+        agent = agents_by_name[config["robot_name"]]
+        cargo_payloads.append(
+            CargoContainerPayload(
+                lift_prim_path=agent.lift_prim_path,
+                goal_xy=config["goal_xy"],
+                prim_path=f"/World/Cargo/{config['name']}",
+                lift_offset=config["lift_offset"],
+            )
+        )
+
     lidar_publishers = [
         IwHubLidarRos2Publisher(
             # The referenced IW Hub articulation moves at iw_hub_sensors.
@@ -109,12 +124,16 @@ def main():
     print("[IW HUB] autonomous-navigation simulation started")
     print("[IW HUB] input : /amr_a/drive_cmd_vel")
     print("[IW HUB] output: /amr_a/odom, /amr_a/scan, /clock")
+    print("[CARGO] container_01 loaded with boxes")
+    print("[CARGO] mission: lift -> navigate -> lower/place at (6.0, 0.0)")
     try:
         while simulation_app.is_running():
             # Keep RTX render products and the embedded drive graph updating.
             simulation_app.update()
+            for payload in cargo_payloads:
+                payload.update()
     finally:
-        _ = lidar_publishers
+        _ = (lidar_publishers, cargo_payloads)
         world.stop()
         simulation_app.close()
 

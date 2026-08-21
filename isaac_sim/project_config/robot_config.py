@@ -38,6 +38,18 @@ TEST_OBSTACLES = [
 ]
 
 
+# One loaded carrier starts on amr_a.  Its floor is above the 2D LiDAR scan
+# plane so the robot does not classify its own payload as an obstacle.
+CARGO_REGISTRY = [
+    {
+        "name": "container_01",
+        "robot_name": "amr_a",
+        "goal_xy": (6.0, 0.0),
+        "lift_offset": (0.0, 0.0, 0.85),
+    }
+]
+
+
 SORTER_CONFIG = {
     "name": "sorter_01",
     "namespace": "/sorter_01",

@@ -34,9 +34,10 @@ Input Zone
 - PhysX
 - Python
 
-## IW Hub 자율주행 실행
+## IW Hub 컨테이너 운반 실행
 
-현재 Isaac 실행 월드는 Ground Plane과 `amr_a` IW Hub 한 대만 생성합니다.
+현재 Isaac 실행 월드는 Ground Plane, 박스를 담은 컨테이너와
+`amr_a` IW Hub 한 대만 생성합니다.
 P3020, 컨베이어, ForkliftB는 이 실행 구성에 포함하지 않습니다.
 
 장애물 회피 실험은 출발 `(1.5, 0.0)`, 장애물 `(3.5, 0.0)`,
@@ -46,8 +47,12 @@ P3020, 컨베이어, ForkliftB는 이 실행 구성에 포함하지 않습니다
 ./scripts/setup_ros.sh
 ./scripts/run_isaac.sh
 ./scripts/run_ros2.sh
-./scripts/test_iw_hub_avoidance.sh
+./scripts/test_iw_hub_container_mission.sh
 ```
+
+세 번째 스크립트는 컨테이너 리프트 상승(0.30 m), 장애물 회피 주행,
+목표 `(6.0, 0.0)` 도착, 리프트 하강과 컨테이너 배치를 순서대로 수행합니다.
+주행만 다시 확인할 때는 `./scripts/test_iw_hub_avoidance.sh`를 사용합니다.
 
 상세 실행 및 목표 전송 방법은 [docs/iw_hub_navigation.md](docs/iw_hub_navigation.md)를 참고합니다.
 

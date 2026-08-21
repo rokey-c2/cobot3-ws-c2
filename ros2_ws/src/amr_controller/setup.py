@@ -7,7 +7,7 @@ PACKAGE_NAME = "amr_controller"
 
 setup(
     name=PACKAGE_NAME,
-    version="0.5.0",
+    version="0.6.0",
     packages=find_packages(),
     data_files=[
         (
@@ -27,9 +27,9 @@ setup(
     entry_points={
         "console_scripts": [
             "odom_tf_bridge = amr_controller.odom_tf_bridge:main",
+            "container_mission = amr_controller.container_mission:main",
             "static_map_publisher = amr_controller.static_map_publisher:main",
             "velocity_mux = amr_controller.velocity_mux:main",
         ],
     },
 )
-

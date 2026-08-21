@@ -234,6 +234,7 @@ class IwHubAgent(BaseRobotAgent):
         self.spawn_yaw = float(cfg.get("spawn_yaw", 0.0))
         self.prim_path = f"/World/Robots/{self.name}"
         self.sensor_prim_path = f"{self.prim_path}/{_SENSORS_REL}"
+        self.lift_prim_path = f"{self.sensor_prim_path}/lift"
 
     def setup(self):
         stage = omni.usd.get_context().get_stage()
@@ -270,4 +271,3 @@ class IwHubAgent(BaseRobotAgent):
 
     def on_physics_step(self, dt):
         del dt
-
