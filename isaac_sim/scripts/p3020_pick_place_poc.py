@@ -12,9 +12,14 @@ M0609의 6_pick_place.py 와 동일한 구조:
   - ParallelGripper 대신 robots/p3020/contact_gripper.py 의 ContactGripper
     를 쓴다. Isaac Sim의 SurfaceGripper(레이캐스트 기반)는 방향/위치를
     다 정확히 검증했는데도 안정적으로 안 붙어서, 대신 "흡착 컵 위치와
-    박스 사이의 실제 거리가 threshold 안으로 들어오면 그 순간
-    PhysicsFixedJoint 로 용접" 하는 단순한 방식으로 바꿨다.
-    VGP20 모델(하드웨어)은 그대로 쓰고, 판정 로직만 대체한 것.
+    박스 사이의 실제 거리가 threshold 안으로 들어오면 그 순간 붙잡는다"는
+    단순한 방식으로 바꿨다. 처음엔 PhysicsFixedJoint 로 용접했는데, 물리
+    솔버가 몇 스텝 지나면서 의도한 상대 위치에서 3~5cm씩 어긋나는 문제가
+    있어서(그리퍼-박스 사이 간격이 벌어지거나 파고드는 현상의 원인), 붙어있는
+    동안은 박스를 kinematic으로 돌리고 매 스텝 그리퍼 기준 고정 오프셋으로
+    직접 트랜스폼을 스냅하는 방식으로 교체했다. 놓을 때는 다시 dynamic으로
+    돌려서 중력으로 자연스럽게 떨어뜨린다. VGP20 모델(하드웨어)은 그대로
+    쓰고, 판정/유지 로직만 대체한 것.
   - 박스 인식은 아직 없어서, "TargetBox" 프림 하나를 씬에 놓고 그 위치를
     감지된 좌표라고 가정한다. 가동범위(SPEC_REACH) 안에 있는지도 확인한다.
 
@@ -610,7 +615,11 @@ def main():
             if fsm.gripper == "close":
                 just_attached = gripper.try_attach(TARGET_BOX_PATH) and not gripper_was_attached
                 if just_attached:
-                    print(f"      [gripper] 접촉 감지 -> 용접 (step={step})")
+                    print(f"      [gripper] 접촉 감지 -> 부착 (step={step})")
+            # 붙어있는 동안은 매 스텝 그리퍼 기준 고정 오프셋으로 다시 스냅한다
+            # (조인트 솔버에 맡기면 몇 cm씩 어긋나는 문제가 있어서 kinematic 직접 갱신으로 대체).
+            if gripper.is_attached():
+                gripper.update()
             gripper_was_attached = gripper.is_attached()
 
             if step % 60 == 0:
