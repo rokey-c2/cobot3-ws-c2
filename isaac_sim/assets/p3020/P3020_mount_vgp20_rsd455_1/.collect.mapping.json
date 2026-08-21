@@ -1,0 +1,59 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/materials/Aluminum_Anodized.mdl",
+            "source_hash": "fef9dd42faed12fb9d2fa05a6e4cbe9652d92ddd",
+            "target_url": "./SubUSDs/materials/Aluminum_Anodized.mdl",
+            "target_hash": "9029484d1de3e2f33fbe1142c8bd766b9a4979e9"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/materials/Aluminum_Cast.mdl",
+            "source_hash": "dfc0c8bc32a430ce34a0b3d82859095c4b718908",
+            "target_url": "./SubUSDs/materials/Aluminum_Cast.mdl",
+            "target_hash": "8531aae115da649c0125bf823c4fdd11e037084f"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/materials/Plastic_ABS.mdl",
+            "source_hash": "3dd9345a5b49b64ce3e36daa62d6381841bf4387",
+            "target_url": "./SubUSDs/materials/Plastic_ABS.mdl",
+            "target_hash": "edb7bd3f9ec1d8b16d8231c41e9821e9a7aa8f06"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/textures/Aluminum_Anodized_BaseColor.png",
+            "source_hash": "adb405f2db03f8f4dc8edb254f82b1a1cb8addd3",
+            "target_url": "./SubUSDs/textures/Aluminum_Anodized_BaseColor.png",
+            "target_hash": "5541692b79f724f32f5aa57f31abb9002bd3d5da"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/textures/Aluminum_Cast_BaseColor.png",
+            "source_hash": "7352703299b178ef3ed03bafd65c1ebd469d6e6f",
+            "target_url": "./SubUSDs/textures/Aluminum_Cast_BaseColor.png",
+            "target_hash": "47a46db22c3da100baa39cd00570fa14fc78e06b"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/textures/Aluminum_Anodized_ORM.png",
+            "source_hash": "a758c3469322832352ab30eabd97ae9c2df1c9cc",
+            "target_url": "./SubUSDs/textures/Aluminum_Anodized_ORM.png",
+            "target_hash": "d0fe483ceb2678848c8f9865d403497fec72e35b"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/textures/Aluminum_Cast_ORM.png",
+            "source_hash": "8ee2b26e154a39e70a10f48df8092f355a4d0997",
+            "target_url": "./SubUSDs/textures/Aluminum_Cast_ORM.png",
+            "target_hash": "5780f3366919052cf11e96b3edd9ea3845345864"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/textures/Aluminum_Anodized_Normal.png",
+            "source_hash": "5f640e3737789e785c0f08f66154e8fe59d689fe",
+            "target_url": "./SubUSDs/textures/Aluminum_Anodized_Normal.png",
+            "target_hash": "be9a5e912e86689c0b4453f2ddf4833534dcb081"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455/SubUSDs/textures/Aluminum_Cast_N.png",
+            "source_hash": "b3264f12e21285ca443aa8cb3531b088c9174e46",
+            "target_url": "./SubUSDs/textures/Aluminum_Cast_N.png",
+            "target_hash": "9715755afea04dfb06b3e6c45f701b51258e02e1"
+        }
+    ]
+}

@@ -43,3 +43,7 @@ dist/
 # Keep empty asset directories in Git
 !isaac_sim/usd/.gitkeep
 !isaac_sim/assets/**/.gitkeep
+
+# Synthetic data generation output (Replicator captures, YOLO datasets, zips)
+isaac_sim/data/
+_out_parcel_sdg/
