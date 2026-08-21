@@ -36,7 +36,7 @@ def generate_launch_description():
     )
     sim_time_argument = DeclareLaunchArgument(
         "use_sim_time",
-        default_value="true",
+        default_value="True",
         description="Use Isaac Sim /clock",
     )
 
@@ -100,8 +100,10 @@ def generate_launch_description():
             "namespace": namespace,
             "use_sim_time": use_sim_time,
             "params_file": params_file,
-            "autostart": "true",
-            "use_composition": "false",
+            "autostart": "True",
+            # Nav2 launch 내부 PythonExpression이 이 값을 평가한다.
+            # 소문자 false는 Python 변수로 해석돼 NameError가 발생한다.
+            "use_composition": "False",
         }.items(),
     )
     collision_monitor = Node(
