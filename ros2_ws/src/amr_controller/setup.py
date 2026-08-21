@@ -9,7 +9,7 @@ PACKAGE_NAME = "amr_controller"
 
 setup(
     name=PACKAGE_NAME,
-    version="0.1.0",
+    version="0.2.0",
     packages=find_packages(),
     data_files=[
         (
@@ -35,13 +35,17 @@ setup(
     maintainer_email=(
         "rokey-c2@users.noreply.github.com"
     ),
-    description="Forklift AMR ROS 2 controller",
+    description="Forklift AMR ROS 2 goal navigation controller",
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
             (
                 "amr_controller = "
                 "amr_controller.amr_controller:main"
+            ),
+            (
+                "goal_navigator = "
+                "amr_controller.goal_navigator:main"
             ),
         ],
     },

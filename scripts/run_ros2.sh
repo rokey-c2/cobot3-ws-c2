@@ -25,9 +25,9 @@ if ! ros2 pkg prefix amr_controller > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "[ROS2] /amr_a/cmd_vel 테스트 노드 시작"
+echo "[ROS2] /amr_a/goal_pose 자율주행 노드 시작"
 
 exec ros2 launch \
     amr_controller \
-    amr_controller.launch.py \
+    amr_navigation.launch.py \
     "$@"
