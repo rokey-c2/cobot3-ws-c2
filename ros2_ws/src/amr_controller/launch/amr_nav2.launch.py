@@ -120,21 +120,6 @@ def generate_launch_description():
         parameters=[{"use_sim_time": use_sim_time}],
         remappings=tf_remappings,
     )
-    scan_time_relay = Node(
-        package="amr_controller",
-        executable="scan_time_relay",
-        namespace=namespace,
-        name="scan_time_relay",
-        output="screen",
-        parameters=[
-            {
-                "use_sim_time": use_sim_time,
-                "input_topic": "scan",
-                "output_topic": "scan_nav",
-                "stamp_offset_sec": 0.10,
-            }
-        ],
-    )
 
     controller_server = Node(
         package="nav2_controller",
@@ -247,7 +232,6 @@ def generate_launch_description():
             map_to_odom,
             odom_tf_bridge,
             base_to_lidar,
-            scan_time_relay,
             controller_server,
             smoother_server,
             planner_server,

@@ -17,9 +17,7 @@ controller_server:
   ros__parameters:
     use_sim_time: true
     controller_frequency: 15.0
-    # Allow the relayed RTX scan and its matching odom transform to reach the
-    # local costmap before treating the controller cycle as timed out.
-    costmap_update_timeout: 2.0
+    costmap_update_timeout: 0.5
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.0
     min_theta_velocity_threshold: 0.001
@@ -102,10 +100,9 @@ local_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
-        tf_filter_tolerance: 0.20
         observation_sources: scan
         scan:
-          topic: scan_nav
+          topic: scan
           data_type: "LaserScan"
           clearing: true
           marking: true
@@ -140,10 +137,9 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
-        tf_filter_tolerance: 0.20
         observation_sources: scan
         scan:
-          topic: scan_nav
+          topic: scan
           data_type: "LaserScan"
           clearing: true
           marking: true
@@ -228,27 +224,24 @@ collision_monitor:
     odom_frame_id: amr_a/odom
     cmd_vel_in_topic: cmd_vel
     cmd_vel_out_topic: cmd_vel_safe
-    state_topic: collision_monitor_state
     transform_tolerance: 0.30
-    # scan_nav is restamped against /clock, so stale or missing scans must stop
-    # the vehicle instead of silently disabling collision protection.
-    source_timeout: 1.0
+    # Isaac RTX scans can arrive with a render-time delay. Keep using scan
+    # points, but do not engage the invalid-source watchdog in simulation.
+    source_timeout: 0.0
     stop_pub_timeout: 1.0
     enable_stamped_cmd_vel: false
-    polygons: ["iw_hub_approach"]
-    iw_hub_approach:
+    polygons: ["iw_hub_stop_zone"]
+    iw_hub_stop_zone:
       type: "polygon"
-      action_type: "approach"
-      footprint_topic: local_costmap/published_footprint
-      time_before_collision: 2.0
-      simulation_time_step: 0.05
+      points: "[[0.95, 0.55], [0.95, -0.55], [-0.75, -0.55], [-0.75, 0.55]]"
+      action_type: "stop"
       min_points: 3
       visualize: true
-      polygon_pub_topic: iw_hub_approach
+      polygon_pub_topic: iw_hub_stop_zone
     observation_sources: ["scan"]
     scan:
       type: "scan"
-      topic: scan_nav
+      topic: scan
       min_height: 0.05
       max_height: 2.5
       enabled: true

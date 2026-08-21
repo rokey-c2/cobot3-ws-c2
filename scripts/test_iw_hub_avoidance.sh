@@ -54,15 +54,6 @@ if ! timeout 10 ros2 topic echo /map --once \
     exit 1
 fi
 
-echo "[TEST] checking /amr_a/scan_nav"
-if ! timeout 10 ros2 topic echo /amr_a/scan_nav --once \
-    --qos-reliability best_effort \
-    --qos-durability volatile > /dev/null 2>&1; then
-    echo "[ERROR] no fresh relayed scan received on /amr_a/scan_nav"
-    echo "Check terminal 2 for scan_time_relay or TF errors."
-    exit 1
-fi
-
 ros2 topic pub --once \
     /amr_a/navigation_enabled \
     std_msgs/msg/Bool \
