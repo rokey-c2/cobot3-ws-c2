@@ -1,6 +1,5 @@
 """ForkliftB에 2D RTX LiDAR를 장착하고 ROS 2 LaserScan을 발행한다."""
 
-import carb
 import omni.kit.commands
 import omni.replicator.core as rep
 import omni.usd
@@ -20,14 +19,6 @@ class ForkliftLidarRos2Publisher:
         self.namespace = namespace.strip("/")
         self.lidar_prim_path = f"{self.parent_prim_path}/nav_lidar"
 
-        # RTX annotator가 GenericModelOutput을 GPU에서 읽도록 보장한다.
-        carb.settings.get_settings().set_bool(
-            "/app/sensors/nv/lidar/outputBufferOnGPU",
-            True,
-        )
-        # Standalone 앱에서는 아래 capture_frame()에서 writer를 직접 실행한다.
-        rep.orchestrator.set_capture_on_play(False)
-
         self.sensor_prim = self._get_or_create_sensor()
         self.render_product = rep.create.render_product(
             self.sensor_prim.GetPath(),
@@ -46,15 +37,6 @@ class ForkliftLidarRos2Publisher:
         print(
             f"[LIDAR] {self.lidar_prim_path} -> "
             f"/{self.namespace}/scan"
-        )
-
-    def capture_frame(self):
-        """현재 렌더 프레임에서 RTX LiDAR ROS writer를 실행한다."""
-
-        rep.orchestrator.step(
-            delta_time=0.0,
-            rt_subframes=1,
-            pause_timeline=False,
         )
 
     def _get_or_create_sensor(self):

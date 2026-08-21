@@ -77,6 +77,10 @@ def main():
         )
 
         world.reset()
+        # Isaac Sim 5.1 공식 RTX LiDAR standalone 순서:
+        # writer를 붙인 뒤 앱 프레임을 초기화하고 timeline을 재생한다.
+        simulation_app.update()
+        world.play()
         forklift_agent.print_joint_info()
 
         forklift_controller = ForkliftController(
@@ -95,7 +99,6 @@ def main():
         while simulation_app.is_running():
             ros2_adapter.update()
             world.step(render=True)
-            lidar_publisher.capture_frame()
 
     finally:
         # writer/render product가 반복문 동안 해제되지 않도록 참조를 유지한다.
