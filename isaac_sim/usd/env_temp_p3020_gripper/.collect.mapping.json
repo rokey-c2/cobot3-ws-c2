@@ -1,0 +1,599 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Acrylic_Clear_Glossy_A_Rough.png",
+            "source_hash": "2eaf346f3c9ef31d22505a6edd72657376691221",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Acrylic_Clear_Glossy_A_Rough.png",
+            "target_hash": "6fc5cd9723824a0ac6b999eee9d2d7b8cf59215f"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png",
+            "source_hash": "366e0c37f58544b4c17013b2b065a9334606933f",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png",
+            "target_hash": "c77195bde3148f2ce4a0021d2cb9040fa28a460e"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Albedo.png",
+            "source_hash": "07d1915d6d28b5364dace0fd55e6e5461d1d1ea5",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Albedo.png",
+            "target_hash": "fa5588ff06e8db028a40b4e37aecb1e34b00926b"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Normal.png",
+            "source_hash": "b8487ce25172cfcc06eb1eb7c2c316bb73062603",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Normal.png",
+            "target_hash": "16a80e5719de9ba69b5288d1cd6b11d553c7d672"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorBelt_A01_Trim_ORM.png",
+            "source_hash": "ad778c34c294ab31e067d9baf0d3c13535cab7f5",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorBelt_A01_Trim_ORM.png",
+            "target_hash": "dc6e1cbfc28f744eb85df52cf89bc4974ec388bf"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Albedo.png",
+            "source_hash": "4b04b5ee9e50018a89d1f2bebda546f64b62047f",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Albedo.png",
+            "target_hash": "576d20fd1c62597df90062abb3afe80ae6487e49"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Alpha.png",
+            "source_hash": "1ed0d8457596bc5b665f268b381b27aec92975c9",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Alpha.png",
+            "target_hash": "61928f790561b602aba6726403dff1f49f60d297"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_ORM.png",
+            "source_hash": "68a737f23ab1699dfd103d29c19efa30d84b380b",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_ORM.png",
+            "target_hash": "dc44d29f025bef4395a7c0aba7077d259e7891a3"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Albedo.png",
+            "source_hash": "e8a8aba34b0244e261370d61f123e1ff2a48a57f",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Albedo.png",
+            "target_hash": "28e34239a5742f1f9e2d1f929c614c308c801b7f"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Normal.png",
+            "source_hash": "d948e47d178e92e623c97f69d7299f77f1114b79",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Normal.png",
+            "target_hash": "1ec0ad51ae65d00ab9a0c376a697312443aa268a"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_MetalPainted_White_Glossy_A_ORM.png",
+            "source_hash": "c4c0e40dd3d2c55d19cca3c8f48d66d4bc4d8f1a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_MetalPainted_White_Glossy_A_ORM.png",
+            "target_hash": "7ab729368249854da16b181c12fcd173f2bf111e"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Metal_Glossy_A.mdl",
+            "source_hash": "f61ec7b25732d12c6a0722ab7844eaf44ed5ffb5",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Metal_Glossy_A.mdl",
+            "target_hash": "1eb9e9e1cef9e2f8c11b67645038c78a6a75ec44"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Steel_A.mdl",
+            "source_hash": "da5605f193883d0f91876266ab5ad5efa78f1479",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Steel_A.mdl",
+            "target_hash": "8b4d1fe1f599b04b9142ec5bf3f2c075ec109441"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/MetalPainted_White_Glossy_A.mdl",
+            "source_hash": "d9a3a21ba32ad33fb30fb0d6c38d3c259b99a489",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/MetalPainted_White_Glossy_A.mdl",
+            "target_hash": "7f80086cc76c09c35fe27a7d0ce2fde1d604632a"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Gray_A.mdl",
+            "source_hash": "55e6222eee77ede2551801cffb619006809e5913",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Gray_A.mdl",
+            "target_hash": "dc5cedab9a22f0473a0650ebf266f5e43be2eac1"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Aluminium_Brushed_A.mdl",
+            "source_hash": "8f0e84d24a63815ae20c9bc66172a1746b277817",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Aluminium_Brushed_A.mdl",
+            "target_hash": "72c1df8765d72717af6a3de9e587f7e6bc5158e2"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Rubber_Black_Rough_A.mdl",
+            "source_hash": "57fdf51ac2635577451211645785fb43de5a45a5",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Rubber_Black_Rough_A.mdl",
+            "target_hash": "0f81bb7ce9b6ab9d1008ed992987b52e80d22f4a"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Red_A.mdl",
+            "source_hash": "bdf3e5f2362d4f87d90daae5307d7c9b2631635a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Red_A.mdl",
+            "target_hash": "10b6b2fb0745d90f3c1effa59a7d7728a8800144"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Rough_Black_A.mdl",
+            "source_hash": "d57b0583e24ba631ef8c4a42bce523e53c99b1e6",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Rough_Black_A.mdl",
+            "target_hash": "7d4441ee469892509f6c91ed7b9ec17de9742775"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Blue_A.mdl",
+            "source_hash": "0af9ccee79861929bd3c596f535ea90454aa45b9",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Blue_A.mdl",
+            "target_hash": "874f5de2b7d21a1c5af8275912d0c23c88907e01"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Orange_A.mdl",
+            "source_hash": "21c828a41e908f3f76091c9ffff53df203bc22ba",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Orange_A.mdl",
+            "target_hash": "d74ee68cdad73b14c7e750b92b39082b5c11a724"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Yellow_A.mdl",
+            "source_hash": "2fc10ca1bc7a30efaf60c46db797dd4d05e17d10",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Plastic_Yellow_A.mdl",
+            "target_hash": "f1c716b38bb9ae0cf4b6f71db36b2a6952f7efe5"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Metal_Rough_A.mdl",
+            "source_hash": "a2cffa98bde16040a9e51b81cd97b71a1feca084",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials/Metal_Rough_A.mdl",
+            "target_hash": "26ab09c617df72f8fc0c1649032de37556dcb23c"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Decal_Albedo.png",
+            "source_hash": "f1bbafe21e917d4e3fc424c4b2d81d928e2b5b35",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Decal_Albedo.png",
+            "target_hash": "6bba84286d60c84fe307767ed46abd06d3d9e254"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Decal_Normal.png",
+            "source_hash": "5139f07a6f2329d9bafecf194379429623563428",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Decal_Normal.png",
+            "target_hash": "0bb5f8940e2ab8ca48dc5908f76b55a416579fb1"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Decal_Opacity.png",
+            "source_hash": "093a3da979c81cc3cacab770cb28a3bf865d079c",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Decal_Opacity.png",
+            "target_hash": "b21888df0845a2a880744244eb2e1aea73df43dd"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/hawk_ROS.usd",
+            "source_hash": "0e3a3618ce076239e5134db2f767dfc6fc8514fb",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/hawk_ROS.usd",
+            "target_hash": "79df41c00f4672a5778d7a97ed104f73d4ea20a3"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1008.png",
+            "source_hash": "5aeec5b7a7315b79652ca967782fae962e3b64b9",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1008.png",
+            "target_hash": "9d146362bc0271bec142a819cd196d0681915a26"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1006.png",
+            "source_hash": "c0129c4a2f686170060b6373382e7b8ae6b07f33",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1006.png",
+            "target_hash": "2059ad6dc772e83eb470f0f48cbb95c17754f3b1"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1005.png",
+            "source_hash": "195852dc8885e0b9929697a06bee7a1e96c353d2",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1005.png",
+            "target_hash": "55d56b4bfc340cd8afa2b2b20192d31d0d423efd"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1007.png",
+            "source_hash": "41e2a955c2c87472c34b3b99f7834167e9470073",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1007.png",
+            "target_hash": "687701273c3fad154f6313e8205cd1af4a6fdcd4"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1004.png",
+            "source_hash": "93530febaa23b0d31cadc67bb82017a09bbf1621",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1004.png",
+            "target_hash": "1433504ede53e0a71c6c0ee6d21311f40b05d20c"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1008.png",
+            "source_hash": "786dbc64e15189749cd1cae6026b18ee04e51c81",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1008.png",
+            "target_hash": "d556d93de8c1fb3a9bd0edbe6c0a402676000cbb"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1006.png",
+            "source_hash": "c25b3c99983c73cfd7e561a98cc207db8e5e9131",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1006.png",
+            "target_hash": "1e385aed038d27a40a7b86d6b7ef8ce632abce54"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1005.png",
+            "source_hash": "abe3813ac01ef525ff308d928c5b5d5a4693a0cc",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1005.png",
+            "target_hash": "45c1fd3186cb5850eabd95617561e16d5e99ecb8"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1004.png",
+            "source_hash": "f44f5759698253d24a932f49fa6bb07196e3995a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1004.png",
+            "target_hash": "80db928dac7ddf662b7d509c22b77241ebd896e7"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1005.png",
+            "source_hash": "324239f6dc835af1ddb58aea7bba60704edce800",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1005.png",
+            "target_hash": "2863192a6d8f662ffa3a7f9316040c8c043ef504"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1002.png",
+            "source_hash": "16edc479d0237f7bf17036e968088e739062a33a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1002.png",
+            "target_hash": "1bf6642623bfdfab7c7c365d7b3663c5b45246bd"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1006.png",
+            "source_hash": "e57582b14a7a835fd236bd42c94dd60fe4cfe3cf",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1006.png",
+            "target_hash": "73c206283484675f6f3384fe3eb2628d196816ae"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1004.png",
+            "source_hash": "537b810d95a3ff68da424c645db90c8e4fd2d1af",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1004.png",
+            "target_hash": "be66eadadd75caea7bf3096cbcb5f75c2a8a3c86"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1008.png",
+            "source_hash": "680473a08e196f395c94b308de02695ad92f3d98",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1008.png",
+            "target_hash": "0acbe7cded57c510d23ce997235eea080b4d7657"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1003.png",
+            "source_hash": "abb6311edb4f2dcad7d3383ad6c6114b3e8adbb0",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1003.png",
+            "target_hash": "ad1ba9fa9f15ffee5413dbba515b2530513e439d"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1001.png",
+            "source_hash": "d82c5243715718e768957fe8e5714cd61da01655",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1001.png",
+            "target_hash": "c97ea899a089ff4fc5b296ce57a2ebbd9fd25b86"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1007.png",
+            "source_hash": "f80a9e52623bb4d3c25a7fd16ddbfd8972035256",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1007.png",
+            "target_hash": "9065758eccc5676ac38461366b1d4f9e0f1bffa7"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1002.png",
+            "source_hash": "1ee57922ee2bc6fc2f3d806742cc90db23364df8",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1002.png",
+            "target_hash": "93518079944b909f0f301811a35275918df8f262"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1003.png",
+            "source_hash": "5340d605cd3cbcccad0f0934907a98cdfc3044d3",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1003.png",
+            "target_hash": "b2cd0d2bdd8ffbf5cf0f89c17e22d932f7cc0a10"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1001.png",
+            "source_hash": "479c303ff451a20c2825d87469785be03f21bf3d",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1001.png",
+            "target_hash": "02e1e8d8e8de491ca65da173c27a81537e0073c8"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1001.png",
+            "source_hash": "3cccc140317d12ba44a2299a9fa6e956b3fab7ad",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1001.png",
+            "target_hash": "424ef284dc0990f6ef3740d02a69b4ae4cbf9202"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1002.png",
+            "source_hash": "de16004b7aa40d74f71a643545e95138658eb8b6",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.1002.png",
+            "target_hash": "9a6a59b5b87e2e540fd79ac3732ecb0716381505"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1003.png",
+            "source_hash": "af26581ec8e1dbe236c0d5f4482b06d0622e0e1f",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1003.png",
+            "target_hash": "abc44ecd219f655ced2094d314875ce61dc8a2b3"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1007.png",
+            "source_hash": "bd942ea45523c5e26c6079ddb7c1df2ad8bb798d",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.1007.png",
+            "target_hash": "47b011e4452d5e2b2f2e748a9d2f0c78b34176e7"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.<UDIM>.png",
+            "source_hash": "e2fc735adf4d875687eb0ee844de5dbefe55fe02",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Albedo.<UDIM>.png",
+            "target_hash": "eee7ce978777de39eac888c53c589784e7b0e509"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.<UDIM>.png",
+            "source_hash": "e2fc735adf4d875687eb0ee844de5dbefe55fe02",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.<UDIM>.png",
+            "target_hash": "eee7ce978777de39eac888c53c589784e7b0e509"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.<UDIM>.png",
+            "source_hash": "e2fc735adf4d875687eb0ee844de5dbefe55fe02",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_ORM.<UDIM>.png",
+            "target_hash": "eee7ce978777de39eac888c53c589784e7b0e509"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/owl.usd",
+            "source_hash": "b437f2440451fcd2dca002f63892b71a337ae1ce",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/owl.usd",
+            "target_hash": "86b222bdc467f6ccb9721f27472e5c4e2374432a"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/rplidar_ROS.usd",
+            "source_hash": "c963cca12d951448d7fcb2ef3a6c66e2d2e96909",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/rplidar_ROS.usd",
+            "target_hash": "359be7629899ce82db38f5566c73e891b7a2b805"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/materials/Aluminum_Anodized.mdl",
+            "source_hash": "9029484d1de3e2f33fbe1142c8bd766b9a4979e9",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/materials/Aluminum_Anodized.mdl",
+            "target_hash": "f30e951b1e41bc07dcddd102ba4c4ec2e3753fcf"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/materials/Aluminum_Cast.mdl",
+            "source_hash": "8531aae115da649c0125bf823c4fdd11e037084f",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/materials/Aluminum_Cast.mdl",
+            "target_hash": "4eee11974a72052f3763728e53ee3ff2f7070e9b"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/materials/Plastic_ABS.mdl",
+            "source_hash": "edb7bd3f9ec1d8b16d8231c41e9821e9a7aa8f06",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/materials/Plastic_ABS.mdl",
+            "target_hash": "778f88b5da632f1715306bd92efe97f134408dc1"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Glossy_A_Albedo.png",
+            "source_hash": "0dd836764920b2cc779b53b6631ed807b7a363c5",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Glossy_A_Albedo.png",
+            "target_hash": "4300fe7f84a68309590bbfeb43deb8cd69edbcb0"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_Albedo.png",
+            "source_hash": "7dfd750ed3a27fbe87b8ef2201062f0e80d9467d",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_Albedo.png",
+            "target_hash": "c6eb0c0142a0926bc705511ee79d73c9b4b71fec"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Rough_A_Albedo.png",
+            "source_hash": "e161573e47da165b91528fbe190289167642bb71",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Rough_A_Albedo.png",
+            "target_hash": "6b3ff6bc68c73ff25aec92e4870c6482d1173f42"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_Albedo.png",
+            "source_hash": "7fc38ddd40cdb5779b6a417ee78ed0982a597fad",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_Albedo.png",
+            "target_hash": "bf092eb93c47efab4a95a549fb6bb05ad5362c79"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_Albedo.png",
+            "source_hash": "b7113317bfdaee781d06d397e0fd0c9b3f9f7794",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_Albedo.png",
+            "target_hash": "8161093efaab1232e4dc66e5cd17ce078b65d9bd"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_Albedo.png",
+            "source_hash": "1f590eb59914a569513c3704099cc4019a647bd0",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_Albedo.png",
+            "target_hash": "a931bfc1e2a10736ca97a632d5dcc0c025498099"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Rubber_Black_Rough_A_Albedo.png",
+            "source_hash": "7c3ac33b1261974d377790006b63180f16535e21",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Rubber_Black_Rough_A_Albedo.png",
+            "target_hash": "d33709ef233ca1d88f201706ca650ce46e5091e8"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Aluminium_Brushed_A1_Albedo.png",
+            "source_hash": "a04f56fb766eec50dfb51a3cbdb3572fa07b796a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Aluminium_Brushed_A1_Albedo.png",
+            "target_hash": "11758a73526495428f2fae6982310d64316ef4b9"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_Albedo.png",
+            "source_hash": "66417ecf404cf39559a42d7f96422254591b8858",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_Albedo.png",
+            "target_hash": "617392e298b0e20a5b522cc1313175a40001d9fd"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_Albedo.png",
+            "source_hash": "5815b743a59a79c2dead77e57ad79110b9eaf2d9",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_Albedo.png",
+            "target_hash": "3dbad30b9d514cd2f7d278ef47ef83ad303df744"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Steel_A1_Albedo.png",
+            "source_hash": "4c5857efb07af7b640b8043cdacf81a65cfe8339",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Steel_A1_Albedo.png",
+            "target_hash": "972cca973e1382979202246edbde1fe281f24ba2"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Glossy_A_Normal.png",
+            "source_hash": "5ac50ca95272bbd7aa35d2a32c0047d29be3c1b8",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Glossy_A_Normal.png",
+            "target_hash": "b285a409e9e65857d5287924eb9a8ab2512f8312"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_ORM.png",
+            "source_hash": "a087c556c2eb34bf319c9fba8a18a3434ad5ac44",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_ORM.png",
+            "target_hash": "7bbca5df4b0629a19cbca60e77779b1af923fe1e"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Rough_A_Normal.png",
+            "source_hash": "78f4096188ffe420615337cd5456765e0ba27538",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Rough_A_Normal.png",
+            "target_hash": "e5fb1d25690729c97f31a7a37529d4374b744f86"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_ORM.png",
+            "source_hash": "e475da82d1b24cf7bfbacb75e3fcf092722c2d39",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_ORM.png",
+            "target_hash": "61dc57c04ab61de0dbbfd9ae0479216bb96d822d"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_ORM.png",
+            "source_hash": "c87189cca4e56c516e8d82baeb1243ae3b60a7f6",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_ORM.png",
+            "target_hash": "0eec78a061bf0e5db6b54bc145dc03efc4b6bec3"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_Normal.png",
+            "source_hash": "b002c865b546805314a02371dacb1b8b2ffbf9de",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_Normal.png",
+            "target_hash": "2cee936dae1fc2d7ade37535e6063b822fbb2fd6"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Rubber_Black_Rough_A_Normal.png",
+            "source_hash": "8f6bf4c54c7cdd94187e7ca19f54f3bb85a67059",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Rubber_Black_Rough_A_Normal.png",
+            "target_hash": "708a751ae2cda43a589f933ca2b85e4842628f96"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Aluminium_Brushed_A1_Normal.png",
+            "source_hash": "cf9168fbd3c37b3405e2398ed946ba6c7830cab3",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Aluminium_Brushed_A1_Normal.png",
+            "target_hash": "3f1a75d1c21066a7600cc5a8e1f896bcc774dc85"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_ORM.png",
+            "source_hash": "81ab1e388f4389632f1759d55e0fdd67080f06e9",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_ORM.png",
+            "target_hash": "3d105abc64ef5bae400d1b1877af3268ae0a8eb0"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_ORM.png",
+            "source_hash": "d99175fa3933c6929f643b6372acf6b4217b862e",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_ORM.png",
+            "target_hash": "2a0e7b5fac8822ce7943441514724c611ad9bf67"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Steel_A1_Normal.png",
+            "source_hash": "53e27778cbc1eee31d8651f5b83c444392a42760",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Steel_A1_Normal.png",
+            "target_hash": "7e24a20ebd36eebfc2394385f55e6f5a086575f1"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Glossy_A_ORM.png",
+            "source_hash": "2df02e0e55765d159ff73b91e67b036dd9d29c47",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Glossy_A_ORM.png",
+            "target_hash": "121ef3329e61d0d9d382777f415a52c39e2650e3"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png",
+            "source_hash": "85605f9cb06d6663b7c800d823706ac2532b0950",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png",
+            "target_hash": "b4b98b0bcfe37440bef6cb9150febe36673e4c79"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Rough_A_ORM.png",
+            "source_hash": "81c1b65155249f3a8179a0e04a31253aaca1d125",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Metal_Rough_A_ORM.png",
+            "target_hash": "2c3c328c4f5dad49bb2a974d18150475c07ef5fa"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_Normal.png",
+            "source_hash": "20908d4f77e9c7c773220bd18e022023b825edca",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_Normal.png",
+            "target_hash": "6c8281d4c726af562a74d1db1752b3166181305c"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_ORM.png",
+            "source_hash": "31c609aa8b9bae49691008dc7f898e61d43af440",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_ORM.png",
+            "target_hash": "c67284ccc6623e5240e5bf518102ce06bf6d956d"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Rubber_Black_Rough_A_ORM.png",
+            "source_hash": "ed4c466521dde0763e51fac969b8fa68decbde01",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Rubber_Black_Rough_A_ORM.png",
+            "target_hash": "3272b55198bc5c1ae51646f7b3379fc6025a70d1"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Aluminium_Brushed_A1_ORM.png",
+            "source_hash": "94d781fa0633af14ca7e25ac1be5c0f83de06eed",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Aluminium_Brushed_A1_ORM.png",
+            "target_hash": "28b3fea7639d23946dd33ef7a29bfc75c010e91b"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_Normal.png",
+            "source_hash": "be1dc0d0567743c5d185efd1bf461b028789bb1a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_Normal.png",
+            "target_hash": "1621d1630fd505bbc33df05f598321d68548f655"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_Normal.png",
+            "source_hash": "cafffc232f41bba6e1c0f5beced491c6c5944bb1",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_Normal.png",
+            "target_hash": "76f18c17c35b0eeaa7da2a6731dbdc7ec24b3feb"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Steel_A1_ORM.png",
+            "source_hash": "b82c88bfba9c11c64550223b9bbcc0eb0eac502a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Steel_A1_ORM.png",
+            "target_hash": "08fa6a2b1bbdfe43ab644b199207eb4a2678628e"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials_1.usd",
+            "source_hash": "178fc379938a45dc47384ded5555e450ad9095eb",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/materials_1.usd",
+            "target_hash": "fbbb849c0c5bdb32885be0f174e32a08354af517"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/owl_ROS.usd",
+            "source_hash": "8dacd9f198118887dd8aa284ecb80bc76303eb1a",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/owl_ROS.usd",
+            "target_hash": "105ff84f8a12b44e9717d55a08bc9e362dad6bfe"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Anodized_BaseColor.png",
+            "source_hash": "5541692b79f724f32f5aa57f31abb9002bd3d5da",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Anodized_BaseColor.png",
+            "target_hash": "5168cdf83cab9a64a79eba8f277aef06fa5b8b87"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Cast_BaseColor.png",
+            "source_hash": "47a46db22c3da100baa39cd00570fa14fc78e06b",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Cast_BaseColor.png",
+            "target_hash": "69c2738b950e1a9d39630c3338a28a99e904b736"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Anodized_ORM.png",
+            "source_hash": "d0fe483ceb2678848c8f9865d403497fec72e35b",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Anodized_ORM.png",
+            "target_hash": "142c757f4258cd326523f5b735d1c15a0728990b"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Cast_ORM.png",
+            "source_hash": "5780f3366919052cf11e96b3edd9ea3845345864",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Cast_ORM.png",
+            "target_hash": "b47c63d41263df3c51866ecb22fe4eb8f6525884"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Anodized_Normal.png",
+            "source_hash": "be9a5e912e86689c0b4453f2ddf4833534dcb081",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Anodized_Normal.png",
+            "target_hash": "8ae710af721009b381aa31bc220ab30fa3f55e2e"
+        },
+        {
+            "source_url": "/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Cast_N.png",
+            "source_hash": "9715755afea04dfb06b3e6c45f701b51258e02e1",
+            "target_url": "./home/rokey/collaboration/cobot3-ws-c2/isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/SubUSDs/textures/Aluminum_Cast_N.png",
+            "target_hash": "550ffc3b37b7db88d6dd1e76dd68f348f8574cda"
+        }
+    ]
+}

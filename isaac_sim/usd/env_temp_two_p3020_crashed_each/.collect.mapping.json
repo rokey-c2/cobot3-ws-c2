@@ -1,0 +1,545 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Acrylic_Clear_Glossy_A_Rough.png",
+            "source_hash": "1730658dc153987dc0c0c79e49aacd18a9505f77",
+            "target_url": "./SubUSDs/textures/T_Acrylic_Clear_Glossy_A_Rough.png",
+            "target_hash": "f8f40de584f60ed6160ed4d4b01f22e2071b42ef"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png",
+            "source_hash": "4544154de9b713912b8ec7d03602fa0a97901126",
+            "target_url": "./SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png",
+            "target_hash": "bbe531beb5088733ed5788c27bc49d1bb05458b6"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Plastic_Orange_A.mdl",
+            "source_hash": "f26575c735a23080305c9168fe0a22c22887dacd",
+            "target_url": "./SubUSDs/materials/Plastic_Orange_A.mdl",
+            "target_hash": "d56000bbc2b193f2ff351f3d0f51f3b6f371d8a7"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Decal_Albedo.png",
+            "source_hash": "77e759cfdb9e848f2c4387662c3cef8bcdf60607",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Decal_Albedo.png",
+            "target_hash": "1dcde3c2bdb8cc2dec2e0682f7813bfe01513adb"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Decal_Normal.png",
+            "source_hash": "1cde68c7b4f9afcaf963f97cbc289405b85e7958",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Decal_Normal.png",
+            "target_hash": "1050303479742e714b9901ecf04203d2ac70c7f0"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Decal_Opacity.png",
+            "source_hash": "de463782c5b8db7a96ab50cc1078c4bd6aff6f28",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Decal_Opacity.png",
+            "target_hash": "10ed74171cafde2d366ac2637e814228c2c17a1f"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/hawk_ROS.usd",
+            "source_hash": "9ecf469a5be0d1c3e2b423c643fe01fdefb908a8",
+            "target_url": "./SubUSDs/hawk_ROS.usd",
+            "target_hash": "a948d59a643e1533571408a71b33d581d386fce9"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1008.png",
+            "source_hash": "40bc6d5de8c32b0fd3985e75a30e4addfd237996",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1008.png",
+            "target_hash": "05792e17186d52d2915bdadc9efaae81fee8dce6"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1006.png",
+            "source_hash": "2aa85ea8373fea61494fd7542663c1f69861a598",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1006.png",
+            "target_hash": "9f8f1b06501e2f32f73cb085e41696adecd94476"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1005.png",
+            "source_hash": "3e7b08f88b0d07139832b5496ffc3bc4d4cbdf70",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1005.png",
+            "target_hash": "2d860c09f8881a91598ffd1e8fb49ebc6cdafa96"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1007.png",
+            "source_hash": "d3e1b985fa88e491d4704a25faa8855319d8ed36",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1007.png",
+            "target_hash": "027762b9e944e5e16bc6c79afae3617a935ddc2f"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1004.png",
+            "source_hash": "0faf80ac68bd4b198d3f5cfe19f65286e2b7172e",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1004.png",
+            "target_hash": "a5d2abe139f94b3559fea59d5b88bf93a8fe6f50"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1008.png",
+            "source_hash": "34e5bedd5522520d29bf31b41b9399803c2a87c1",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1008.png",
+            "target_hash": "fe6af05074233bc381e66ff1b8761b62019f4d9b"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1006.png",
+            "source_hash": "91df027f6aeb70651bd0c6be25bed77e989a960b",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1006.png",
+            "target_hash": "7426cec6f12152c501701cc061fa0848ac29c928"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1005.png",
+            "source_hash": "f1c9a2028227e645dc98757c267478c619d1d837",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1005.png",
+            "target_hash": "d057731e2a20bcb0396c042102da67947bae641c"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1004.png",
+            "source_hash": "80b6e684a332a1b35bea456778044212c1d30ea8",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1004.png",
+            "target_hash": "6224f9437d2363599acd99810825fd3dd1f44849"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1005.png",
+            "source_hash": "ad20d0cf856e2665662d55d05b7f666607482c93",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1005.png",
+            "target_hash": "df96398eddd0b09acecd5119c8d035d599987dd0"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1002.png",
+            "source_hash": "ab834577d129781e1ccf05092f91b3f4d9ecff87",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1002.png",
+            "target_hash": "d91c415c6b10996afbfffa200e220ad3b6c2d700"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1006.png",
+            "source_hash": "dfb5060843e0b98a6350d2e6ac1e9a07495a42cc",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1006.png",
+            "target_hash": "d486b21418d64e0d8d5b8cf943a0a49ad9aa8b6b"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1004.png",
+            "source_hash": "a6cd864862934160cf77c1eaac5b0b82b6843919",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1004.png",
+            "target_hash": "1e69019a2c081bc7c4f0f3136b9b5ac78fc1a6e5"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1008.png",
+            "source_hash": "228efd884b04cfa29369905f32cacb17432f1fa1",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1008.png",
+            "target_hash": "b8184c36b56828ddcc78ca04dbe6805994e31184"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1003.png",
+            "source_hash": "9abb38089053c3ee79064ea019d08d0939c72303",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1003.png",
+            "target_hash": "f58db5bde9d6fe90adf28ce23f9623213ed9a4e2"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1001.png",
+            "source_hash": "ee02105f24de0161085d0b192e494fbd2a2306cb",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1001.png",
+            "target_hash": "687be6cfb6ce9c127442caaef82b4c684012d995"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1007.png",
+            "source_hash": "98867a96dbabd42f557108f4498142ecbdac84ff",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1007.png",
+            "target_hash": "5b154de26214ff16ae42907951d9fbf2df458928"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1002.png",
+            "source_hash": "5cac36e9d3179cdf6c544757813af414d8a87251",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1002.png",
+            "target_hash": "b917e2d0863e537caf809620fc4be458e3b8d8f2"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1003.png",
+            "source_hash": "650a04098b17738f0a40311c62cfebaff59b9e27",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1003.png",
+            "target_hash": "78e14cae94dd0044e43fa0ce2362f5c714587154"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1001.png",
+            "source_hash": "2e6fb240e53b2b696d80ff65177e4a5ef3e31d11",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1001.png",
+            "target_hash": "764e477b27230eb6ee6af024f045c42d1fae5f60"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1001.png",
+            "source_hash": "80809095da7d69291ad3e2cfbe3be5c126f2f892",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1001.png",
+            "target_hash": "636f8577eb37ec856bdd089e4c95f72ca95cf6de"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.1002.png",
+            "source_hash": "6d326ed9d51301a66919c05188a6f23af5290b4b",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.1002.png",
+            "target_hash": "2b0d5efdf56f5000ca8d723fe15ac06b2a3bf46f"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.1003.png",
+            "source_hash": "6d041e803cd9491bc9897f82e401ac3631fcd612",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.1003.png",
+            "target_hash": "a6815ba9c9ff816ef440226329ac43fd12b1e021"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.1007.png",
+            "source_hash": "b532b18000033efe01866b70a3f08926804b6295",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.1007.png",
+            "target_hash": "7519d0d6f142995e2ed29131890c2763e77284e9"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Albedo.<UDIM>.png",
+            "source_hash": "6beaa5e167ac2f7805b283d50ba1e47279285637",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Albedo.<UDIM>.png",
+            "target_hash": "74b64010e00cd7ff60bdb6445e4b21d63f378043"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_Normal.<UDIM>.png",
+            "source_hash": "6beaa5e167ac2f7805b283d50ba1e47279285637",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_Normal.<UDIM>.png",
+            "target_hash": "74b64010e00cd7ff60bdb6445e4b21d63f378043"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Forklift_B1_ORM.<UDIM>.png",
+            "source_hash": "6beaa5e167ac2f7805b283d50ba1e47279285637",
+            "target_url": "./SubUSDs/textures/T_Forklift_B1_ORM.<UDIM>.png",
+            "target_hash": "74b64010e00cd7ff60bdb6445e4b21d63f378043"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Albedo.png",
+            "source_hash": "69f04cdda308d3e0fff689bc5ec54f7693318c54",
+            "target_url": "./SubUSDs/textures/T_MetalPainted_White_Glossy_A_Albedo.png",
+            "target_hash": "068ce1188c35bafdc66eddf50d93e9fba702b1fb"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Normal.png",
+            "source_hash": "5fa247d26e0a663f0e50abe13cc74cdf03ff31f2",
+            "target_url": "./SubUSDs/textures/T_MetalPainted_White_Glossy_A_Normal.png",
+            "target_hash": "f24ba1911c6b26ab8c38e19b5d59154a99258bdb"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_MetalPainted_White_Glossy_A_ORM.png",
+            "source_hash": "f9038fb251d99f7d92937e53db2cfa7317221879",
+            "target_url": "./SubUSDs/textures/T_MetalPainted_White_Glossy_A_ORM.png",
+            "target_hash": "76f99661eec7f0cedd46a7803d2d54541df4f532"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/rplidar_ROS.usd",
+            "source_hash": "8f62868e3d669aca433dbe521d640d3e6b70e882",
+            "target_url": "./SubUSDs/rplidar_ROS.usd",
+            "target_hash": "0494b32b8c41fe6603af9109e6ab1b6e4a773754"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Albedo.png",
+            "source_hash": "c79b3ff7a7d416f088838d043c62b7a1b70c81c2",
+            "target_url": "./SubUSDs/textures/T_ConveyorBelt_A01_Trim_Albedo.png",
+            "target_hash": "f431c80e4935f0e35f8a67b1e09a4a398b91f70d"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Normal.png",
+            "source_hash": "ff117c5127f0e09baeba3e4029baba9705b5cd55",
+            "target_url": "./SubUSDs/textures/T_ConveyorBelt_A01_Trim_Normal.png",
+            "target_hash": "736481bb5a644d3556d29823ca1a8f543078cac8"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_ConveyorBelt_A01_Trim_ORM.png",
+            "source_hash": "c04c7840ddf8f8e3591bb4636554942e7c41b699",
+            "target_url": "./SubUSDs/textures/T_ConveyorBelt_A01_Trim_ORM.png",
+            "target_hash": "161ff3feaa5a5c7a367e238491c7766a880b7126"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Albedo.png",
+            "source_hash": "d07201a06f2178a1e127aef82669d21d2c5383e1",
+            "target_url": "./SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Albedo.png",
+            "target_hash": "f45461964c9b389979b83189a7a04844556edad8"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Alpha.png",
+            "source_hash": "9e0b5504edab8dec0f54d2d8c01a4566dc5a4add",
+            "target_url": "./SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Alpha.png",
+            "target_hash": "1877b472f186fc4834027a470aaaeed8edb3cbd4"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_ORM.png",
+            "source_hash": "ed0afc04cdc39560143ccbe4c9985a03d2b4457e",
+            "target_url": "./SubUSDs/textures/T_ConveyorsBelt_A01_Decal_ORM.png",
+            "target_hash": "23f94548f3ace7b26f2f49718564cd7ee9f47894"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Metal_Glossy_A.mdl",
+            "source_hash": "6a9e9e8410848e9cc0125410cfb4702f252ae95b",
+            "target_url": "./SubUSDs/materials/Metal_Glossy_A.mdl",
+            "target_hash": "9a6c67faca85b33f284dd98d7c4bd99e34c6f54d"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/MetalPainted_White_Glossy_A.mdl",
+            "source_hash": "699e76bc620e7423f8f4e2d016e50c0b9a5b522b",
+            "target_url": "./SubUSDs/materials/MetalPainted_White_Glossy_A.mdl",
+            "target_hash": "8ddec16bf2ef6d96ce6176a77b773c969ceaaa30"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Steel_A.mdl",
+            "source_hash": "661c14f24811c72a22597ea9b16594589d3b2432",
+            "target_url": "./SubUSDs/materials/Steel_A.mdl",
+            "target_hash": "d867ca2a148baca52fd5652d80f31378d5f441ed"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Plastic_Blue_A.mdl",
+            "source_hash": "c74aad2e81fd80823ded9632318ce8bd04ed3dcb",
+            "target_url": "./SubUSDs/materials/Plastic_Blue_A.mdl",
+            "target_hash": "bbcd5dc66d5e0017a26acf1d4fcf1ca3a579ca10"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Rubber_Black_Rough_A.mdl",
+            "source_hash": "edad1f1b5c9fa6c74b0ef84e63cbd4e5a979a372",
+            "target_url": "./SubUSDs/materials/Rubber_Black_Rough_A.mdl",
+            "target_hash": "a487a88ea78137dd9b7504e20afd97df97df64ab"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Plastic_Rough_Black_A.mdl",
+            "source_hash": "7249a5648926935547714f8c242c8fd7ba3b0af2",
+            "target_url": "./SubUSDs/materials/Plastic_Rough_Black_A.mdl",
+            "target_hash": "7795c286bd11ea7e884e96264d5f08fcd2eb1c0c"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Aluminium_Brushed_A.mdl",
+            "source_hash": "55c135615fcbc6e67932e7bbabcdedfe3d1c495f",
+            "target_url": "./SubUSDs/materials/Aluminium_Brushed_A.mdl",
+            "target_hash": "121e6c95c1b3af8a98855a41a30e5063f2da389a"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Plastic_Gray_A.mdl",
+            "source_hash": "964f9e8edc6f4cfcc246999d3a913a3fcf62e7a6",
+            "target_url": "./SubUSDs/materials/Plastic_Gray_A.mdl",
+            "target_hash": "d864666e6f2a27357e860acdf9689b6583902715"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Plastic_Red_A.mdl",
+            "source_hash": "6bb4c120a6b1b765526348214cac28b9a1420c7d",
+            "target_url": "./SubUSDs/materials/Plastic_Red_A.mdl",
+            "target_hash": "3470d5e9a4b7e8515291f82bfa8e3cbbef90d99b"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Plastic_Yellow_A.mdl",
+            "source_hash": "482751cc9d5b91cd2896fe764ee0fbf26697466d",
+            "target_url": "./SubUSDs/materials/Plastic_Yellow_A.mdl",
+            "target_hash": "0474977caa88e019befdb9613119d33c2682c0ec"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials/Metal_Rough_A.mdl",
+            "source_hash": "517db0efda701758ea07fd71649a637baeec4ea4",
+            "target_url": "./SubUSDs/materials/Metal_Rough_A.mdl",
+            "target_hash": "67383d6428c9bcdd38e3288405c5bec24a6bb030"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/owl.usd",
+            "source_hash": "fbb6c4ce1bb31124f50143e971f3acda8a62df1b",
+            "target_url": "./SubUSDs/owl.usd",
+            "target_hash": "3c0ad829c45efd09c3762952ca8008c6ca390b28"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Orange_A_Albedo.png",
+            "source_hash": "594d332c5d5e425050a98b7d30493d2fc6fee1cb",
+            "target_url": "./SubUSDs/textures/T_Plastic_Orange_A_Albedo.png",
+            "target_hash": "08b36bb46c4bff47a63d1b4c4ecc514571d47b05"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Orange_A_ORM.png",
+            "source_hash": "f905742a74961d7549915afe2b5b65981ee269e4",
+            "target_url": "./SubUSDs/textures/T_Plastic_Orange_A_ORM.png",
+            "target_hash": "074b040bf49d6cc93b07ad522b4f93faac1cdb7e"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Orange_A_Normal.png",
+            "source_hash": "bc52bd39f70dd8ec9798e0ada75cf898e51ea31c",
+            "target_url": "./SubUSDs/textures/T_Plastic_Orange_A_Normal.png",
+            "target_hash": "bbaaa6d23999f7de40648e92a5b01e8c018d922e"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/materials_1.usd",
+            "source_hash": "8ec47c1f4face7d56e5901f205bf8cf424461fdb",
+            "target_url": "./SubUSDs/materials_1.usd",
+            "target_hash": "cf1d5fe12ab0e6f8b65664b1794e0429131dcb3a"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/owl_ROS.usd",
+            "source_hash": "0e6d7d6169a0468b5ed9d85bef1c6d4b70437278",
+            "target_url": "./SubUSDs/owl_ROS.usd",
+            "target_hash": "51e152391b06024adac83261ec79905e9b241f98"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Yellow_A_Albedo.png",
+            "source_hash": "c36b7a79e1f2bc79eddd5cb2523273b77e89ef4f",
+            "target_url": "./SubUSDs/textures/T_Plastic_Yellow_A_Albedo.png",
+            "target_hash": "b0cd98a87c2bd94aaf5651339ba598bb75148b32"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Metal_Glossy_A_Albedo.png",
+            "source_hash": "2f79ff1038893b56a799cfad62ead3fa98ed1cb7",
+            "target_url": "./SubUSDs/textures/T_Metal_Glossy_A_Albedo.png",
+            "target_hash": "1dca9aba7bbed3570972c4cf975fb31fae1a178b"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Blue_A_Albedo.png",
+            "source_hash": "a37590bc41f0c5bb173fe561d622c77a5a8b6b32",
+            "target_url": "./SubUSDs/textures/T_Plastic_Blue_A_Albedo.png",
+            "target_hash": "fc85f6dad218e922bc8f1eed7f79ac76cf1ed9aa"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Rubber_Black_Rough_A_Albedo.png",
+            "source_hash": "a7f45c5903e070550229e1a1abc3e9c9c2935d98",
+            "target_url": "./SubUSDs/textures/T_Rubber_Black_Rough_A_Albedo.png",
+            "target_hash": "d8a5911e8c7d8addc8ca240afcdc613556ba08de"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Aluminium_Brushed_A1_Albedo.png",
+            "source_hash": "62f7b6a9a679a7f5de75c0ef81c0fef6f0f1fad4",
+            "target_url": "./SubUSDs/textures/T_Aluminium_Brushed_A1_Albedo.png",
+            "target_hash": "41ec01bf169feffd563c009ce797c37154d51a16"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Rough_Black_A_Albedo.png",
+            "source_hash": "a49cc1a136cd09661261c0eda31646982c1dfb68",
+            "target_url": "./SubUSDs/textures/T_Plastic_Rough_Black_A_Albedo.png",
+            "target_hash": "e82aca3a2b2487c70db256283b811ddd1a50adcd"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Metal_Rough_A_Albedo.png",
+            "source_hash": "ec837cd7303354466e69c7ec52e63f73919e06d3",
+            "target_url": "./SubUSDs/textures/T_Metal_Rough_A_Albedo.png",
+            "target_hash": "5aada35bde276db6eaaa73d208fb113cfcaf1142"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Gray_A_Albedo.png",
+            "source_hash": "d080faf602d19d073ac392cb7b62d002196b2ec9",
+            "target_url": "./SubUSDs/textures/T_Plastic_Gray_A_Albedo.png",
+            "target_hash": "08de3f2f7699b15fdcafe57bb073e81b87c134d5"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Red_A_Albedo.png",
+            "source_hash": "c6dfb6db1a6ca21cf8221fa949042f8cd0a7623f",
+            "target_url": "./SubUSDs/textures/T_Plastic_Red_A_Albedo.png",
+            "target_hash": "d76559e0f554453155551618c4a7a4c74d8af631"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Steel_A1_Albedo.png",
+            "source_hash": "22b3b59f00220ecbb88080f5cf4db9bfd6e7df75",
+            "target_url": "./SubUSDs/textures/T_Steel_A1_Albedo.png",
+            "target_hash": "fa61f2aced337fb91b17a2ab8b2d5b58778a4286"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Yellow_A_ORM.png",
+            "source_hash": "e4346a608c3e2cf66908fb41b2e5d28b655b2cc1",
+            "target_url": "./SubUSDs/textures/T_Plastic_Yellow_A_ORM.png",
+            "target_hash": "d75d6b08246a2022cf990d28bfc60d021a49aebc"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Metal_Glossy_A_Normal.png",
+            "source_hash": "3c292c0aa921471c29535b6559c0372c5334e6f9",
+            "target_url": "./SubUSDs/textures/T_Metal_Glossy_A_Normal.png",
+            "target_hash": "15626ed12ce44f6afaa2f5ea335413f63ea420bc"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Blue_A_ORM.png",
+            "source_hash": "38d789617869c45b5d69ec695b3132320dcb5013",
+            "target_url": "./SubUSDs/textures/T_Plastic_Blue_A_ORM.png",
+            "target_hash": "16299c4665b5b06ac2f1579983a4f0ddf2ecd17e"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Rubber_Black_Rough_A_Normal.png",
+            "source_hash": "a8b8b571a87da1f61abdb1ecc2997acf4a71d585",
+            "target_url": "./SubUSDs/textures/T_Rubber_Black_Rough_A_Normal.png",
+            "target_hash": "4fdb40f127ad9482b6a4220d2f865be7a455db75"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Aluminium_Brushed_A1_Normal.png",
+            "source_hash": "cf560d6e8562be42dd777181354dcc4152cb5024",
+            "target_url": "./SubUSDs/textures/T_Aluminium_Brushed_A1_Normal.png",
+            "target_hash": "97b7d010493ea6db38dbe601179504e241d741a7"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Rough_Black_A_ORM.png",
+            "source_hash": "f521562db677447c2cd8915a6ee29758ef167d00",
+            "target_url": "./SubUSDs/textures/T_Plastic_Rough_Black_A_ORM.png",
+            "target_hash": "4e9db365dc02bb10764cd6b30829c1c2d5bc9e78"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Metal_Rough_A_Normal.png",
+            "source_hash": "d9077fe8ad2500024d3b0715f8322c13def47059",
+            "target_url": "./SubUSDs/textures/T_Metal_Rough_A_Normal.png",
+            "target_hash": "3c23836ee7e40f24773672d78877b99a789ed82b"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Gray_A_ORM.png",
+            "source_hash": "9f095122161f66df8dad449e205e03c955bd9d5f",
+            "target_url": "./SubUSDs/textures/T_Plastic_Gray_A_ORM.png",
+            "target_hash": "c71aa725bdfbac560ce651412cfdbef683294b77"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Red_A_Normal.png",
+            "source_hash": "5c5942e3d41d1d4f8baf7c0300c9b99dcf3ee97c",
+            "target_url": "./SubUSDs/textures/T_Plastic_Red_A_Normal.png",
+            "target_hash": "1e99cfdd9aef41bed8c47d502a15c60118633787"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Steel_A1_Normal.png",
+            "source_hash": "af77f3336dd7d810cd9571f7b68abf4bf4253b9a",
+            "target_url": "./SubUSDs/textures/T_Steel_A1_Normal.png",
+            "target_hash": "8c579fcead7d6bf3d8ed2c1c27ab20e2166c0a30"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png",
+            "source_hash": "db54c9257763b5cbd51a4f01473feedfe7ed7ece",
+            "target_url": "./SubUSDs/textures/T_Plastic_Yellow_A_Normal.png",
+            "target_hash": "2d8423631ac27279f3177ae09f6d82ce15fa1f0e"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Metal_Glossy_A_ORM.png",
+            "source_hash": "a6c8be572b8322bec6c470a2cd1d720af9f25cc3",
+            "target_url": "./SubUSDs/textures/T_Metal_Glossy_A_ORM.png",
+            "target_hash": "63bc67371eeff868c5ac08912aafd301e22a1184"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Blue_A_Normal.png",
+            "source_hash": "9c822cf93c9c0af376970aa621fdbe6b8cbc594e",
+            "target_url": "./SubUSDs/textures/T_Plastic_Blue_A_Normal.png",
+            "target_hash": "bf17f430021c3476f7386682910bd17b8f23a73e"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Rubber_Black_Rough_A_ORM.png",
+            "source_hash": "9e3910949e3713514b05e566fae23025cd493c64",
+            "target_url": "./SubUSDs/textures/T_Rubber_Black_Rough_A_ORM.png",
+            "target_hash": "1ff2c748863c367b8ccd34f1e24b53c51434e770"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Aluminium_Brushed_A1_ORM.png",
+            "source_hash": "10687178dce49cb361938216a4464b33b69dd0e6",
+            "target_url": "./SubUSDs/textures/T_Aluminium_Brushed_A1_ORM.png",
+            "target_hash": "cd3be613b55cd86d2eccabfdd18a563d80b3da55"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Metal_Rough_A_ORM.png",
+            "source_hash": "95a3de56cefcb571d88f377c038b19d9a82a97d0",
+            "target_url": "./SubUSDs/textures/T_Metal_Rough_A_ORM.png",
+            "target_hash": "3a38859d2a00af76219e7065a4269a218a3e4bb3"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Gray_A_Normal.png",
+            "source_hash": "188883f0975d3869daa5b2ab5974f85198daf1f0",
+            "target_url": "./SubUSDs/textures/T_Plastic_Gray_A_Normal.png",
+            "target_hash": "01d48063535569c38bcae5d516586a2a83cb43bd"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Plastic_Red_A_ORM.png",
+            "source_hash": "6b73c3cab8090cf0f6ecf5ccae70ed1455fb3517",
+            "target_url": "./SubUSDs/textures/T_Plastic_Red_A_ORM.png",
+            "target_hash": "91a9865df1b2d21d5753e30dc752e3b67b9e86d7"
+        },
+        {
+            "source_url": "/home/rokey/cobot3_ws/isaacpjt/env_temp_one_p3020_fixed_joint/SubUSDs/textures/T_Steel_A1_ORM.png",
+            "source_hash": "3a6145c81f349e5ee23f157b7b19a0b32bbee4c2",
+            "target_url": "./SubUSDs/textures/T_Steel_A1_ORM.png",
+            "target_hash": "85ccb4613d10d54097e8871e0871a598c782ca82"
+        }
+    ]
+}
