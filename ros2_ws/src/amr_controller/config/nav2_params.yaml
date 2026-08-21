@@ -225,7 +225,9 @@ collision_monitor:
     cmd_vel_in_topic: cmd_vel
     cmd_vel_out_topic: cmd_vel_safe
     transform_tolerance: 0.30
-    source_timeout: 0.5
+    # Isaac RTX scans can arrive with a render-time delay. Keep using scan
+    # points, but do not engage the invalid-source watchdog in simulation.
+    source_timeout: 0.0
     stop_pub_timeout: 1.0
     enable_stamped_cmd_vel: false
     polygons: ["iw_hub_stop_zone"]
