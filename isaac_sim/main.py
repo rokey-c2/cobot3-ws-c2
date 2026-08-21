@@ -95,6 +95,7 @@ def main():
         while simulation_app.is_running():
             ros2_adapter.update()
             world.step(render=True)
+            lidar_publisher.capture_frame()
 
     finally:
         # writer/render product가 반복문 동안 해제되지 않도록 참조를 유지한다.
