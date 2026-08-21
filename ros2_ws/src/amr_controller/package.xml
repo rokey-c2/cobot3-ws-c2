@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>amr_controller</name>
-  <version>0.3.0</version>
-  <description>ForkliftB ROS 2 Nav2 navigation and safety command mux</description>
+  <version>0.4.0</version>
+  <description>ForkliftB ROS 2 Nav2 navigation, Foxglove, and safety command mux</description>
 
   <maintainer email="rokey-c2@users.noreply.github.com">
     rokey-c2
@@ -11,6 +11,7 @@
 
   <buildtool_depend>ament_python</buildtool_depend>
 
+  <exec_depend>foxglove_bridge</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
@@ -18,6 +19,7 @@
   <exec_depend>nav2_collision_monitor</exec_depend>
   <exec_depend>nav2_common</exec_depend>
   <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
   <exec_depend>nav2_regulated_pure_pursuit_controller</exec_depend>
   <exec_depend>nav2_smac_planner</exec_depend>
   <exec_depend>nav_msgs</exec_depend>

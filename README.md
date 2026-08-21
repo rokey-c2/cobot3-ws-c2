@@ -33,6 +33,19 @@ Input Zone
 - PhysX
 - Python
 
+## ForkliftB 한 대 실행
+
+각 명령은 별도 터미널에서 실행합니다.
+
+```bash
+./scripts/run_isaac.sh
+./scripts/run_ros2.sh
+./scripts/run_foxglove.sh
+```
+
+- 자율주행 설정: `docs/amr_ros2_setup.md`
+- Foxglove 관제 설정: `docs/foxglove_monitoring.md`
+
 ## 중요
 `isaac_sim/project_config/`를 사용합니다.
 

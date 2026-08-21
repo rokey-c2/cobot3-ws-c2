@@ -9,7 +9,7 @@ PACKAGE_NAME = "amr_controller"
 
 setup(
     name=PACKAGE_NAME,
-    version="0.3.0",
+    version="0.4.0",
     packages=find_packages(),
     data_files=[
         (
@@ -33,13 +33,17 @@ setup(
     zip_safe=True,
     maintainer="rokey-c2",
     maintainer_email="rokey-c2@users.noreply.github.com",
-    description="ForkliftB ROS 2 Nav2 navigation and safety command mux",
+    description="ForkliftB ROS 2 Nav2 navigation and Foxglove monitoring",
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
             (
                 "amr_controller = "
                 "amr_controller.amr_controller:main"
+            ),
+            (
+                "foxglove_goal_bridge = "
+                "amr_controller.foxglove_goal_bridge:main"
             ),
             (
                 "goal_navigator = "
