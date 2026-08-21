@@ -6,6 +6,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
+    unset FASTRTPS_DEFAULT_PROFILES_FILE
+fi
 source "$ROOT_DIR/ros2_ws/install/setup.bash"
 
 ACTION_NAME="/amr_a/navigate_to_pose"

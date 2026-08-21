@@ -32,6 +32,9 @@ cd ~/collaboration/cobot3-ws-c2
 
 모든 터미널은 `ROS_DOMAIN_ID=110`,
 `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`를 사용한다. 실행 스크립트가 두 값을 자동 설정한다.
+단일 PC 실험에서는 RTX LaserScan 전송을 막을 수 있는 팀 네트워크용
+`FASTRTPS_DEFAULT_PROFILES_FILE`을 실행 스크립트가 자동으로 해제한다.
+다중 PC whitelist가 필요한 경우에만 `USE_FASTDDS_WHITELIST=1`을 지정한다.
 
 ## 2. 실행
 
