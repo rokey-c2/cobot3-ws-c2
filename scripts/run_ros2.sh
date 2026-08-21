@@ -33,15 +33,24 @@ for package_name in "${required_packages[@]}"; do
     fi
 done
 
-for topic_name in /clock /amr_a/scan /amr_a/odom; do
+wait_for_topic() {
+    local topic_name="$1"
+    local reliability="$2"
+
     echo "[ROS2] waiting for $topic_name"
-    if ! timeout 10 ros2 topic echo "$topic_name" --once \
-        --qos-reliability best_effort \
+    if ! timeout 20 ros2 topic echo "$topic_name" --once \
+        --qos-reliability "$reliability" \
         --qos-durability volatile > /dev/null 2>&1; then
         echo "[ERROR] no message received from $topic_name"
         echo "Start Isaac Sim first: ./scripts/run_isaac.sh"
-        exit 1
+        return 1
     fi
-done
+}
+
+# Isaac's clock publisher uses sensor-style best-effort QoS. The RTX LiDAR
+# and embedded IW Hub odometry publishers are reliable in Isaac Sim 5.1.
+wait_for_topic /clock best_effort
+wait_for_topic /amr_a/scan reliable
+wait_for_topic /amr_a/odom reliable
 
 exec ros2 launch amr_controller amr_nav2.launch.py "$@"
