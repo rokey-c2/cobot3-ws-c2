@@ -33,24 +33,27 @@ for package_name in "${required_packages[@]}"; do
     fi
 done
 
-wait_for_topic() {
+wait_for_publisher() {
     local topic_name="$1"
-    local reliability="$2"
 
     echo "[ROS2] waiting for $topic_name"
-    if ! timeout 20 ros2 topic echo "$topic_name" --once \
-        --qos-reliability "$reliability" \
-        --qos-durability volatile > /dev/null 2>&1; then
-        echo "[ERROR] no message received from $topic_name"
-        echo "Start Isaac Sim first: ./scripts/run_isaac.sh"
-        return 1
-    fi
+    for _ in $(seq 1 40); do
+        if ros2 topic info "$topic_name" 2>/dev/null | \
+            grep -Eq 'Publisher count: [1-9][0-9]*'; then
+            return 0
+        fi
+        sleep 0.5
+    done
+
+    echo "[ERROR] no publisher found for $topic_name"
+    echo "Start Isaac Sim first: ./scripts/run_isaac.sh"
+    return 1
 }
 
-# Isaac's clock publisher uses sensor-style best-effort QoS. The RTX LiDAR
-# and embedded IW Hub odometry publishers are reliable in Isaac Sim 5.1.
-wait_for_topic /clock best_effort
-wait_for_topic /amr_a/scan reliable
-wait_for_topic /amr_a/odom reliable
+# Avoid a CLI echo QoS false-negative while still requiring every Isaac
+# publisher that Nav2 needs before launch.
+wait_for_publisher /clock
+wait_for_publisher /amr_a/scan
+wait_for_publisher /amr_a/odom
 
 exec ros2 launch amr_controller amr_nav2.launch.py "$@"
