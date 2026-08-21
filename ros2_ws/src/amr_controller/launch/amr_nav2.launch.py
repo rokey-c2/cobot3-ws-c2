@@ -131,6 +131,7 @@ def generate_launch_description():
                 "use_sim_time": use_sim_time,
                 "input_topic": "scan",
                 "output_topic": "scan_nav",
+                "stamp_offset_sec": 0.10,
             }
         ],
     )

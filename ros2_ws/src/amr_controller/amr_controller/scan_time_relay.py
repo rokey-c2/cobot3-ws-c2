@@ -1,6 +1,7 @@
 """Publish Isaac RTX LaserScan messages with the current ROS clock stamp."""
 
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
@@ -13,9 +14,13 @@ class ScanTimeRelay(Node):
         super().__init__("scan_time_relay")
         self.declare_parameter("input_topic", "scan")
         self.declare_parameter("output_topic", "scan_nav")
+        self.declare_parameter("stamp_offset_sec", 0.10)
 
         input_topic = str(self.get_parameter("input_topic").value)
         output_topic = str(self.get_parameter("output_topic").value)
+        self._stamp_offset = Duration(
+            seconds=float(self.get_parameter("stamp_offset_sec").value)
+        )
         self._publisher = self.create_publisher(
             LaserScan,
             output_topic,
@@ -29,11 +34,17 @@ class ScanTimeRelay(Node):
         )
         self._received_scan = False
         self.get_logger().info(
-            f"restamping LaserScan messages: {input_topic} -> {output_topic}"
+            f"restamping LaserScan messages: {input_topic} -> {output_topic} "
+            f"(TF offset {self._stamp_offset.nanoseconds / 1e9:.2f}s)"
         )
 
     def _relay(self, message):
-        message.header.stamp = self.get_clock().now().to_msg()
+        # Isaac publishes odometry and RTX scans on separate render pipelines.
+        # A small past offset guarantees the matching odom transform is already
+        # buffered when Nav2 and Collision Monitor consume this scan.
+        message.header.stamp = (
+            self.get_clock().now() - self._stamp_offset
+        ).to_msg()
         self._publisher.publish(message)
         if not self._received_scan:
             self._received_scan = True
@@ -51,7 +62,8 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
