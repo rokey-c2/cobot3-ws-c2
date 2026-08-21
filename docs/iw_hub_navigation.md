@@ -1,7 +1,7 @@
 # IW Hub 단일 AMR 자율주행
 
-이 구성은 `main`의 P3020 월드를 유지하면서 ForkliftB 대신
-Idealworks IW Hub 한 대(`amr_a`)를 실행한다. Isaac Sim 5.1에서
+이 구성은 저장된 물류 월드를 불러오지 않고 빈 테스트 월드에서
+Idealworks IW Hub 한 대(`amr_a`)만 실행한다. Isaac Sim 5.1에서
 odometry, RTX LiDAR, simulation clock을 발행하고 ROS 2 Jazzy Nav2가
 목표 경로 계획, LiDAR 장애물 반영, 충돌 정지, 속도 명령 중재를 담당한다.
 
@@ -89,4 +89,4 @@ ros2 topic pub --once /amr_a/emergency_stop std_msgs/msg/Bool "{data: false}"
 - 정적 지도는 40 m × 40 m 경계 지도이며 실제 장애물은 LiDAR costmap에 반영한다.
 - `spawn_xyz`, footprint, LiDAR 높이는 실제 월드 배치 확인 후 조정한다.
 - ForkliftB 코드는 이 실행 경로와 로봇 registry에서 사용하지 않는다.
-- 저장된 P3020 월드 안의 기존 ForkliftB prim도 시작할 때 자동 제거한다.
+- P3020, 컨베이어, ForkliftB와 다른 AMR은 생성하지 않는다.

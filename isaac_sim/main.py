@@ -10,14 +10,11 @@ simulation_app = SimulationApp({"headless": HEADLESS})
 
 from isaacsim.core.api import World
 from isaacsim.core.utils.extensions import enable_extension
-from isaacsim.core.utils.stage import is_stage_loading, open_stage
 import omni.graph.core as og
-import omni.usd
 
 from project_config.robot_config import (
     IW_HUB_USD,
     ROBOT_REGISTRY,
-    WORLD_USD,
 )
 
 
@@ -28,30 +25,6 @@ simulation_app.update()
 
 from robots.iw_hub.iw_hub_agent import IwHubAgent
 from sensors.lidar_sensor import IwHubLidarRos2Publisher
-
-
-def _load_world_stage():
-    if not WORLD_USD.is_file():
-        raise FileNotFoundError(f"World USD not found: {WORLD_USD}")
-    if not IW_HUB_USD.is_file():
-        raise FileNotFoundError(f"IW Hub USD not found: {IW_HUB_USD}")
-
-    print(f"[WORLD] loading: {WORLD_USD}")
-    open_stage(str(WORLD_USD))
-    while is_stage_loading():
-        simulation_app.update()
-
-    # The collected P3020 world still contains an older ForkliftB prim.
-    # Remove every ForkliftB prim before the IW Hub is spawned.
-    stage = omni.usd.get_context().get_stage()
-    forklift_paths = [
-        prim.GetPath()
-        for prim in stage.Traverse()
-        if "forklift" in prim.GetName().lower()
-    ]
-    for prim_path in sorted(forklift_paths, key=str, reverse=True):
-        stage.RemovePrim(prim_path)
-        print(f"[WORLD] removed legacy ForkliftB prim: {prim_path}")
 
 
 def _create_clock_graph():
@@ -82,8 +55,12 @@ def _create_clock_graph():
 
 
 def main():
-    _load_world_stage()
+    if not IW_HUB_USD.is_file():
+        raise FileNotFoundError(f"IW Hub USD not found: {IW_HUB_USD}")
+
     world = World(stage_units_in_meters=1.0)
+    world.scene.add_default_ground_plane()
+    print("[WORLD] empty test world + ground plane")
     _create_clock_graph()
 
     agents = []

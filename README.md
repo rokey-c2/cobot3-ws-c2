@@ -36,6 +36,9 @@ Input Zone
 
 ## IW Hub 자율주행 실행
 
+현재 Isaac 실행 월드는 Ground Plane과 `amr_a` IW Hub 한 대만 생성합니다.
+P3020, 컨베이어, ForkliftB는 이 실행 구성에 포함하지 않습니다.
+
 ```bash
 ./scripts/setup_ros.sh
 ./scripts/run_isaac.sh
@@ -48,4 +51,3 @@ Input Zone
 `isaac_sim/project_config/`를 사용합니다.
 
 `config/`라는 일반 이름은 Isaac Sim/OpenCV 내부 모듈과 충돌할 수 있으므로 사용하지 않습니다.
-

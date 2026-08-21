@@ -4,12 +4,6 @@ from pathlib import Path
 
 
 ISAAC_SIM_ROOT = Path(__file__).resolve().parents[1]
-WORLD_USD = (
-    ISAAC_SIM_ROOT
-    / "usd"
-    / "env_temp_three_p3020"
-    / "World0.usd"
-)
 IW_HUB_USD = (
     ISAAC_SIM_ROOT
     / "robots"
@@ -37,4 +31,3 @@ SORTER_CONFIG = {
     "namespace": "/sorter_01",
     "routes": ["A", "B"],
 }
-
