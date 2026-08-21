@@ -46,7 +46,11 @@ required_topics=(
 )
 
 for topic_name in "${required_topics[@]}"; do
-    if ! timeout 8 ros2 topic echo "$topic_name" --once > /dev/null 2>&1; then
+    if ! timeout 8 ros2 topic echo "$topic_name" \
+        --once \
+        --qos-reliability best_effort \
+        --qos-durability volatile \
+        > /dev/null 2>&1; then
         echo "[ERROR] 메시지를 받을 수 없습니다: $topic_name"
         echo "다른 터미널에서 Isaac Sim을 먼저 실행하세요:"
         echo "  cd $ROOT_DIR"
