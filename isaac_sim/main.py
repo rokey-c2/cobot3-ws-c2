@@ -96,7 +96,9 @@ def main():
 
     lidar_publishers = [
         IwHubLidarRos2Publisher(
-            parent_prim_path=agent.prim_path,
+            # The referenced IW Hub articulation moves at iw_hub_sensors.
+            # Mount the LiDAR there so its world pose follows the chassis.
+            parent_prim_path=agent.sensor_prim_path,
             namespace=agent.name,
         )
         for agent in agents
