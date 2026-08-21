@@ -1,92 +1,40 @@
-"""Robot registry.
+"""Runtime configuration for the first IW Hub autonomous-navigation MVP."""
 
-spawn_xyz / spawn_yaw 값은 실제 Scene 배치 후 프로젝트 좌표에 맞게 수정하세요.
-"""
+from pathlib import Path
 
+
+ISAAC_SIM_ROOT = Path(__file__).resolve().parents[1]
+WORLD_USD = (
+    ISAAC_SIM_ROOT
+    / "usd"
+    / "env_temp_three_p3020"
+    / "World0.usd"
+)
+IW_HUB_USD = (
+    ISAAC_SIM_ROOT
+    / "robots"
+    / "iw_hub"
+    / "iw_hub_v2.usda"
+)
+
+
+# Start with one AMR. Additional IW Hubs can be added after the single-robot
+# Nav2 frame/topic chain has been verified in Isaac Sim.
 ROBOT_REGISTRY = [
-    # Inbound AMR
     {
-        "type": "forklift_b",
-        "name": "amr_in_01",
-        "namespace": "/amr_in_01",
-        "role": "inbound",
+        "type": "iw_hub",
+        "name": "amr_a",
+        "namespace": "/amr_a",
+        "role": "inbound_amr",
         "spawn_xyz": (0.0, 0.0, 0.0),
         "spawn_yaw": 0.0,
-    },
-    {
-        "type": "forklift_b",
-        "name": "amr_in_02",
-        "namespace": "/amr_in_02",
-        "role": "inbound",
-        "spawn_xyz": (0.0, 2.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-
-    # Outbound A
-    {
-        "type": "forklift_b",
-        "name": "amr_out_a_01",
-        "namespace": "/amr_out_a_01",
-        "role": "outbound_a",
-        "spawn_xyz": (10.0, 5.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "forklift_b",
-        "name": "amr_out_a_02",
-        "namespace": "/amr_out_a_02",
-        "role": "outbound_a",
-        "spawn_xyz": (10.0, 7.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-
-    # Outbound B
-    {
-        "type": "forklift_b",
-        "name": "amr_out_b_01",
-        "namespace": "/amr_out_b_01",
-        "role": "outbound_b",
-        "spawn_xyz": (10.0, -5.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "forklift_b",
-        "name": "amr_out_b_02",
-        "namespace": "/amr_out_b_02",
-        "role": "outbound_b",
-        "spawn_xyz": (10.0, -7.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-
-    # P3020
-    {
-        "type": "p3020",
-        "name": "arm_in_01",
-        "namespace": "/arm_in_01",
-        "role": "inbound_arm",
-        "spawn_xyz": (3.0, 0.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "p3020",
-        "name": "arm_a_01",
-        "namespace": "/arm_a_01",
-        "role": "loading_a",
-        "spawn_xyz": (8.0, 4.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "p3020",
-        "name": "arm_b_01",
-        "namespace": "/arm_b_01",
-        "role": "loading_b",
-        "spawn_xyz": (8.0, -4.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
+    }
 ]
+
 
 SORTER_CONFIG = {
     "name": "sorter_01",
     "namespace": "/sorter_01",
     "routes": ["A", "B"],
 }
+
