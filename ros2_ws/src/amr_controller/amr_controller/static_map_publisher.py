@@ -1,4 +1,4 @@
-"""Publish the blank bounded map used by the IW Hub global costmap."""
+"""Publish the bounded test map used by the IW Hub global costmap."""
 
 import math
 
@@ -18,22 +18,58 @@ class StaticMapPublisher(Node):
 
         self.declare_parameter("width_m", 40.0)
         self.declare_parameter("height_m", 40.0)
-        self.declare_parameter("resolution", 0.1)
+        self.declare_parameter("resolution", 0.05)
         self.declare_parameter("origin_x", -20.0)
         self.declare_parameter("origin_y", -20.0)
         self.declare_parameter("border_m", 0.2)
+        self.declare_parameter("obstacle_center_x", 3.5)
+        self.declare_parameter("obstacle_center_y", 0.0)
+        self.declare_parameter("obstacle_size_x", 0.8)
+        self.declare_parameter("obstacle_size_y", 1.4)
 
         resolution = float(self.get_parameter("resolution").value)
         width_m = float(self.get_parameter("width_m").value)
         height_m = float(self.get_parameter("height_m").value)
         border_m = float(self.get_parameter("border_m").value)
+        origin_x = float(self.get_parameter("origin_x").value)
+        origin_y = float(self.get_parameter("origin_y").value)
+        obstacle_center_x = float(
+            self.get_parameter("obstacle_center_x").value
+        )
+        obstacle_center_y = float(
+            self.get_parameter("obstacle_center_y").value
+        )
+        obstacle_size_x = float(
+            self.get_parameter("obstacle_size_x").value
+        )
+        obstacle_size_y = float(
+            self.get_parameter("obstacle_size_y").value
+        )
 
-        if resolution <= 0.0:
-            raise ValueError("resolution must be positive")
+        if resolution <= 0.0 or obstacle_size_x <= 0.0 or obstacle_size_y <= 0.0:
+            raise ValueError("resolution and obstacle sizes must be positive")
 
         width_cells = int(math.ceil(width_m / resolution))
         height_cells = int(math.ceil(height_m / resolution))
         border_cells = max(1, int(math.ceil(border_m / resolution)))
+        obstacle_bounds = (
+            math.floor(
+                (obstacle_center_x - obstacle_size_x / 2.0 - origin_x)
+                / resolution
+            ),
+            math.floor(
+                (obstacle_center_y - obstacle_size_y / 2.0 - origin_y)
+                / resolution
+            ),
+            math.ceil(
+                (obstacle_center_x + obstacle_size_x / 2.0 - origin_x)
+                / resolution
+            ),
+            math.ceil(
+                (obstacle_center_y + obstacle_size_y / 2.0 - origin_y)
+                / resolution
+            ),
+        )
 
         qos = QoSProfile(
             depth=1,
@@ -47,24 +83,22 @@ class StaticMapPublisher(Node):
         self.message.info.resolution = resolution
         self.message.info.width = width_cells
         self.message.info.height = height_cells
-        self.message.info.origin.position.x = float(
-            self.get_parameter("origin_x").value
-        )
-        self.message.info.origin.position.y = float(
-            self.get_parameter("origin_y").value
-        )
+        self.message.info.origin.position.x = origin_x
+        self.message.info.origin.position.y = origin_y
         self.message.info.origin.orientation.w = 1.0
         self.message.data = build_occupancy_grid(
             width_cells,
             height_cells,
             border_cells,
+            occupied_rectangles=[obstacle_bounds],
         )
 
         self.publish_map()
         self.timer = self.create_timer(2.0, self.publish_map)
         self.get_logger().info(
             f"static map: {width_m:.1f} x {height_m:.1f} m, "
-            f"resolution={resolution:.2f} m"
+            f"resolution={resolution:.2f} m, obstacle="
+            f"({obstacle_center_x:.2f}, {obstacle_center_y:.2f})"
         )
 
     def publish_map(self):
