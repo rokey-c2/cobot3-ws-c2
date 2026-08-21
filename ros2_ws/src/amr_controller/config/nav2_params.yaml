@@ -19,7 +19,7 @@ controller_server:
     controller_frequency: 15.0
     # Allow the relayed RTX scan and its matching odom transform to reach the
     # local costmap before treating the controller cycle as timed out.
-    costmap_update_timeout: 1.0
+    costmap_update_timeout: 2.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.0
     min_theta_velocity_threshold: 0.001
@@ -111,7 +111,6 @@ local_costmap:
           marking: true
           inf_is_valid: true
           observation_persistence: 0.5
-          expected_update_rate: 0.20
           max_obstacle_height: 2.5
           raytrace_min_range: 0.10
           raytrace_max_range: 20.0
@@ -152,7 +151,6 @@ global_costmap:
           marking: true
           inf_is_valid: true
           observation_persistence: 0.5
-          expected_update_rate: 0.20
           max_obstacle_height: 2.5
           raytrace_min_range: 0.10
           raytrace_max_range: 20.0
