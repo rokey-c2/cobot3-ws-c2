@@ -40,6 +40,9 @@ class CargoContainerPayload:
         self.lift_prim_path = lift_prim_path
         self.goal_xy = tuple(float(value) for value in goal_xy)
         self.prim_path = prim_path
+        self.attached_prim_path = (
+            f"{lift_prim_path}/attached_{prim_path.rsplit('/', 1)[-1]}"
+        )
         self.lift_offset = Gf.Vec3d(*lift_offset)
         self.lifted_threshold = float(lifted_threshold)
         self.goal_tolerance = float(goal_tolerance)
@@ -52,55 +55,58 @@ class CargoContainerPayload:
             )
 
         UsdGeom.Xform.Define(self.stage, "/World/Cargo")
-        root = UsdGeom.Xform.Define(self.stage, prim_path)
+        root = UsdGeom.Xform.Define(
+            self.stage, self.attached_prim_path
+        )
         root.ClearXformOpOrder()
-        self._world_transform_op = root.AddTransformOp()
-        self._create_visuals()
+        root.AddTranslateOp().Set(self.lift_offset)
+        self._attached_root = root.GetPrim()
+        self._create_visuals(self.attached_prim_path)
 
         self.attached = True
         self.lifted_once = False
         self._baseline_lift_z = None
-        self._last_world_matrix = None
         self.update()
         carb.log_info(
-            f"[CARGO] attached {prim_path} to {lift_prim_path}"
+            f"[CARGO] attached {self.attached_prim_path} to "
+            f"{lift_prim_path}"
         )
 
-    def _create_visuals(self):
+    def _create_visuals(self, root_path):
         # The 1.00 x 0.70 m carrier stays inside the loaded Nav2 footprint.
         base_color = (0.15, 0.35, 0.70)
         wall_color = (0.20, 0.48, 0.88)
         _define_cube(
             self.stage,
-            f"{self.prim_path}/base",
+            f"{root_path}/base",
             (0.0, 0.0, 0.04),
             (1.00, 0.70, 0.08),
             base_color,
         )
         _define_cube(
             self.stage,
-            f"{self.prim_path}/wall_front",
+            f"{root_path}/wall_front",
             (0.47, 0.0, 0.23),
             (0.06, 0.70, 0.38),
             wall_color,
         )
         _define_cube(
             self.stage,
-            f"{self.prim_path}/wall_rear",
+            f"{root_path}/wall_rear",
             (-0.47, 0.0, 0.23),
             (0.06, 0.70, 0.38),
             wall_color,
         )
         _define_cube(
             self.stage,
-            f"{self.prim_path}/wall_left",
+            f"{root_path}/wall_left",
             (0.0, 0.32, 0.23),
             (0.88, 0.06, 0.38),
             wall_color,
         )
         _define_cube(
             self.stage,
-            f"{self.prim_path}/wall_right",
+            f"{root_path}/wall_right",
             (0.0, -0.32, 0.23),
             (0.88, 0.06, 0.38),
             wall_color,
@@ -114,7 +120,7 @@ class CargoContainerPayload:
         for name, translate, scale, color in boxes:
             _define_cube(
                 self.stage,
-                f"{self.prim_path}/{name}",
+                f"{root_path}/{name}",
                 translate,
                 scale,
                 color,
@@ -124,13 +130,19 @@ class CargoContainerPayload:
         cache = UsdGeom.XformCache()
         return cache.GetLocalToWorldTransform(self._lift_prim)
 
-    def _payload_world_matrix(self, lift_world_matrix):
-        world_position = lift_world_matrix.Transform(self.lift_offset)
-        lift_transform = Gf.Transform(lift_world_matrix)
-        payload_transform = Gf.Transform()
-        payload_transform.SetTranslation(world_position)
-        payload_transform.SetRotation(lift_transform.GetRotation())
-        return payload_transform.GetMatrix()
+    def _place_payload(self):
+        cache = UsdGeom.XformCache()
+        world_matrix = cache.GetLocalToWorldTransform(
+            self._attached_root
+        )
+        UsdGeom.Imageable(self._attached_root).MakeInvisible()
+
+        placed_root = UsdGeom.Xform.Define(
+            self.stage, self.prim_path
+        )
+        placed_root.ClearXformOpOrder()
+        placed_root.AddTransformOp().Set(world_matrix)
+        self._create_visuals(self.prim_path)
 
     def update(self):
         """Follow the lift and release the payload after a completed place."""
@@ -149,11 +161,6 @@ class CargoContainerPayload:
         if lift_delta >= self.lifted_threshold:
             self.lifted_once = True
 
-        self._last_world_matrix = self._payload_world_matrix(
-            lift_world_matrix
-        )
-        self._world_transform_op.Set(self._last_world_matrix)
-
         distance_to_goal = math.hypot(
             float(lift_position[0]) - self.goal_xy[0],
             float(lift_position[1]) - self.goal_xy[1],
@@ -165,9 +172,9 @@ class CargoContainerPayload:
             goal_tolerance=self.goal_tolerance,
             lowered_tolerance=self.lowered_tolerance,
         ):
+            self._place_payload()
             self.attached = False
             carb.log_info(
                 f"[CARGO] placed {self.prim_path} at "
                 f"({lift_position[0]:.2f}, {lift_position[1]:.2f})"
             )
-

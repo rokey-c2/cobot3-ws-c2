@@ -128,8 +128,10 @@ def main():
     print("[CARGO] mission: lift -> navigate -> lower/place at (6.0, 0.0)")
     try:
         while simulation_app.is_running():
-            # Keep RTX render products and the embedded drive graph updating.
+            # Keep RTX render products and embedded ROS graphs updating.
             simulation_app.update()
+            # Cargo is parented under the lift, so this only observes mission
+            # state and writes to USD once when the payload is placed.
             for payload in cargo_payloads:
                 payload.update()
     finally:
