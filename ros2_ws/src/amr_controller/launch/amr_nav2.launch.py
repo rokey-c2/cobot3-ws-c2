@@ -1,6 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -11,6 +10,7 @@ def generate_launch_description():
     namespace = LaunchConfiguration("namespace")
     params_file = LaunchConfiguration("params_file")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    autostart = LaunchConfiguration("autostart")
     configured_params = RewrittenYaml(
         source_file=params_file,
         root_key=namespace,
@@ -38,6 +38,11 @@ def generate_launch_description():
         "use_sim_time",
         default_value="True",
         description="Use Isaac Sim /clock",
+    )
+    autostart_argument = DeclareLaunchArgument(
+        "autostart",
+        default_value="True",
+        description="Automatically activate Nav2 lifecycle nodes",
     )
 
     static_map = Node(
@@ -86,25 +91,66 @@ def generate_launch_description():
         parameters=[{"use_sim_time": use_sim_time}],
     )
 
-    nav2 = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("nav2_bringup"),
-                    "launch",
-                    "navigation_launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "namespace": namespace,
-            "use_sim_time": use_sim_time,
-            "params_file": params_file,
-            "autostart": "True",
-            # Nav2 launch 내부 PythonExpression이 이 값을 평가한다.
-            # 소문자 false는 Python 변수로 해석돼 NameError가 발생한다.
-            "use_composition": "False",
-        }.items(),
+    controller_server = Node(
+        package="nav2_controller",
+        executable="controller_server",
+        namespace=namespace,
+        name="controller_server",
+        output="screen",
+        parameters=[configured_params],
+        remappings=[("cmd_vel", "cmd_vel_nav")],
+    )
+    smoother_server = Node(
+        package="nav2_smoother",
+        executable="smoother_server",
+        namespace=namespace,
+        name="smoother_server",
+        output="screen",
+        parameters=[configured_params],
+    )
+    planner_server = Node(
+        package="nav2_planner",
+        executable="planner_server",
+        namespace=namespace,
+        name="planner_server",
+        output="screen",
+        parameters=[configured_params],
+    )
+    behavior_server = Node(
+        package="nav2_behaviors",
+        executable="behavior_server",
+        namespace=namespace,
+        name="behavior_server",
+        output="screen",
+        parameters=[configured_params],
+    )
+    bt_navigator = Node(
+        package="nav2_bt_navigator",
+        executable="bt_navigator",
+        namespace=namespace,
+        name="bt_navigator",
+        output="screen",
+        parameters=[configured_params],
+    )
+    waypoint_follower = Node(
+        package="nav2_waypoint_follower",
+        executable="waypoint_follower",
+        namespace=namespace,
+        name="waypoint_follower",
+        output="screen",
+        parameters=[configured_params],
+    )
+    velocity_smoother = Node(
+        package="nav2_velocity_smoother",
+        executable="velocity_smoother",
+        namespace=namespace,
+        name="velocity_smoother",
+        output="screen",
+        parameters=[configured_params],
+        remappings=[
+            ("cmd_vel", "cmd_vel_nav"),
+            ("cmd_vel_smoothed", "cmd_vel"),
+        ],
     )
     collision_monitor = Node(
         package="nav2_collision_monitor",
@@ -114,17 +160,26 @@ def generate_launch_description():
         output="screen",
         parameters=[configured_params],
     )
-    collision_lifecycle_manager = Node(
+    lifecycle_manager = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
         namespace=namespace,
-        name="lifecycle_manager_collision_monitor",
+        name="lifecycle_manager_navigation",
         output="screen",
         parameters=[
             {
                 "use_sim_time": use_sim_time,
-                "autostart": True,
-                "node_names": ["collision_monitor"],
+                "autostart": autostart,
+                "node_names": [
+                    "controller_server",
+                    "smoother_server",
+                    "planner_server",
+                    "behavior_server",
+                    "bt_navigator",
+                    "waypoint_follower",
+                    "velocity_smoother",
+                    "collision_monitor",
+                ],
             }
         ],
     )
@@ -134,11 +189,18 @@ def generate_launch_description():
             namespace_argument,
             params_argument,
             sim_time_argument,
+            autostart_argument,
             static_map,
             velocity_mux,
             map_to_odom,
-            nav2,
+            controller_server,
+            smoother_server,
+            planner_server,
+            behavior_server,
+            bt_navigator,
+            waypoint_follower,
+            velocity_smoother,
             collision_monitor,
-            collision_lifecycle_manager,
+            lifecycle_manager,
         ]
     )
