@@ -129,7 +129,9 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.publisher.publish(Twist())
+        # SIGINT 처리 후 rclpy context가 먼저 종료된 경우 publish하지 않는다.
+        if rclpy.ok():
+            node.publisher.publish(Twist())
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

@@ -37,8 +37,26 @@ for package_name in "${required_packages[@]}"; do
     fi
 done
 
+echo "[ROS2] Isaac Sim 입력 토픽 확인 중"
+
+required_topics=(
+    /clock
+    /amr_a/scan
+    /amr_a/odom
+)
+
+for topic_name in "${required_topics[@]}"; do
+    if ! timeout 8 ros2 topic echo "$topic_name" --once > /dev/null 2>&1; then
+        echo "[ERROR] 메시지를 받을 수 없습니다: $topic_name"
+        echo "다른 터미널에서 Isaac Sim을 먼저 실행하세요:"
+        echo "  cd $ROOT_DIR"
+        echo "  ./scripts/run_isaac.sh"
+        exit 1
+    fi
+    echo "[ROS2] 확인 완료: $topic_name"
+done
+
 echo "[ROS2] ForkliftB LiDAR/Nav2 장애물 회피 시작"
-echo "[ROS2] 시작 전 /clock, /amr_a/scan, /amr_a/odom을 확인하세요."
 
 exec ros2 launch \
     amr_controller \
