@@ -9,4 +9,25 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 cd "$ROOT_DIR/ros2_ws"
 
-echo "[TODO] Add package.xml / setup.py or CMakeLists.txt before colcon build."
+if [ ! -f "install/setup.bash" ]; then
+    echo "[ERROR] ROS 2 Workspace가 아직 빌드되지 않았습니다."
+    echo "먼저 다음 명령을 실행하세요:"
+    echo "  ./scripts/setup_ros.sh"
+    exit 1
+fi
+
+source install/setup.bash
+
+if ! ros2 pkg prefix amr_controller > /dev/null 2>&1; then
+    echo "[ERROR] amr_controller 패키지가 빌드되지 않았습니다."
+    echo "다음 명령을 다시 실행하세요:"
+    echo "  ./scripts/setup_ros.sh"
+    exit 1
+fi
+
+echo "[ROS2] /amr_a/cmd_vel 테스트 노드 시작"
+
+exec ros2 launch \
+    amr_controller \
+    amr_controller.launch.py \
+    "$@"

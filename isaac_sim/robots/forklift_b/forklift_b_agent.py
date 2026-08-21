@@ -1,20 +1,29 @@
-from robots.base_robot import BaseRobotAgent
+from isaacsim.core.prims import SingleArticulation
 
 
-class ForkliftBAgent(BaseRobotAgent):
-    """ForkliftB 공통 Agent.
+class ForkliftBAgent:
+    """ForkliftB를 Isaac Sim Articulation으로 관리한다."""
 
-    하나의 Agent 클래스로 6대의 ForkliftB 인스턴스를 생성합니다.
-    """
+    def __init__(
+        self,
+        world,
+        prim_path="/World/forklift_b_sensor",
+        name="forklift_b",
+    ):
+        self.prim_path = prim_path
 
-    def setup(self):
-        # TODO: ForkliftB asset/articulation load
-        pass
+        self.robot = world.scene.add(
+            SingleArticulation(
+                prim_path=self.prim_path,
+                name=name,
+            )
+        )
 
-    def post_reset(self):
-        # TODO: controller reset
-        pass
+    def print_joint_info(self):
+        print("\n[FORKLIFT] Articulation registered")
+        print(f"[FORKLIFT] Prim path: {self.prim_path}")
+        print(f"[FORKLIFT] DOF count: {self.robot.num_dof}")
 
-    def on_physics_step(self, dt: float):
-        # TODO: navigation / fork control
-        pass
+        print("[FORKLIFT] DOF names:")
+        for index, joint_name in enumerate(self.robot.dof_names):
+            print(f"  {index}: {joint_name}")

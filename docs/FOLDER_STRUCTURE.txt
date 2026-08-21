@@ -87,6 +87,12 @@
             ├── config
                 ├── amr.yaml
             ├── launch
+                ├── amr_controller.launch.py
+            ├── package.xml
+            ├── resource
+                ├── amr_controller
+            ├── setup.cfg
+            ├── setup.py
         ├── arm_controller
             ├── arm_controller
                 ├── __init__.py

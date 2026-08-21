@@ -1,11 +1,31 @@
-def setup_world(world):
-    """Initial scene setup.
+from pathlib import Path
 
-    현재 단계에서는 Ground Plane만 생성합니다.
-    다음 단계에서 USD Scene, ForkliftB, P3020, Conveyor,
-    Wheel Sorter를 이 함수 또는 전용 loader를 통해 연결합니다.
-    """
+from isaacsim.core.utils.stage import add_reference_to_stage
+
+
+ISAAC_SIM_DIR = Path(__file__).resolve().parent
+FORKLIFT_USD_PATH = ISAAC_SIM_DIR / "usd" / "forklift_b.usd"
+
+
+def setup_world(world):
+    """Ground Plane과 ForkliftB를 월드에 배치한다."""
+
     print("[WORLD] Scene setup")
+
+    if not FORKLIFT_USD_PATH.exists():
+        raise FileNotFoundError(
+            f"Forklift USD 파일을 찾을 수 없습니다: {FORKLIFT_USD_PATH}"
+        )
+
+    # 물리 시뮬레이션용 바닥
     world.scene.add_default_ground_plane()
-    print("[WORLD] Ground plane created")
+
+    # 저장한 ForkliftB USD 불러오기
+    add_reference_to_stage(
+        usd_path=str(FORKLIFT_USD_PATH),
+        prim_path="/World/ForkliftScene",
+    )
+
+    print(f"[WORLD] Forklift loaded: {FORKLIFT_USD_PATH}")
+
     return world
