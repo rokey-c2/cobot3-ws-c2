@@ -54,12 +54,22 @@ if ! timeout 10 ros2 topic echo /map --once \
     exit 1
 fi
 
+echo "[TEST] checking live /amr_a/scan samples"
+scan_rate="$(timeout 8 ros2 topic hz /amr_a/scan --window 5 2>&1 || true)"
+if ! printf '%s\n' "$scan_rate" | grep -q 'average rate:'; then
+    echo "[ERROR] /amr_a/scan has no live LaserScan samples"
+    echo "Keep Isaac Sim playing and restart terminal 2."
+    exit 1
+fi
+printf '%s\n' "$scan_rate" | grep -m1 'average rate:'
+
 ros2 topic pub --once \
     /amr_a/navigation_enabled \
     std_msgs/msg/Bool \
     "{data: true}"
 
-echo "[TEST] start=(1.5, 0.0), obstacle=(3.5, 0.0), goal=(6.0, 0.0)"
+echo "[TEST] dynamic LiDAR avoidance: start=(1.5, 0.0), goal=(6.0, 0.0)"
+echo "[TEST] /map contains no obstacle; move /World/Obstacles while Play is running"
 exec ros2 action send_goal \
     "$ACTION_NAME" \
     nav2_msgs/action/NavigateToPose \

@@ -1,4 +1,4 @@
-"""Publish the bounded test map used by the IW Hub global costmap."""
+"""Publish the bounded, obstacle-free map used by the IW Hub global costmap."""
 
 import math
 
@@ -11,7 +11,7 @@ from amr_controller.map_utils import build_occupancy_grid
 
 
 class StaticMapPublisher(Node):
-    """Nav2 static layer가 사용할 transient-local OccupancyGrid를 발행한다."""
+    """Publish only the world boundary; runtime obstacles come from LiDAR."""
 
     def __init__(self):
         super().__init__("static_map_publisher")
@@ -22,10 +22,6 @@ class StaticMapPublisher(Node):
         self.declare_parameter("origin_x", -20.0)
         self.declare_parameter("origin_y", -20.0)
         self.declare_parameter("border_m", 0.2)
-        self.declare_parameter("obstacle_center_x", 3.5)
-        self.declare_parameter("obstacle_center_y", 0.0)
-        self.declare_parameter("obstacle_size_x", 0.8)
-        self.declare_parameter("obstacle_size_y", 1.4)
 
         resolution = float(self.get_parameter("resolution").value)
         width_m = float(self.get_parameter("width_m").value)
@@ -33,43 +29,13 @@ class StaticMapPublisher(Node):
         border_m = float(self.get_parameter("border_m").value)
         origin_x = float(self.get_parameter("origin_x").value)
         origin_y = float(self.get_parameter("origin_y").value)
-        obstacle_center_x = float(
-            self.get_parameter("obstacle_center_x").value
-        )
-        obstacle_center_y = float(
-            self.get_parameter("obstacle_center_y").value
-        )
-        obstacle_size_x = float(
-            self.get_parameter("obstacle_size_x").value
-        )
-        obstacle_size_y = float(
-            self.get_parameter("obstacle_size_y").value
-        )
 
-        if resolution <= 0.0 or obstacle_size_x <= 0.0 or obstacle_size_y <= 0.0:
-            raise ValueError("resolution and obstacle sizes must be positive")
+        if resolution <= 0.0 or width_m <= 0.0 or height_m <= 0.0:
+            raise ValueError("resolution and map dimensions must be positive")
 
         width_cells = int(math.ceil(width_m / resolution))
         height_cells = int(math.ceil(height_m / resolution))
         border_cells = max(1, int(math.ceil(border_m / resolution)))
-        obstacle_bounds = (
-            math.floor(
-                (obstacle_center_x - obstacle_size_x / 2.0 - origin_x)
-                / resolution
-            ),
-            math.floor(
-                (obstacle_center_y - obstacle_size_y / 2.0 - origin_y)
-                / resolution
-            ),
-            math.ceil(
-                (obstacle_center_x + obstacle_size_x / 2.0 - origin_x)
-                / resolution
-            ),
-            math.ceil(
-                (obstacle_center_y + obstacle_size_y / 2.0 - origin_y)
-                / resolution
-            ),
-        )
 
         qos = QoSProfile(
             depth=1,
@@ -90,15 +56,14 @@ class StaticMapPublisher(Node):
             width_cells,
             height_cells,
             border_cells,
-            occupied_rectangles=[obstacle_bounds],
+            occupied_rectangles=[],
         )
 
         self.publish_map()
         self.timer = self.create_timer(2.0, self.publish_map)
         self.get_logger().info(
-            f"static map: {width_m:.1f} x {height_m:.1f} m, "
-            f"resolution={resolution:.2f} m, obstacle="
-            f"({obstacle_center_x:.2f}, {obstacle_center_y:.2f})"
+            f"boundary-only map: {width_m:.1f} x {height_m:.1f} m, "
+            f"resolution={resolution:.2f} m; obstacles=/amr_a/scan"
         )
 
     def publish_map(self):
@@ -123,3 +88,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+

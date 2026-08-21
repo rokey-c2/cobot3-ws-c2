@@ -111,8 +111,6 @@ def main():
 
     lidar_publishers = [
         IwHubLidarRos2Publisher(
-            # The referenced IW Hub articulation moves at iw_hub_sensors.
-            # Mount the LiDAR there so its world pose follows the chassis.
             parent_prim_path=agent.sensor_prim_path,
             namespace=agent.name,
         )
@@ -121,6 +119,11 @@ def main():
     simulation_app.update()
     world.play()
 
+    # A 10 Hz rotary LiDAR needs several rendered simulation frames to finish
+    # its first 360-degree scan. Warm it up before ROS 2 is allowed to launch.
+    for _ in range(12):
+        world.step(render=True)
+
     print("[IW HUB] autonomous-navigation simulation started")
     print("[IW HUB] input : /amr_a/drive_cmd_vel")
     print("[IW HUB] output: /amr_a/odom, /amr_a/scan, /clock")
@@ -128,10 +131,8 @@ def main():
     print("[CARGO] mission: lift -> navigate -> lower/place at (6.0, 0.0)")
     try:
         while simulation_app.is_running():
-            # Keep RTX render products and embedded ROS graphs updating.
-            simulation_app.update()
-            # Cargo is parented under the lift, so this only observes mission
-            # state and writes to USD once when the payload is placed.
+            # World.step advances physics and every RTX render product together.
+            world.step(render=True)
             for payload in cargo_payloads:
                 payload.update()
     finally:
@@ -142,3 +143,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

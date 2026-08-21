@@ -50,10 +50,25 @@ wait_for_publisher() {
     return 1
 }
 
-# Avoid a CLI echo QoS false-negative while still requiring every Isaac
-# publisher that Nav2 needs before launch.
+wait_for_samples() {
+    local topic_name="$1"
+    local output
+
+    echo "[ROS2] checking live samples on $topic_name"
+    output="$(timeout 8 ros2 topic hz "$topic_name" --window 5 2>&1 || true)"
+    if printf '%s\n' "$output" | grep -q 'average rate:'; then
+        printf '%s\n' "$output" | grep -m1 'average rate:'
+        return 0
+    fi
+
+    echo "[ERROR] publisher exists but no live samples arrived on $topic_name"
+    echo "Keep Isaac Sim playing; do not start Nav2 with a silent LiDAR."
+    return 1
+}
+
 wait_for_publisher /clock
 wait_for_publisher /amr_a/scan
 wait_for_publisher /amr_a/odom
+wait_for_samples /amr_a/scan
 
 exec ros2 launch amr_controller amr_nav2.launch.py "$@"
