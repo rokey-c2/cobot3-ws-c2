@@ -101,7 +101,10 @@ def main():
 
         while simulation_app.is_running():
             ros2_adapter.update()
-            world.step(render=True)
+            # RTX LiDAR ROS writer는 Kit application update에서 렌더된다.
+            # timeline은 world.play()가 진행하므로 별도 world.step()을
+            # 호출하지 않고 Isaac Sim 5.1 공식 standalone 루프를 따른다.
+            simulation_app.update()
 
     finally:
         # writer/render product가 반복문 동안 해제되지 않도록 참조를 유지한다.
