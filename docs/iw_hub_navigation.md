@@ -48,6 +48,26 @@ cd ~/collaboration/cobot3-ws-c2
 
 ## 3. 자율주행 시작과 목표 전송
 
+기본 장애물 회피 실험 배치는 다음과 같다.
+
+| 항목 | 좌표/크기 |
+|---|---|
+| IW Hub 출발 | `(1.5, 0.0)` |
+| 경로 장애물 | 중심 `(3.5, 0.0)`, 크기 `0.8 × 1.4 × 1.0 m` |
+| 이동 목표 | `(6.0, 0.0)` |
+
+Isaac Sim과 Nav2를 실행한 뒤 세 번째 터미널에서 실험 스크립트를 실행한다.
+
+```bash
+cd ~/collaboration/cobot3-ws-c2
+./scripts/test_iw_hub_avoidance.sh
+```
+
+직선 경로 중앙의 빨간 장애물을 RTX LiDAR가 감지하고, Nav2 global/local
+costmap에 반영하여 IW Hub가 장애물 옆으로 우회하는지 확인한다.
+
+### 목표를 직접 전송하는 방법
+
 Nav2 실행 직후에는 안전을 위해 최종 속도가 차단돼 있다.
 
 ```bash

@@ -9,12 +9,15 @@ simulation_app = SimulationApp({"headless": HEADLESS})
 
 
 from isaacsim.core.api import World
+from isaacsim.core.api.objects import FixedCuboid
 from isaacsim.core.utils.extensions import enable_extension
 import omni.graph.core as og
+import numpy as np
 
 from project_config.robot_config import (
     IW_HUB_USD,
     ROBOT_REGISTRY,
+    TEST_OBSTACLES,
 )
 
 
@@ -61,6 +64,22 @@ def main():
     world = World(stage_units_in_meters=1.0)
     world.scene.add_default_ground_plane()
     print("[WORLD] empty test world + ground plane")
+
+    for obstacle in TEST_OBSTACLES:
+        world.scene.add(
+            FixedCuboid(
+                prim_path=f"/World/Obstacles/{obstacle['name']}",
+                name=obstacle["name"],
+                position=np.array(obstacle["position"], dtype=float),
+                scale=np.array(obstacle["scale"], dtype=float),
+                color=np.array(obstacle["color"], dtype=float),
+            )
+        )
+        print(
+            f"[WORLD] obstacle: {obstacle['name']} "
+            f"position={obstacle['position']} scale={obstacle['scale']}"
+        )
+
     _create_clock_graph()
 
     agents = []

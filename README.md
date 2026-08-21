@@ -39,10 +39,14 @@ Input Zone
 현재 Isaac 실행 월드는 Ground Plane과 `amr_a` IW Hub 한 대만 생성합니다.
 P3020, 컨베이어, ForkliftB는 이 실행 구성에 포함하지 않습니다.
 
+장애물 회피 실험은 출발 `(1.5, 0.0)`, 장애물 `(3.5, 0.0)`,
+목표 `(6.0, 0.0)` 구성입니다.
+
 ```bash
 ./scripts/setup_ros.sh
 ./scripts/run_isaac.sh
 ./scripts/run_ros2.sh
+./scripts/test_iw_hub_avoidance.sh
 ```
 
 상세 실행 및 목표 전송 방법은 [docs/iw_hub_navigation.md](docs/iw_hub_navigation.md)를 참고합니다.
