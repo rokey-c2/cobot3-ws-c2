@@ -69,6 +69,7 @@ def generate_launch_description():
     map_to_odom = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
+        namespace=namespace,
         name="map_to_amr_a_odom",
         output="screen",
         arguments=[
