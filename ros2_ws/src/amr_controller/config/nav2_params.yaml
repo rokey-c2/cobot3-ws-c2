@@ -17,7 +17,9 @@ controller_server:
   ros__parameters:
     use_sim_time: true
     controller_frequency: 15.0
-    costmap_update_timeout: 0.5
+    # Allow the relayed RTX scan and its matching odom transform to reach the
+    # local costmap before treating the controller cycle as timed out.
+    costmap_update_timeout: 2.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.0
     min_theta_velocity_threshold: 0.001
@@ -107,8 +109,6 @@ local_costmap:
           data_type: "LaserScan"
           clearing: true
           marking: true
-          expected_update_rate: 0.20
-          observation_persistence: 0.30
           max_obstacle_height: 2.5
           raytrace_min_range: 0.10
           raytrace_max_range: 20.0
@@ -147,8 +147,6 @@ global_costmap:
           data_type: "LaserScan"
           clearing: true
           marking: true
-          expected_update_rate: 0.20
-          observation_persistence: 0.50
           max_obstacle_height: 2.5
           raytrace_min_range: 0.10
           raytrace_max_range: 20.0
