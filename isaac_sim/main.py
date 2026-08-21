@@ -71,17 +71,20 @@ def main():
             name=FORKLIFT_NAME,
         )
 
+        # Articulation과 PhysX view를 먼저 초기화한다. RTX writer를 붙인 뒤
+        # reset하면 render-product graph가 비활성화될 수 있다.
+        world.reset()
+        forklift_agent.print_joint_info()
+
         lidar_publisher = ForkliftLidarRos2Publisher(
             parent_prim_path=FORKLIFT_PRIM_PATH,
             namespace=ROS2_NAMESPACE,
         )
 
-        world.reset()
         # Isaac Sim 5.1 공식 RTX LiDAR standalone 순서:
-        # writer를 붙인 뒤 앱 프레임을 초기화하고 timeline을 재생한다.
+        # writer attach -> app update -> timeline play.
         simulation_app.update()
         world.play()
-        forklift_agent.print_joint_info()
 
         forklift_controller = ForkliftController(
             forklift_robot=forklift_agent.robot,
