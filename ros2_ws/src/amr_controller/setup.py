@@ -27,6 +27,7 @@ setup(
     entry_points={
         "console_scripts": [
             "odom_tf_bridge = amr_controller.odom_tf_bridge:main",
+            "scan_time_relay = amr_controller.scan_time_relay:main",
             "container_mission = amr_controller.container_mission:main",
             "static_map_publisher = amr_controller.static_map_publisher:main",
             "velocity_mux = amr_controller.velocity_mux:main",
