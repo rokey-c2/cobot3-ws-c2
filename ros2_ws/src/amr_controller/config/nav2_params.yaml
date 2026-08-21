@@ -132,7 +132,7 @@ global_costmap:
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
-        map_topic: map
+        map_topic: /map
         map_subscribe_transient_local: true
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -179,7 +179,8 @@ behavior_server:
       plugin: "nav2_behaviors::DriveOnHeading"
     wait:
       plugin: "nav2_behaviors::Wait"
-    global_frame: amr_a/odom
+    local_frame: amr_a/odom
+    global_frame: map
     robot_base_frame: amr_a/base_link
     transform_tolerance: 0.30
     simulate_ahead_time: 2.0
@@ -242,4 +243,3 @@ collision_monitor:
       min_height: 0.05
       max_height: 2.5
       enabled: true
-

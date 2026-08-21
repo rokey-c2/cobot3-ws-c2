@@ -42,6 +42,15 @@ if ! ros2 action list | grep -qx "$ACTION_NAME"; then
     exit 1
 fi
 
+echo "[TEST] checking /map"
+if ! timeout 10 ros2 topic echo /map --once \
+    --qos-reliability reliable \
+    --qos-durability transient_local > /dev/null 2>&1; then
+    echo "[ERROR] no static map received on /map"
+    echo "Check terminal 2 for static map publisher errors."
+    exit 1
+fi
+
 ros2 topic pub --once \
     /amr_a/navigation_enabled \
     std_msgs/msg/Bool \

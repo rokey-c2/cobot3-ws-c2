@@ -52,6 +52,7 @@ def generate_launch_description():
         namespace=namespace,
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
+        remappings=[("map", "/map")],
     )
     velocity_mux = Node(
         package="amr_controller",
@@ -74,7 +75,7 @@ def generate_launch_description():
         output="screen",
         arguments=[
             "--x",
-            "0",
+            "1.5",
             "--y",
             "0",
             "--z",
