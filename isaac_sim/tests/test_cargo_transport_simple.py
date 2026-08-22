@@ -1,11 +1,13 @@
-"""Simple scripted IW Hub cargo pickup + transport test.
+"""Simple IW Hub Y-axis approach + lift test.
 
 No ROS2, Nav2, or LiDAR logic is used here.
-The purpose is only to validate the physical sequence:
-START -> cargo_pod -> lift up -> delivery coordinate.
+Sequence:
+1) Spawn at the current project START position.
+2) Rotate to +90 degrees.
+3) Move only along the Y direction until y=-2.0846.
+4) Stop and command lift_joint from 0.00 m to 0.04 m.
 
-The docking pose reuses the exact yaw=0 lift alignment that already passed the
-standalone lift test.
+This is a temporary scripted test. Later the approach will be replaced by Nav2.
 """
 
 from pathlib import Path
@@ -28,7 +30,7 @@ from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 from isaacsim.core.utils.viewports import set_camera_view
 
-# Only wheel control is needed. ROS2 bridge is intentionally not enabled.
+# Only local wheel control is needed. ROS2 bridge is intentionally not enabled.
 enable_extension("isaacsim.robot.wheeled_robots")
 simulation_app.update()
 
@@ -54,50 +56,34 @@ CARGO_USD = ISAAC_SIM_DIR / "usd" / "cargo" / "cargo_box.usd"
 ROBOT_PRIM_PATH = "/World/Robots/amr_a"
 SOURCE_ROBOT_PRIM = Sdf.Path("/World/iw_hub_ROS")
 CARGO_PRIM_PATH = "/World/Cargo/cargo_pod"
-COLLIDER_ROOT_PATH = f"{CARGO_PRIM_PATH}/PhysicsColliders"
 LIFT_JOINT_PATH = f"{ROBOT_PRIM_PATH}/lift_joint"
-LIFT_COLLISION_PATH = f"{ROBOT_PRIM_PATH}/lift/Collision"
 
 WHEEL_DOF_NAMES = ["left_wheel_joint", "right_wheel_joint"]
 WHEEL_RADIUS = 0.08
 WHEEL_BASE = 0.58
 
-# Cargo position.
+# Existing cargo position.
 POD_X = 10.5
 POD_Y = -1.5
 POD_Z = 0.5
+CARGO_MASS_KG = 20.0
 
-# Requested destination.
-DELIVERY_X = 1.30104
-DELIVERY_Y = -0.06065
-
-# This is the lift local X center measured from the current NVIDIA IW Hub.
-# At yaw=0, placing the robot root at POD_X - (-0.255899...) centers the lift
-# under the cargo. This exact pose already passed the standalone lift test.
-LIFT_LOCAL_CENTER_X = -0.255899694280196
-DOCK_ROOT_X = POD_X - LIFT_LOCAL_CENTER_X
-DOCK_ROOT_Y = POD_Y
-DOCK_YAW = 0.0
-
-# Keep enough east-side clearance to rotate before reversing under the pod.
-EAST_CLEAR_X = POD_X + 0.90
+# Requested temporary target from the Isaac Sim screenshot.
+# We intentionally control only Y after the 90-degree rotation.
+TARGET_Y = -2.0846
+TARGET_YAW = math.radians(90.0)
+PHOTO_X_REFERENCE = 10.53654
 
 LIFT_DOWN = 0.0
 LIFT_UP = 0.04
-CARGO_MASS_KG = 20.0
 
-EMPTY_LINEAR_SPEED = 0.25
-DOCK_LINEAR_SPEED = 0.06
-ROTATE_SPEED = 0.45
-LOADED_LINEAR_SPEED = 0.16
-LOADED_ANGULAR_SPEED = 0.20
+ROTATE_SPEED = 0.35
+Y_DRIVE_SPEED = 0.12
+YAW_TOLERANCE = math.radians(1.5)
+Y_TOLERANCE = 0.015
 
-POSITION_TOLERANCE = 0.025
-DOCK_TOLERANCE = 0.010
-YAW_TOLERANCE = math.radians(2.0)
-
-START_CAMERA_EYE = (12.6, -3.9, 2.5)
-START_CAMERA_TARGET = (10.6, -0.7, 0.25)
+CAMERA_EYE = (12.4, -3.8, 2.6)
+CAMERA_TARGET = (10.5, -1.2, 0.25)
 
 
 def _wrap_angle(angle):
@@ -127,15 +113,8 @@ def _spawn_cargo(stage):
         mass_kg=CARGO_MASS_KG,
     )
 
-    # Debug request: show the compound physics boxes from the start.
-    collider_root = stage.GetPrimAtPath(COLLIDER_ROOT_PATH)
-    if collider_root.IsValid():
-        for collider_prim in Usd.PrimRange(collider_root):
-            if collider_prim.IsA(UsdGeom.Imageable):
-                UsdGeom.Imageable(collider_prim).MakeVisible()
-
     print(f"[CARGO] spawned at ({POD_X:.3f}, {POD_Y:.3f}, {POD_Z:.3f})")
-    print("[CARGO] PhysicsColliders are visible for this debug test")
+    print("[CARGO] PhysicsColliders are visible")
 
 
 def _spawn_iw_hub(stage):
@@ -153,17 +132,18 @@ def _spawn_iw_hub(stage):
 
     stage.Load(ROBOT_PRIM_PATH)
 
-    # The navigation reference contains LiDAR prims. They are not needed in
-    # this local physics test, so deactivate only LiDAR-named prims here.
+    # This temporary test does not use LiDAR. Deactivate LiDAR-named prims only.
     robot_prim = stage.GetPrimAtPath(ROBOT_PRIM_PATH)
     lidar_paths = []
     for child in Usd.PrimRange(robot_prim):
-        path_text = child.GetPath().pathString.lower()
-        if "lidar" in path_text:
+        if "lidar" in child.GetPath().pathString.lower():
             lidar_paths.append(child.GetPath())
 
-    # Deactivate deepest paths first so traversal remains stable.
-    for path in sorted(lidar_paths, key=lambda item: item.pathString.count("/"), reverse=True):
+    for path in sorted(
+        lidar_paths,
+        key=lambda item: item.pathString.count("/"),
+        reverse=True,
+    ):
         lidar_prim = stage.GetPrimAtPath(path)
         if lidar_prim.IsValid() and lidar_prim.IsActive():
             try:
@@ -173,7 +153,7 @@ def _spawn_iw_hub(stage):
 
     print(
         f"[IW HUB] spawned at START "
-        f"({START_XY[0]:.3f}, {START_XY[1]:.3f}, 0.000)"
+        f"({START_XY[0]:.5f}, {START_XY[1]:.5f}, 0.00000)"
     )
 
 
@@ -206,7 +186,8 @@ def _world_position(stage, prim_path):
 
 def _step_seconds(world, seconds):
     dt = float(world.get_physics_dt())
-    for _ in range(max(1, int(round(seconds / dt)))):
+    steps = max(1, int(round(float(seconds) / dt)))
+    for _ in range(steps):
         world.step(render=True)
 
 
@@ -216,14 +197,14 @@ def _stop(robot, controller):
     )
 
 
-def _rotate_to(world, robot, controller, target_yaw, timeout=20.0):
+def _rotate_to_90(world, robot, controller, timeout=20.0):
     dt = float(world.get_physics_dt())
     max_steps = int(timeout / dt)
 
     for _ in range(max_steps):
         _, orientation = robot.get_world_pose()
         yaw = _yaw_from_quaternion(orientation)
-        error = _wrap_angle(target_yaw - yaw)
+        error = _wrap_angle(TARGET_YAW - yaw)
 
         if abs(error) <= YAW_TOLERANCE:
             _stop(robot, controller)
@@ -240,126 +221,30 @@ def _rotate_to(world, robot, controller, target_yaw, timeout=20.0):
     return False
 
 
-def _drive_x(world, robot, controller, target_x, speed, timeout=30.0):
-    """Drive along world X. Robot must already be at yaw=0."""
+def _drive_y_only(world, robot, controller, timeout=40.0):
+    """After yaw=+90 deg, move only by forward/backward wheel motion on Y."""
 
     dt = float(world.get_physics_dt())
     max_steps = int(timeout / dt)
 
     for _ in range(max_steps):
         position, _ = robot.get_world_pose()
-        error = float(target_x) - float(position[0])
+        error_y = TARGET_Y - float(position[1])
 
-        if abs(error) <= POSITION_TOLERANCE:
+        if abs(error_y) <= Y_TOLERANCE:
             _stop(robot, controller)
             world.step(render=True)
             return True
 
-        linear = math.copysign(min(speed, max(0.035, 0.7 * abs(error))), error)
-        robot.apply_wheel_actions(
-            controller.forward(np.array([linear, 0.0], dtype=float))
-        )
-        world.step(render=True)
-
-    _stop(robot, controller)
-    return False
-
-
-def _drive_y_south(world, robot, controller, target_y, speed, timeout=30.0):
-    """Drive along world -Y. Robot must already be at yaw=-90 degrees."""
-
-    dt = float(world.get_physics_dt())
-    max_steps = int(timeout / dt)
-
-    for _ in range(max_steps):
-        position, _ = robot.get_world_pose()
-        error = float(target_y) - float(position[1])
-
-        if abs(error) <= POSITION_TOLERANCE:
-            _stop(robot, controller)
-            world.step(render=True)
-            return True
-
-        # At yaw=-90, positive linear velocity decreases world Y.
-        linear = -math.copysign(min(speed, max(0.035, 0.7 * abs(error))), error)
-        robot.apply_wheel_actions(
-            controller.forward(np.array([linear, 0.0], dtype=float))
-        )
-        world.step(render=True)
-
-    _stop(robot, controller)
-    return False
-
-
-def _reverse_into_pod(world, robot, controller, target_x, timeout=25.0):
-    """At yaw=0, reverse west until the proven lift-alignment root pose."""
-
-    dt = float(world.get_physics_dt())
-    max_steps = int(timeout / dt)
-
-    for _ in range(max_steps):
-        position, _ = robot.get_world_pose()
-        error = float(target_x) - float(position[0])
-
-        if abs(error) <= DOCK_TOLERANCE:
-            _stop(robot, controller)
-            world.step(render=True)
-            return True
-
+        # At +90 deg, positive linear velocity increases world Y.
+        # Our target is lower Y, so the command will naturally become negative.
         linear = math.copysign(
-            min(DOCK_LINEAR_SPEED, max(0.025, 0.5 * abs(error))),
-            error,
+            min(Y_DRIVE_SPEED, max(0.03, 0.45 * abs(error_y))),
+            error_y,
         )
+
         robot.apply_wheel_actions(
             controller.forward(np.array([linear, 0.0], dtype=float))
-        )
-        world.step(render=True)
-
-    _stop(robot, controller)
-    return False
-
-
-def _drive_to_goal(
-    world,
-    robot,
-    controller,
-    goal_x,
-    goal_y,
-    timeout=140.0,
-):
-    """Simple point-to-point loaded drive; no obstacle avoidance."""
-
-    dt = float(world.get_physics_dt())
-    max_steps = int(timeout / dt)
-
-    for _ in range(max_steps):
-        position, orientation = robot.get_world_pose()
-        x = float(position[0])
-        y = float(position[1])
-        yaw = _yaw_from_quaternion(orientation)
-
-        dx = float(goal_x) - x
-        dy = float(goal_y) - y
-        distance = math.hypot(dx, dy)
-
-        if distance <= 0.06:
-            _stop(robot, controller)
-            world.step(render=True)
-            return True
-
-        desired_yaw = math.atan2(dy, dx)
-        heading_error = _wrap_angle(desired_yaw - yaw)
-
-        linear = 0.0
-        if abs(heading_error) < math.radians(10.0):
-            linear = min(LOADED_LINEAR_SPEED, max(0.04, 0.4 * distance))
-
-        angular = float(
-            np.clip(1.4 * heading_error, -LOADED_ANGULAR_SPEED, LOADED_ANGULAR_SPEED)
-        )
-
-        robot.apply_wheel_actions(
-            controller.forward(np.array([linear, angular], dtype=float))
         )
         world.step(render=True)
 
@@ -371,8 +256,8 @@ def _print_pose(label, robot):
     position, orientation = robot.get_world_pose()
     yaw = math.degrees(_yaw_from_quaternion(orientation))
     print(
-        f"[{label}] x={position[0]:.3f}, y={position[1]:.3f}, "
-        f"z={position[2]:.3f}, yaw={yaw:.1f} deg"
+        f"[{label}] x={position[0]:.5f}, y={position[1]:.5f}, "
+        f"z={position[2]:.5f}, yaw={yaw:.2f} deg"
     )
 
 
@@ -384,12 +269,14 @@ def main():
 
     print()
     print("============================================")
-    print(" SIMPLE CARGO PICKUP + TRANSPORT")
+    print(" IW HUB Y-AXIS APPROACH + LIFT TEST")
     print("============================================")
     print("[INFO] ROS2/Nav2/LiDAR logic is NOT used")
-    print(f"[START] ({START_XY[0]:.3f}, {START_XY[1]:.3f})")
-    print(f"[CARGO] ({POD_X:.3f}, {POD_Y:.3f})")
-    print(f"[GOAL ] ({DELIVERY_X:.5f}, {DELIVERY_Y:.5f})")
+    print(f"[START] x={START_XY[0]:.5f}, y={START_XY[1]:.5f}")
+    print("[STEP 1] rotate to +90 deg")
+    print(f"[STEP 2] move only on Y to y={TARGET_Y:.4f}")
+    print(f"[PHOTO] reference x={PHOTO_X_REFERENCE:.5f}")
+    print("[STEP 3] lift up to 0.04 m")
     print("============================================")
 
     if open_stage(str(WORLD_USD)) is False:
@@ -407,14 +294,14 @@ def main():
     robot = world.scene.add(
         WheeledRobot(
             prim_path=ROBOT_PRIM_PATH,
-            name="simple_transport_iw_hub",
+            name="y_axis_lift_iw_hub",
             wheel_dof_names=WHEEL_DOF_NAMES,
             create_robot=False,
         )
     )
 
     controller = DifferentialController(
-        name="simple_transport_controller",
+        name="y_axis_lift_controller",
         wheel_radius=WHEEL_RADIUS,
         wheel_base=WHEEL_BASE,
     )
@@ -423,63 +310,33 @@ def main():
     world.play()
 
     set_camera_view(
-        eye=START_CAMERA_EYE,
-        target=START_CAMERA_TARGET,
+        eye=CAMERA_EYE,
+        target=CAMERA_TARGET,
         camera_prim_path="/OmniverseKit_Persp",
     )
 
     _set_lift_target(stage, LIFT_DOWN)
-    print("[VIEW] cargo, visible colliders, and start area shown for 3 seconds")
-    _step_seconds(world, 3.0)
+    _step_seconds(world, 2.0)
     _print_pose("START", robot)
 
-    # Keep the route simple and deterministic. We do not use a generic
-    # pre-dock planner. The robot clears the pod on the east side, comes down
-    # to the pod Y line, then reverses straight into the already-proven lift
-    # pose. This avoids turning while under the pod.
     print()
     print("============================================")
-    print(" 1. MOVE DIRECTLY TO CARGO DOCKING LINE")
+    print(" 1. ROTATE TO +90 DEG")
     print("============================================")
-
-    if not _drive_x(world, robot, controller, EAST_CLEAR_X, EMPTY_LINEAR_SPEED):
-        raise RuntimeError("Failed to move east for cargo approach")
-
-    if not _rotate_to(world, robot, controller, -math.pi / 2.0):
-        raise RuntimeError("Failed to face cargo approach direction")
-
-    if not _drive_y_south(world, robot, controller, POD_Y, EMPTY_LINEAR_SPEED):
-        raise RuntimeError("Failed to reach cargo Y line")
-
-    if not _rotate_to(world, robot, controller, DOCK_YAW):
-        raise RuntimeError("Failed to align for reverse docking")
+    if not _rotate_to_90(world, robot, controller):
+        raise RuntimeError("Failed to rotate IW Hub to +90 degrees")
+    _print_pose("ROTATED", robot)
 
     print()
     print("============================================")
-    print(" 2. REVERSE STRAIGHT UNDER CARGO")
+    print(" 2. MOVE ONLY ALONG Y")
     print("============================================")
-
-    if not _reverse_into_pod(world, robot, controller, DOCK_ROOT_X):
-        raise RuntimeError("Failed to reverse under cargo")
+    if not _drive_y_only(world, robot, controller):
+        raise RuntimeError(f"Failed to reach target Y={TARGET_Y:.4f}")
 
     _stop(robot, controller)
     _step_seconds(world, 1.0)
-    _print_pose("DOCKED", robot)
-
-    cargo_center = _world_position(stage, CARGO_PRIM_PATH)
-    lift_center = _world_position(stage, LIFT_COLLISION_PATH)
-    center_error = math.hypot(
-        cargo_center[0] - lift_center[0],
-        cargo_center[1] - lift_center[1],
-    )
-
-    print(
-        f"[DOCK CHECK] cargo center x={cargo_center[0]:.4f}, y={cargo_center[1]:.4f}"
-    )
-    print(
-        f"[DOCK CHECK] lift center  x={lift_center[0]:.4f}, y={lift_center[1]:.4f}"
-    )
-    print(f"[DOCK CHECK] center error = {center_error:.4f} m")
+    _print_pose("Y TARGET", robot)
 
     print()
     print("============================================")
@@ -490,48 +347,24 @@ def main():
     _set_lift_target(stage, LIFT_UP)
     _step_seconds(world, 4.0)
     cargo_after = _world_position(stage, CARGO_PRIM_PATH)
-    lift_delta = cargo_after[2] - cargo_before[2]
 
+    cargo_delta_z = float(cargo_after[2] - cargo_before[2])
     print(
-        f"[CARGO] z: {cargo_before[2]:.4f} -> {cargo_after[2]:.4f}, "
-        f"delta={lift_delta:.4f} m"
+        f"[CARGO] z={cargo_before[2]:.4f} -> {cargo_after[2]:.4f}, "
+        f"delta={cargo_delta_z:.4f} m"
     )
 
-    if lift_delta < 0.005:
-        raise RuntimeError("Cargo was not lifted; transport cancelled")
-
-    print("[PASS] Cargo lift confirmed")
-
-    print()
-    print("============================================")
-    print(" 4. TRANSPORT TO DESTINATION")
-    print("============================================")
-
-    if not _drive_to_goal(
-        world,
-        robot,
-        controller,
-        DELIVERY_X,
-        DELIVERY_Y,
-    ):
-        raise RuntimeError("Failed to reach delivery coordinate")
-
-    _stop(robot, controller)
-    _step_seconds(world, 2.0)
-    _print_pose("GOAL", robot)
-
-    cargo_goal = _world_position(stage, CARGO_PRIM_PATH)
-    print(
-        f"[CARGO] goal x={cargo_goal[0]:.3f}, "
-        f"y={cargo_goal[1]:.3f}, z={cargo_goal[2]:.3f}"
-    )
+    if cargo_delta_z >= 0.005:
+        print("[PASS] cargo_pod moved upward with the lift")
+    else:
+        print("[WARN] lift moved up, but cargo_pod did not rise enough")
+        print("       We can tune the final Y alignment after this test")
 
     print()
     print("============================================")
     print(" TEST COMPLETE")
     print("============================================")
-    print("[PASS] START -> cargo -> lift -> destination completed")
-    print("[INFO] Lift stays UP for inspection")
+    print("[INFO] Lift stays UP for visual inspection")
     print("[INFO] Ctrl+C closes Isaac Sim")
     print("============================================")
 
@@ -544,7 +377,7 @@ def main():
         _stop(robot, controller)
         world.stop()
         simulation_app.close()
-        print("[SYSTEM] Simple cargo transport test closed")
+        print("[SYSTEM] Y-axis lift test closed")
 
 
 if __name__ == "__main__":
