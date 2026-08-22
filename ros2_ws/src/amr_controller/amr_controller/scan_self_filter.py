@@ -14,12 +14,12 @@ class ScanSelfFilter(Node):
     def __init__(self):
         super().__init__("scan_self_filter")
 
-        self.declare_parameter("input_topic", "/amr_a/scan")
-        self.declare_parameter("output_topic", "/amr_a/scan_filtered")
+        self.declare_parameter("input_topic", "/amr_a/scan_raw")
+        self.declare_parameter("output_topic", "/amr_a/scan")
 
-        # IW Hub footprint in base_link coordinates.  These defaults match the
-        # footprint currently used by the custom Nav2 configuration, with a
-        # small margin so the rear chassis is not marked as a moving wall.
+        # IW Hub footprint in base_link coordinates. These defaults match the
+        # current Nav2 footprint with a small margin so chassis reflections are
+        # removed before AMCL, costmaps, and collision monitoring consume them.
         self.declare_parameter("self_min_x", -1.15)
         self.declare_parameter("self_max_x", 0.35)
         self.declare_parameter("self_min_y", -0.35)
