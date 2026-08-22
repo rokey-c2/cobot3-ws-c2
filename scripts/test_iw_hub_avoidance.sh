@@ -3,8 +3,8 @@ set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-GOAL_X="-13.813100814819336"
-GOAL_Y="0.7454315423965454"
+GOAL_X="1.0015223026275635"
+GOAL_Y="0.018860459327697754"
 
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
