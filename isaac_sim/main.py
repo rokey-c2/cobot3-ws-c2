@@ -1,4 +1,4 @@
-"""Run the custom warehouse with one default IW Hub Sensor AMR."""
+"""Run the custom warehouse with NVIDIA's official IW Hub Nav2 robot setup."""
 
 from pathlib import Path
 
@@ -33,7 +33,7 @@ WORLD_USD = (
 )
 
 
-# Required by the IW Hub asset's built-in ROS 2 and RTX sensors.
+# Required by NVIDIA's IW Hub Navigation sample ROS 2 / RTX setup.
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 simulation_app.update()
@@ -77,15 +77,12 @@ def main():
             f"Warehouse USD not found: {WORLD_USD}"
         )
 
-    if not IW_HUB_USD.is_file():
-        raise FileNotFoundError(
-            f"IW Hub USD not found: {IW_HUB_USD}"
-        )
-
     print()
     print("============================================")
     print("[WORLD] loading custom warehouse")
     print(f"[WORLD] USD: {WORLD_USD}")
+    print("[IW HUB] NVIDIA Navigation robot source")
+    print(f"[IW HUB] USD: {IW_HUB_USD}")
     print("============================================")
     print()
 
@@ -136,25 +133,25 @@ def main():
 
     world.play()
 
-    # Give the default IW Hub RTX sensors time to start publishing.
+    # Give NVIDIA's built-in front/back RTX LiDAR publishers time to start.
     for _ in range(30):
         world.step(render=True)
 
     print()
     print("============================================")
-    print(" DEFAULT IW HUB SENSOR NAVIGATION READY")
+    print(" NVIDIA IW HUB NAVIGATION READY")
     print("============================================")
     print(f"[START] x={START_XY[0]:.6f}, y={START_XY[1]:.6f}")
     print(f"[GOAL ] x={GOAL_XY[0]:.6f}, y={GOAL_XY[1]:.6f}")
     print()
-    print("[IW HUB DEFAULT ROS TOPICS]")
+    print("[NVIDIA DEFAULT NAVIGATION TOPICS]")
     print("  command : /cmd_vel")
     print("  odom    : /chassis/odom")
     print("  lidar   : /front_2d_lidar/scan")
     print("  lidar   : /back_2d_lidar/scan")
     print()
-    print("[INFO] No custom LiDAR is created by this project.")
-    print("[INFO] The IW Hub Sensor asset's built-in LiDAR is used unchanged.")
+    print("[INFO] LiDAR positions/ranges/orientations are not recreated here.")
+    print("[INFO] They come from NVIDIA's IW Hub Navigation sample unchanged.")
     print("============================================")
     print()
 
