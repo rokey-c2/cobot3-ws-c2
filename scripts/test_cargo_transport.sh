@@ -10,16 +10,16 @@ if [[ ! -x "$ISAAC_SIM_DIR/python.sh" ]]; then
 fi
 
 echo "============================================"
-echo " IW HUB ARTICULATION LIFT + DELIVERY V3"
+echo " IW HUB FIXED LIFT + DELIVERY V4"
 echo "============================================"
 echo "[INFO] ROS2/Nav2/LiDAR logic are NOT used."
 echo "[INFO] 1) rotate to +90 deg"
-echo "[INFO] 2) move under cargo_pod"
-echo "[INFO] 3) control lift_joint through ArticulationAction"
-echo "[INFO] 4) verify joint + cargo actually move"
-echo "[INFO] 5) carry to x=1.30104, y=-0.06065"
+echo "[INFO] 2) move along Y under cargo_pod"
+echo "[INFO] 3) restore lift position mode / KP / KD"
+echo "[INFO] 4) lift to physical max (~0.04 m)"
+echo "[INFO] 5) carry cargo to x=1.30104, y=-0.06065"
 echo "[INFO] Cargo PhysicsColliders are visible."
 echo "============================================"
 
 cd "$ROOT_DIR/isaac_sim"
-exec "$ISAAC_SIM_DIR/python.sh" tests/test_cargo_y_dock_delivery_v3.py
+exec "$ISAAC_SIM_DIR/python.sh" tests/test_cargo_y_dock_delivery_v4.py
