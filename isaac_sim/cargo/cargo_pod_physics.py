@@ -10,24 +10,30 @@ from pxr import Gf, UsdGeom, UsdPhysics
 
 
 def _create_collision_box(stage, path, center, size):
-    """Create one invisible box collider under the cargo rigid body."""
+    """Create one visible box collider under the cargo rigid body."""
 
     cube = UsdGeom.Cube.Define(stage, path)
     cube.CreateSizeAttr(1.0)
+    cube.CreateDisplayColorAttr([Gf.Vec3f(0.9, 0.25, 0.1)])
+    cube.CreateDisplayOpacityAttr([0.45])
 
     xform = UsdGeom.Xformable(cube.GetPrim())
     xform.AddTranslateOp().Set(Gf.Vec3d(*center))
     xform.AddScaleOp().Set(Gf.Vec3f(*size))
 
     UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
-    UsdGeom.Imageable(cube.GetPrim()).MakeInvisible()
+
+    # Keep the simplified physics boxes visible while we debug docking/lift.
+    # Later this can be switched off without changing the collision geometry.
+    UsdGeom.Imageable(cube.GetPrim()).MakeVisible()
 
 
 def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
     """Turn the referenced STEP mesh into one compound rigid body.
 
-    The visual STEP mesh is left unchanged.  Physics uses several simple
+    The visual STEP mesh is left unchanged. Physics uses several simple
     box colliders so the open space below the pod stays open for the IW Hub.
+    The colliders are intentionally visible during the current test stage.
     """
 
     cargo_prim = stage.GetPrimAtPath(prim_path)
@@ -104,5 +110,5 @@ def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
 
     print(
         f"[CARGO] physics enabled for {prim_path} "
-        f"(mass={float(mass_kg):.1f} kg, compound box collision)"
+        f"(mass={float(mass_kg):.1f} kg, compound box collision, visible=True)"
     )
