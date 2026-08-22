@@ -47,3 +47,10 @@ dist/
 # Synthetic data generation output (Replicator captures, YOLO datasets, zips)
 isaac_sim/data/
 _out_parcel_sdg/
+
+# Trained model weights (large binaries, keep outside Git)
+isaac_sim/robots/p3020/vision/models/
+
+# Offline test ros2 bags (large binaries, keep outside Git)
+tests/ros2/*/
+!tests/ros2/.gitkeep

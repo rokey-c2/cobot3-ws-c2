@@ -1,0 +1,19 @@
+locate_box_node:
+  ros__parameters:
+    rgb_topic: /rgb
+    depth_topic: /depth
+
+    # 학습된 YOLO 모델(onnx) 경로. 장비마다 위치가 다를 수 있어 기본값 없음 -
+    # launch 인자나 이 파일에서 반드시 지정해야 한다.
+    model_path: ""
+    conf_threshold: 0.5
+
+    # 카메라 intrinsics placeholder. bag에 /camera_info 가 없어서 임시로
+    # 해상도 640x480, 수평 FOV 60도를 가정한다.
+    # Isaac Sim 실카메라 연동 시 실제 Focal Length/Horizontal Aperture로 교체 필요.
+    image_width: 640
+    image_height: 480
+    horizontal_fov_deg: 60.0
+
+    # rgb/depth 싱크 허용 오차 (초)
+    sync_slop_sec: 0.05
