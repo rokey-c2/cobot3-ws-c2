@@ -1,14 +1,15 @@
 """Runtime configuration for the single IW Hub navigation test."""
 
-from pathlib import Path
 
-
-ISAAC_SIM_ROOT = Path(__file__).resolve().parents[1]
+# NVIDIA's official Isaac Sim 5.1 IW Hub Navigation sample.
+# The navigation scene contains the IW Hub setup used by NVIDIA Nav2,
+# including the front/back 2D LiDAR configuration and ROS 2 publishers.
+# We reference the robot setup from this scene instead of creating LiDARs
+# ourselves or changing their sensor parameters.
 IW_HUB_USD = (
-    ISAAC_SIM_ROOT
-    / "robots"
-    / "iw_hub"
-    / "iw_hub_v2.usda"
+    "https://omniverse-content-production.s3-us-west-2.amazonaws.com/"
+    "Assets/Isaac/5.1/Isaac/Samples/ROS2/Scenario/"
+    "iw_hub_warehouse_navigation.usd"
 )
 
 
