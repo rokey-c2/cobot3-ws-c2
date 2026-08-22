@@ -1,4 +1,4 @@
-"""Run the custom warehouse world with one Nav2-controlled IW Hub AMR."""
+"""Run the custom warehouse with one default IW Hub Sensor AMR."""
 
 from pathlib import Path
 
@@ -7,17 +7,8 @@ from isaacsim import SimulationApp
 from project_config.simulation_config import HEADLESS
 
 
-# ---------------------------------------------------------------------
-# 1. Isaac Sim 시작
-# ---------------------------------------------------------------------
-
 simulation_app = SimulationApp({"headless": HEADLESS})
 
-
-# ---------------------------------------------------------------------
-# 2. Isaac Sim imports
-#    SimulationApp 생성 이후 import
-# ---------------------------------------------------------------------
 
 import omni.graph.core as og
 
@@ -26,15 +17,12 @@ from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 
 from project_config.robot_config import (
-    CARGO_REGISTRY,
+    GOAL_XY,
     IW_HUB_USD,
     ROBOT_REGISTRY,
+    START_XY,
 )
 
-
-# ---------------------------------------------------------------------
-# 3. Warehouse USD
-# ---------------------------------------------------------------------
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
@@ -45,25 +33,14 @@ WORLD_USD = (
 )
 
 
-# ---------------------------------------------------------------------
-# 4. ROS2 / RTX Sensor Extension 활성화
-# ---------------------------------------------------------------------
-
+# Required by the IW Hub asset's built-in ROS 2 and RTX sensors.
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
-
 simulation_app.update()
 
 
-# Extension 활성화 이후 project module import
 from robots.iw_hub.iw_hub_agent import IwHubAgent
-from sensors.lidar_sensor import IwHubLidarRos2Publisher
-from cargo.container_payload import CargoContainerPayload
 
-
-# ---------------------------------------------------------------------
-# ROS2 /clock publisher
-# ---------------------------------------------------------------------
 
 def _create_clock_graph():
     """Publish Isaac Sim simulation time on /clock."""
@@ -83,7 +60,10 @@ def _create_clock_graph():
             og.Controller.Keys.CONNECT: [
                 ("tick.outputs:tick", "clock.inputs:execIn"),
                 ("context.outputs:context", "clock.inputs:context"),
-                ("sim_time.outputs:simulationTime", "clock.inputs:timeStamp"),
+                (
+                    "sim_time.outputs:simulationTime",
+                    "clock.inputs:timeStamp",
+                ),
             ],
         },
     )
@@ -91,16 +71,16 @@ def _create_clock_graph():
     print("[ROS2] /clock publisher created")
 
 
-# ---------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------
-
 def main():
     if not WORLD_USD.is_file():
-        raise FileNotFoundError(f"Warehouse USD not found: {WORLD_USD}")
+        raise FileNotFoundError(
+            f"Warehouse USD not found: {WORLD_USD}"
+        )
 
     if not IW_HUB_USD.is_file():
-        raise FileNotFoundError(f"IW Hub USD not found: {IW_HUB_USD}")
+        raise FileNotFoundError(
+            f"IW Hub USD not found: {IW_HUB_USD}"
+        )
 
     print()
     print("============================================")
@@ -112,15 +92,15 @@ def main():
     result = open_stage(str(WORLD_USD))
 
     if result is False:
-        raise RuntimeError(f"Failed to open warehouse USD: {WORLD_USD}")
+        raise RuntimeError(
+            f"Failed to open warehouse USD: {WORLD_USD}"
+        )
 
     for _ in range(5):
         simulation_app.update()
 
-    print("[WORLD] custom warehouse loaded")
-
     world = World(stage_units_in_meters=1.0)
-    print("[WORLD] Isaac World created from loaded Stage")
+    print("[WORLD] custom warehouse loaded")
 
     _create_clock_graph()
 
@@ -130,18 +110,23 @@ def main():
         if config["type"] != "iw_hub":
             continue
 
-        print()
         print(
             f"[IW HUB] spawning {config['name']} "
             f"at {config['spawn_xyz']}"
         )
 
-        agent = IwHubAgent(config, world, IW_HUB_USD)
+        agent = IwHubAgent(
+            config,
+            world,
+            IW_HUB_USD,
+        )
         agent.setup()
         agents.append(agent)
 
     if not agents:
-        raise RuntimeError("No IW Hub robot found in ROBOT_REGISTRY")
+        raise RuntimeError(
+            "No IW Hub robot found in ROBOT_REGISTRY"
+        )
 
     print("[WORLD] resetting simulation")
     world.reset()
@@ -149,89 +134,40 @@ def main():
     for agent in agents:
         agent.post_reset()
 
-    print("[WORLD] reset complete")
-
-    agents_by_name = {agent.name: agent for agent in agents}
-    cargo_payloads = []
-
-    for config in CARGO_REGISTRY:
-        robot_name = config["robot_name"]
-
-        if robot_name not in agents_by_name:
-            print(
-                f"[CARGO] skip {config['name']}: "
-                f"robot '{robot_name}' not found"
-            )
-            continue
-
-        agent = agents_by_name[robot_name]
-        payload = CargoContainerPayload(
-            lift_prim_path=agent.lift_prim_path,
-            goal_xy=config["goal_xy"],
-            prim_path=f"/World/Cargo/{config['name']}",
-            lift_offset=config["lift_offset"],
-        )
-        cargo_payloads.append(payload)
-        print(f"[CARGO] created: {config['name']}")
-
-    lidar_publishers = []
-
-    for agent in agents:
-        print(f"[LIDAR] creating LiDAR for {agent.name}")
-        lidar = IwHubLidarRos2Publisher(
-            parent_prim_path=agent.sensor_prim_path,
-            namespace=agent.name,
-        )
-        lidar_publishers.append(lidar)
-
-    for _ in range(3):
-        simulation_app.update()
-
     world.play()
-    print("[WORLD] simulation playing")
-    print("[LIDAR] warming up...")
 
-    for _ in range(20):
+    # Give the default IW Hub RTX sensors time to start publishing.
+    for _ in range(30):
         world.step(render=True)
 
     print()
     print("============================================")
-    print(" IW HUB NAVIGATION SIMULATION STARTED")
+    print(" DEFAULT IW HUB SENSOR NAVIGATION READY")
     print("============================================")
+    print(f"[START] x={START_XY[0]:.6f}, y={START_XY[1]:.6f}")
+    print(f"[GOAL ] x={GOAL_XY[0]:.6f}, y={GOAL_XY[1]:.6f}")
     print()
-    print(f"[WORLD] {WORLD_USD}")
+    print("[IW HUB DEFAULT ROS TOPICS]")
+    print("  command : /cmd_vel")
+    print("  odom    : /chassis/odom")
+    print("  lidar   : /front_2d_lidar/scan")
+    print("  lidar   : /back_2d_lidar/scan")
     print()
-    print("[ROS2]")
-    print("  clock:")
-    print("    /clock")
-    print()
-    print("  IW Hub:")
-    print("    input : /amr_a/drive_cmd_vel")
-    print("    output: /amr_a/odom")
-    print("    output: /amr_a/scan")
-    print()
-    print("[RVIZ / NAV2]")
-    print("  map:")
-    print("    warehouse_navigation.yaml")
-    print()
-    print("[INFO] Camera publisher is NOT configured in this main.py.")
-    print("[INFO] RViz Image displaying 'No Image' is therefore expected.")
-    print()
+    print("[INFO] No custom LiDAR is created by this project.")
+    print("[INFO] The IW Hub Sensor asset's built-in LiDAR is used unchanged.")
     print("============================================")
     print()
 
     try:
         while simulation_app.is_running():
             world.step(render=True)
-            for payload in cargo_payloads:
-                payload.update()
 
     except KeyboardInterrupt:
         print()
         print("[SYSTEM] Ctrl+C received")
 
     finally:
-        _ = (agents, lidar_publishers, cargo_payloads)
+        _ = agents
         print("[WORLD] stopping simulation")
         world.stop()
         simulation_app.close()
