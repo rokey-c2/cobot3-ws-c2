@@ -43,6 +43,7 @@ enable_extension("isaacsim.sensors.rtx")
 simulation_app.update()
 
 
+from cargo.cargo_pod_physics import add_cargo_pod_physics
 from robots.iw_hub.iw_hub_agent import IwHubAgent
 
 
@@ -104,6 +105,9 @@ def _spawn_cargo_pods():
         if yaw != 0.0:
             rotate_op = xform.AddRotateZOp()
             rotate_op.Set(yaw)
+
+        mass_kg = float(config.get("mass_kg", 20.0))
+        add_cargo_pod_physics(stage, prim_path, mass_kg=mass_kg)
 
         print(
             f"[CARGO] spawned {name} at {config['spawn_xyz']} "
