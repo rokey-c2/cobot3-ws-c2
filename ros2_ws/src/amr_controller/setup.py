@@ -22,12 +22,10 @@ setup(
     zip_safe=True,
     maintainer="rokey-c2",
     maintainer_email="rokey-c2@users.noreply.github.com",
-    description="IW Hub ROS 2 Jazzy Nav2 navigation and safety mux",
+    description="IW Hub ROS 2 Jazzy navigation helpers",
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
-            "odom_tf_bridge = amr_controller.odom_tf_bridge:main",
-            "scan_self_filter = amr_controller.scan_self_filter:main",
             "container_mission = amr_controller.container_mission:main",
             "static_map_publisher = amr_controller.static_map_publisher:main",
             "velocity_mux = amr_controller.velocity_mux:main",
