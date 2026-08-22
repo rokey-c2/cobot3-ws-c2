@@ -1,8 +1,15 @@
-"""Temporary Y-axis-only docking + lift test.
+"""Temporary IW Hub cargo pickup + delivery test.
 
 No ROS2, Nav2, or LiDAR logic is used.
-The robot is placed on the screenshot X line, rotates to +90 degrees,
-then moves only along Y until the IW Hub lift center is under cargo_pod.
+Sequence:
+1) Start on the current inbound lane.
+2) Rotate to +90 degrees.
+3) Move only along Y until the lift center is under cargo_pod.
+4) Raise lift_joint to its authored physical maximum.
+5) Carry cargo_pod to the requested destination coordinate.
+
+Later the driving logic can be replaced by Nav2 while keeping the same
+physical cargo and lift behavior.
 """
 
 from pathlib import Path
@@ -59,27 +66,33 @@ POD_Y = -1.5
 POD_Z = 0.5
 CARGO_MASS_KG = 20.0
 
-# Use the X value from the user's screenshot as the straight docking lane.
+# Keep the straight docking lane seen in the user's screenshot.
 TEST_START_X = 10.53654
 TEST_START_Y = float(START_XY[1])
-
 TARGET_YAW = math.radians(90.0)
 
-# Measured current NVIDIA IW Hub lift-center offset from robot root.
-# lift center local = (-0.2558996943, 0)
-# At yaw +90 deg, this becomes world (0, -0.2558996943).
-# Therefore root Y must be POD_Y + 0.2558996943 for the lift to sit under POD_Y.
+# NVIDIA IW Hub lift center measured from the robot root.
+# local lift center X = -0.2558996943 m.
+# At yaw +90 deg this becomes world Y = -0.2558996943 m.
+# Therefore robot root Y must be POD_Y + 0.2558996943.
 LIFT_LOCAL_CENTER_X = -0.255899694280196
 TARGET_ROOT_Y = POD_Y - LIFT_LOCAL_CENTER_X
 
+# User-requested destination.
+DELIVERY_X = 1.30104
+DELIVERY_Y = -0.06065
+
 LIFT_DOWN = 0.0
-LIFT_UP = 0.04
 
 ROTATE_SPEED = 0.35
 Y_DRIVE_SPEED = 0.10
+LOADED_LINEAR_SPEED = 0.10
+LOADED_ANGULAR_SPEED = 0.12
+
 YAW_TOLERANCE = math.radians(1.0)
 Y_TOLERANCE = 0.008
 MAX_DOCK_CENTER_ERROR = 0.08
+DELIVERY_TOLERANCE = 0.08
 
 CAMERA_EYE = (12.3, -3.5, 2.5)
 CAMERA_TARGET = (10.5, -1.3, 0.25)
@@ -107,6 +120,7 @@ def _spawn_cargo(stage):
 
     add_cargo_pod_physics(stage, CARGO_PRIM_PATH, mass_kg=CARGO_MASS_KG)
     print(f"[CARGO] spawned at x={POD_X:.5f}, y={POD_Y:.5f}, z={POD_Z:.3f}")
+    print("[CARGO] PhysicsColliders are visible")
 
 
 def _spawn_iw_hub(stage):
@@ -139,6 +153,18 @@ def _spawn_iw_hub(stage):
     print(f"[IW HUB] test start x={TEST_START_X:.5f}, y={TEST_START_Y:.5f}")
 
 
+def _lift_upper_limit(stage):
+    joint = stage.GetPrimAtPath(LIFT_JOINT_PATH)
+    if not joint.IsValid():
+        raise RuntimeError(f"lift_joint not found: {LIFT_JOINT_PATH}")
+
+    attr = joint.GetAttribute("physics:upperLimit")
+    if not attr.IsValid():
+        raise RuntimeError("lift_joint upperLimit attribute is missing")
+
+    return float(attr.Get())
+
+
 def _set_lift_target(stage, target_position):
     joint = stage.GetPrimAtPath(LIFT_JOINT_PATH)
     if not joint.IsValid():
@@ -149,7 +175,7 @@ def _set_lift_target(stage, target_position):
         raise RuntimeError("lift_joint targetPosition attribute is missing")
 
     attr.Set(float(target_position))
-    print(f"[LIFT] targetPosition = {target_position:.3f} m")
+    print(f"[LIFT] targetPosition = {target_position:.8f} m")
 
 
 def _world_position(stage, prim_path):
@@ -172,12 +198,13 @@ def _stop(robot, controller):
     robot.apply_wheel_actions(controller.forward(np.array([0.0, 0.0], dtype=float)))
 
 
-def _rotate_to_90(world, robot, controller, timeout=20.0):
+def _rotate_to(world, robot, controller, target_yaw, timeout=25.0):
     dt = float(world.get_physics_dt())
+
     for _ in range(int(timeout / dt)):
         _, orientation = robot.get_world_pose()
         yaw = _yaw_from_quaternion(orientation)
-        error = _wrap_angle(TARGET_YAW - yaw)
+        error = _wrap_angle(target_yaw - yaw)
 
         if abs(error) <= YAW_TOLERANCE:
             _stop(robot, controller)
@@ -193,9 +220,10 @@ def _rotate_to_90(world, robot, controller, timeout=20.0):
 
 
 def _drive_y_to_dock(world, robot, controller, timeout=35.0):
-    """Move on the Y docking lane while holding yaw near +90 degrees."""
+    """Move only along the Y docking lane while holding yaw near +90 deg."""
 
     dt = float(world.get_physics_dt())
+
     for _ in range(int(timeout / dt)):
         position, orientation = robot.get_world_pose()
         error_y = TARGET_ROOT_Y - float(position[1])
@@ -207,12 +235,59 @@ def _drive_y_to_dock(world, robot, controller, timeout=35.0):
             world.step(render=True)
             return True
 
-        # At +90 deg, positive velocity increases world Y.
         linear = math.copysign(
             min(Y_DRIVE_SPEED, max(0.025, 0.45 * abs(error_y))),
             error_y,
         )
         angular = float(np.clip(1.2 * yaw_error, -0.10, 0.10))
+
+        robot.apply_wheel_actions(
+            controller.forward(np.array([linear, angular], dtype=float))
+        )
+        world.step(render=True)
+
+    _stop(robot, controller)
+    return False
+
+
+def _drive_to_delivery(world, robot, controller, timeout=180.0):
+    """Slow direct drive to the requested point. No obstacle avoidance."""
+
+    dt = float(world.get_physics_dt())
+
+    for _ in range(int(timeout / dt)):
+        position, orientation = robot.get_world_pose()
+        x = float(position[0])
+        y = float(position[1])
+        yaw = _yaw_from_quaternion(orientation)
+
+        dx = DELIVERY_X - x
+        dy = DELIVERY_Y - y
+        distance = math.hypot(dx, dy)
+
+        if distance <= DELIVERY_TOLERANCE:
+            _stop(robot, controller)
+            world.step(render=True)
+            return True
+
+        desired_yaw = math.atan2(dy, dx)
+        heading_error = _wrap_angle(desired_yaw - yaw)
+
+        # With cargo lifted, rotate and drive slowly to reduce slipping.
+        linear = 0.0
+        if abs(heading_error) <= math.radians(8.0):
+            linear = min(
+                LOADED_LINEAR_SPEED,
+                max(0.035, 0.30 * distance),
+            )
+
+        angular = float(
+            np.clip(
+                1.2 * heading_error,
+                -LOADED_ANGULAR_SPEED,
+                LOADED_ANGULAR_SPEED,
+            )
+        )
 
         robot.apply_wheel_actions(
             controller.forward(np.array([linear, angular], dtype=float))
@@ -271,22 +346,25 @@ def main():
 
     print()
     print("============================================")
-    print(" CORRECTED Y-AXIS DOCK + LIFT TEST")
+    print(" IW HUB PICKUP + DELIVERY TEST")
     print("============================================")
     print(f"[POD] x={POD_X:.5f}, y={POD_Y:.5f}")
     print(f"[ROBOT X LANE] x={TEST_START_X:.5f}")
-    print(f"[TARGET ROOT Y] y={TARGET_ROOT_Y:.5f}")
-    print("[INFO] Previous y=-2.0846 was NOT the under-pod lift pose")
+    print(f"[DOCK ROOT Y] y={TARGET_ROOT_Y:.5f}")
+    print(f"[DELIVERY] x={DELIVERY_X:.5f}, y={DELIVERY_Y:.5f}")
+    print("[INFO] ROS2/Nav2/LiDAR are NOT used")
     print("============================================")
 
     _set_lift_target(stage, LIFT_DOWN)
     _step_seconds(world, 2.0)
     _print_pose("START", robot)
 
-    if not _rotate_to_90(world, robot, controller):
+    print("\n[STEP 1] rotate to +90 deg")
+    if not _rotate_to(world, robot, controller, TARGET_YAW):
         raise RuntimeError("Failed to rotate to +90 degrees")
     _print_pose("ROTATED", robot)
 
+    print("\n[STEP 2] move only along Y under cargo_pod")
     if not _drive_y_to_dock(world, robot, controller):
         raise RuntimeError(f"Failed to reach dock root y={TARGET_ROOT_Y:.5f}")
 
@@ -300,8 +378,7 @@ def main():
     dy = float(lift_center[1] - cargo_center[1])
     center_error = math.hypot(dx, dy)
 
-    print()
-    print("============================================")
+    print("\n============================================")
     print(" DOCK CHECK")
     print("============================================")
     print(f"[CARGO CENTER] x={cargo_center[0]:.5f}, y={cargo_center[1]:.5f}")
@@ -311,25 +388,47 @@ def main():
     if center_error > MAX_DOCK_CENTER_ERROR:
         raise RuntimeError("Lift center is not sufficiently under cargo; lift cancelled")
 
+    print("\n[STEP 3] lift to physical maximum")
+    lift_max = _lift_upper_limit(stage)
+    print(f"[LIFT] authored upperLimit = {lift_max:.8f} m")
+
     cargo_before = _world_position(stage, CARGO_PRIM_PATH)
-    _set_lift_target(stage, LIFT_UP)
-    _step_seconds(world, 4.0)
+    _set_lift_target(stage, lift_max)
+    _step_seconds(world, 5.0)
     cargo_after = _world_position(stage, CARGO_PRIM_PATH)
     cargo_delta_z = float(cargo_after[2] - cargo_before[2])
 
-    print()
-    print("============================================")
-    print(" LIFT RESULT")
-    print("============================================")
     print(f"[CARGO] z={cargo_before[2]:.4f} -> {cargo_after[2]:.4f}")
     print(f"[CARGO] delta Z={cargo_delta_z:.4f} m")
 
-    if cargo_delta_z >= 0.005:
-        print("[PASS] cargo_pod lifted successfully")
-    else:
-        print("[FAIL] cargo_pod did not lift")
+    if cargo_delta_z < 0.005:
+        raise RuntimeError("cargo_pod did not lift; delivery cancelled")
 
-    print("[INFO] Lift stays UP. Ctrl+C closes Isaac Sim.")
+    print("[PASS] cargo_pod lifted successfully")
+
+    print("\n[STEP 4] carry cargo to requested destination")
+    print(f"[TARGET] x={DELIVERY_X:.5f}, y={DELIVERY_Y:.5f}")
+
+    if not _drive_to_delivery(world, robot, controller):
+        raise RuntimeError("Failed to reach requested destination")
+
+    _stop(robot, controller)
+    _step_seconds(world, 2.0)
+    _print_pose("DELIVERY", robot)
+
+    cargo_final = _world_position(stage, CARGO_PRIM_PATH)
+    print(
+        f"[CARGO FINAL] x={cargo_final[0]:.5f}, "
+        f"y={cargo_final[1]:.5f}, z={cargo_final[2]:.5f}"
+    )
+
+    print("\n============================================")
+    print(" TEST COMPLETE")
+    print("============================================")
+    print("[PASS] dock -> maximum lift -> destination completed")
+    print("[INFO] Lift stays at the physical maximum for inspection")
+    print("[INFO] Ctrl+C closes Isaac Sim")
+    print("============================================")
 
     try:
         while simulation_app.is_running():
