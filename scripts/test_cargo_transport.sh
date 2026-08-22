@@ -10,15 +10,13 @@ if [[ ! -x "$ISAAC_SIM_DIR/python.sh" ]]; then
 fi
 
 echo "============================================"
-echo " CORRECTED IW HUB Y-AXIS DOCK + LIFT TEST"
+echo " IW HUB PICKUP + DELIVERY TEST"
 echo "============================================"
 echo "[INFO] ROS2/Nav2/LiDAR logic are NOT used."
-echo "[INFO] Robot X lane: 10.53654"
 echo "[INFO] 1) rotate to +90 deg"
-echo "[INFO] 2) move only along Y to the computed under-pod pose"
-echo "[INFO] 3) verify lift center against cargo center"
-echo "[INFO] 4) lift up to 0.04 m"
-echo "[INFO] Previous y=-2.0846 was not the lift-aligned pose."
+echo "[INFO] 2) move only along Y under cargo_pod"
+echo "[INFO] 3) lift to authored physical maximum (~0.04 m)"
+echo "[INFO] 4) carry cargo to x=1.30104, y=-0.06065"
 echo "[INFO] Cargo PhysicsColliders are visible."
 echo "============================================"
 
