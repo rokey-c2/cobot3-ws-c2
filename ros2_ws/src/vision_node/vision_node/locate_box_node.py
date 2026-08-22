@@ -38,8 +38,21 @@ class LocateBoxNode(Node):
         self.declare_parameter('conf_threshold', 0.5)
         self.declare_parameter('image_width', 640)
         self.declare_parameter('image_height', 480)
-        self.declare_parameter('horizontal_fov_deg', 60.0)
+        # 640x480, 수평 FOV 90.53도는 Isaac Sim 카메라 prim
+        # (P3020_mount_vgp20_rsd455_1/World1.usd,
+        # /World/vgp20/rsd455/RSD455/Camera_Pseudo_Depth)의 실측
+        # focalLength=1.93 / horizontalAperture=3.896 로부터 계산한 값
+        # (config/vision.yaml 주석 참고). bag 재생(실카메라 없음) 등 다른
+        # 카메라를 쓸 때는 파라미터로 반드시 덮어써야 한다.
+        self.declare_parameter('horizontal_fov_deg', 90.53)
         self.declare_parameter('sync_slop_sec', 0.05)
+        # _latest_detection이 이 시간(초)보다 오래되면 "박스가 없어졌을 수도
+        # 있다"고 보고 box_detected=False로 취급한다. 원래는 "한 번이라도
+        # 검출된 적 있으면" 그 값을 시간 제한 없이 계속 반환했는데, 그러면
+        # 호출자가 release_lock=true로 불러도 실제로는 몇 초~몇십 초 전의
+        # (박스가 이미 다른 곳으로 옮겨졌을 수 있는) 낡은 좌표를 즉시 돌려받게
+        # 된다 -- p3020_pick_place_poc.py 통합 중 실제로 재현/확인한 버그.
+        self.declare_parameter('detection_timeout_sec', 1.0)
 
         model_path = self.get_parameter('model_path').value
         if not model_path:
@@ -64,6 +77,7 @@ class LocateBoxNode(Node):
         )
 
         self._latest_detection = None  # geometry_msgs/Point | None
+        self._latest_detection_time = None  # rclpy.time.Time | None
         self._locked = False
         self._locked_position = None  # geometry_msgs/Point | None
 
@@ -74,8 +88,12 @@ class LocateBoxNode(Node):
         depth_sub = message_filters.Subscriber(
             self, Image, self.get_parameter('depth_topic').value, qos_profile=qos_profile_sensor_data
         )
+        # queue_size가 크면(원래 10) 발행이 한동안 끊겼다가 재개될 때(로봇팔이
+        # 스캔 자세로 이동하는 동안 등) 큐에 남아있던 오래된 메시지가 새
+        # 메시지와 잘못 매칭돼 낡은 검출을 반환하는 사례를 발견함(직접 재현).
+        # 작게 유지해서 그런 오래된 잔여 메시지가 오래 안 남게 한다.
         self._sync = message_filters.ApproximateTimeSynchronizer(
-            [rgb_sub, depth_sub], queue_size=10,
+            [rgb_sub, depth_sub], queue_size=2,
             slop=self.get_parameter('sync_slop_sec').value,
         )
         self._sync.registerCallback(self._on_synced_frame)
@@ -93,6 +111,14 @@ class LocateBoxNode(Node):
 
         detection = self._detector.detect(rgb)
         self._latest_detection = self._to_point(detection, depth)
+        self._latest_detection_time = self.get_clock().now()
+
+    def _detection_is_fresh(self) -> bool:
+        if self._latest_detection is None or self._latest_detection_time is None:
+            return False
+        age_sec = (self.get_clock().now() - self._latest_detection_time).nanoseconds / 1e9
+        timeout = self.get_parameter('detection_timeout_sec').value
+        return age_sec <= timeout
 
     def _to_point(self, detection, depth):
         if detection is None:
@@ -120,7 +146,7 @@ class LocateBoxNode(Node):
             response.position_locked = True
             return response
 
-        if self._latest_detection is not None:
+        if self._detection_is_fresh():
             self._locked = True
             self._locked_position = self._latest_detection
             response.box_detected = True
