@@ -2,10 +2,13 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/maps/warehouse_navigation.yaml"
+PARAMS_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/params/iw_hub_navigation_params_custom.yaml"
 
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+
 if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
     unset FASTRTPS_DEFAULT_PROFILES_FILE
 fi
@@ -17,21 +20,35 @@ if [ ! -f "$ROOT_DIR/ros2_ws/install/setup.bash" ]; then
 fi
 source "$ROOT_DIR/ros2_ws/install/setup.bash"
 
+# NVIDIA IW Hub navigation is normally built in the Isaac Sim Jazzy workspace.
+# Source it automatically when it is not already visible in this shell.
+if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
+    ISAAC_JAZZY_SETUP="$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
+    if [ -f "$ISAAC_JAZZY_SETUP" ]; then
+        source "$ISAAC_JAZZY_SETUP"
+    fi
+fi
+
 required_packages=(
     amr_controller
-    nav2_bringup
-    nav2_collision_monitor
-    nav2_regulated_pure_pursuit_controller
-    nav2_smac_planner
+    iw_hub_navigation
     tf2_ros
 )
 for package_name in "${required_packages[@]}"; do
-    if ! ros2 pkg prefix "$package_name" > /dev/null 2>&1; then
+    if ! ros2 pkg prefix "$package_name" >/dev/null 2>&1; then
         echo "[ERROR] missing ROS 2 package: $package_name"
-        echo "Install: sudo apt install ros-jazzy-navigation2 ros-jazzy-nav2-bringup"
         exit 1
     fi
 done
+
+if [ ! -f "$MAP_FILE" ]; then
+    echo "[ERROR] map not found: $MAP_FILE"
+    exit 1
+fi
+if [ ! -f "$PARAMS_FILE" ]; then
+    echo "[ERROR] Nav2 params not found: $PARAMS_FILE"
+    exit 1
+fi
 
 wait_for_publisher() {
     local topic_name="$1"
@@ -46,7 +63,6 @@ wait_for_publisher() {
     done
 
     echo "[ERROR] no publisher found for $topic_name"
-    echo "Start Isaac Sim first: ./scripts/run_isaac.sh"
     return 1
 }
 
@@ -62,13 +78,42 @@ wait_for_samples() {
     fi
 
     echo "[ERROR] publisher exists but no live samples arrived on $topic_name"
-    echo "Keep Isaac Sim playing; do not start Nav2 with a silent LiDAR."
     return 1
 }
 
 wait_for_publisher /clock
-wait_for_publisher /amr_a/scan
+wait_for_publisher /amr_a/scan_raw
 wait_for_publisher /amr_a/odom
+wait_for_samples /amr_a/scan_raw
+
+BRIDGE_PIDS=()
+cleanup() {
+    for pid in "${BRIDGE_PIDS[@]:-}"; do
+        kill "$pid" >/dev/null 2>&1 || true
+    done
+}
+trap cleanup EXIT INT TERM
+
+# Keep Isaac's raw scan untouched for diagnostics and publish only the filtered
+# stream on /amr_a/scan, which is what AMCL/costmaps/collision_monitor consume.
+ros2 run amr_controller scan_self_filter --ros-args -p use_sim_time:=true &
+BRIDGE_PIDS+=("$!")
+
+# Alias Isaac's namespaced ground-truth odometry into the single-robot Nav2 TF
+# convention: odom -> base_link.
+ros2 run amr_controller odom_tf_bridge --ros-args -p use_sim_time:=true &
+BRIDGE_PIDS+=("$!")
+
+wait_for_publisher /amr_a/scan
 wait_for_samples /amr_a/scan
 
-exec ros2 launch amr_controller amr_nav2.launch.py "$@"
+sleep 1
+
+echo "[ROS2] starting NVIDIA IW Hub Nav2"
+echo "[ROS2] map:    $MAP_FILE"
+echo "[ROS2] params: $PARAMS_FILE"
+
+ros2 launch iw_hub_navigation iw_hub_navigation.launch.py \
+    map:="$MAP_FILE" \
+    params_file:="$PARAMS_FILE" \
+    "$@"
