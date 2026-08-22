@@ -3,7 +3,9 @@ set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/maps/warehouse_navigation.yaml"
-PARAMS_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/params/iw_hub_navigation_params_custom.yaml"
+
+START_X="8.155903816223145"
+START_Y="-5.628969192504883"
 
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
@@ -13,15 +15,7 @@ if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
     unset FASTRTPS_DEFAULT_PROFILES_FILE
 fi
 
-if [ ! -f "$ROOT_DIR/ros2_ws/install/setup.bash" ]; then
-    echo "[ERROR] ROS 2 workspace is not built."
-    echo "Run first: ./scripts/setup_ros.sh"
-    exit 1
-fi
-source "$ROOT_DIR/ros2_ws/install/setup.bash"
-
-# NVIDIA IW Hub navigation is normally built in the Isaac Sim Jazzy workspace.
-# Source it automatically when it is not already visible in this shell.
+# NVIDIA's official IW Hub Nav2 package lives in the Isaac Sim ROS workspace.
 if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
     ISAAC_JAZZY_SETUP="$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
     if [ -f "$ISAAC_JAZZY_SETUP" ]; then
@@ -29,24 +23,14 @@ if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
     fi
 fi
 
-required_packages=(
-    amr_controller
-    iw_hub_navigation
-    tf2_ros
-)
-for package_name in "${required_packages[@]}"; do
-    if ! ros2 pkg prefix "$package_name" >/dev/null 2>&1; then
-        echo "[ERROR] missing ROS 2 package: $package_name"
-        exit 1
-    fi
-done
+if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
+    echo "[ERROR] iw_hub_navigation package not found"
+    echo "Expected: $HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
+    exit 1
+fi
 
 if [ ! -f "$MAP_FILE" ]; then
     echo "[ERROR] map not found: $MAP_FILE"
-    exit 1
-fi
-if [ ! -f "$PARAMS_FILE" ]; then
-    echo "[ERROR] Nav2 params not found: $PARAMS_FILE"
     exit 1
 fi
 
@@ -54,7 +38,7 @@ wait_for_publisher() {
     local topic_name="$1"
 
     echo "[ROS2] waiting for $topic_name"
-    for _ in $(seq 1 40); do
+    for _ in $(seq 1 60); do
         if ros2 topic info "$topic_name" 2>/dev/null | \
             grep -Eq 'Publisher count: [1-9][0-9]*'; then
             return 0
@@ -63,6 +47,7 @@ wait_for_publisher() {
     done
 
     echo "[ERROR] no publisher found for $topic_name"
+    echo "[ERROR] Start Isaac Sim first with ./scripts/run_isaac.sh"
     return 1
 }
 
@@ -81,39 +66,51 @@ wait_for_samples() {
     return 1
 }
 
+# Use only the topics already provided by the default IW Hub Sensor asset.
 wait_for_publisher /clock
-wait_for_publisher /amr_a/scan_raw
-wait_for_publisher /amr_a/odom
-wait_for_samples /amr_a/scan_raw
+wait_for_publisher /front_2d_lidar/scan
+wait_for_publisher /back_2d_lidar/scan
+wait_for_publisher /chassis/odom
 
-BRIDGE_PIDS=()
-cleanup() {
-    for pid in "${BRIDGE_PIDS[@]:-}"; do
-        kill "$pid" >/dev/null 2>&1 || true
-    done
-}
-trap cleanup EXIT INT TERM
+wait_for_samples /front_2d_lidar/scan
+wait_for_samples /back_2d_lidar/scan
 
-# Keep Isaac's raw scan untouched for diagnostics and publish only the filtered
-# stream on /amr_a/scan, which is what AMCL/costmaps/collision_monitor consume.
-ros2 run amr_controller scan_self_filter --ros-args -p use_sim_time:=true &
-BRIDGE_PIDS+=("$!")
-
-# Alias Isaac's namespaced ground-truth odometry into the single-robot Nav2 TF
-# convention: odom -> base_link.
-ros2 run amr_controller odom_tf_bridge --ros-args -p use_sim_time:=true &
-BRIDGE_PIDS+=("$!")
-
-wait_for_publisher /amr_a/scan
-wait_for_samples /amr_a/scan
-
-sleep 1
-
-echo "[ROS2] starting NVIDIA IW Hub Nav2"
-echo "[ROS2] map:    $MAP_FILE"
-echo "[ROS2] params: $PARAMS_FILE"
+printf '\n[ROS2] Default IW Hub Sensor topics are alive.\n'
+printf '[ROS2] Starting NVIDIA iw_hub_navigation with the project map.\n'
+printf '[ROS2] No custom LiDAR, scan filter, or odom TF bridge is used.\n\n'
 
 ros2 launch iw_hub_navigation iw_hub_navigation.launch.py \
     map:="$MAP_FILE" \
-    params_file:="$PARAMS_FILE" \
-    "$@"
+    "$@" &
+NAV2_PID=$!
+
+cleanup() {
+    kill "$NAV2_PID" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT INT TERM
+
+# Wait for AMCL to become active before setting the map-frame start pose.
+echo "[ROS2] waiting for AMCL"
+for _ in $(seq 1 60); do
+    amcl_state="$(ros2 lifecycle get /amcl 2>/dev/null || true)"
+    if printf '%s\n' "$amcl_state" | grep -q 'active'; then
+        break
+    fi
+    sleep 1
+done
+
+if ! printf '%s\n' "${amcl_state:-}" | grep -q 'active'; then
+    echo "[ERROR] AMCL did not become active"
+    wait "$NAV2_PID"
+    exit 1
+fi
+
+sleep 1
+
+echo "[ROS2] setting initial pose: ($START_X, $START_Y)"
+ros2 topic pub --once \
+    /initialpose \
+    geometry_msgs/msg/PoseWithCovarianceStamped \
+    "{header: {frame_id: map}, pose: {pose: {position: {x: $START_X, y: $START_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}"
+
+wait "$NAV2_PID"
