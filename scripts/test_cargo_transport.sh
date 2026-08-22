@@ -10,12 +10,13 @@ if [[ ! -x "$ISAAC_SIM_DIR/python.sh" ]]; then
 fi
 
 echo "============================================"
-echo " IW HUB SCRIPTED CARGO TRANSPORT TEST"
+echo " SIMPLE IW HUB CARGO TRANSPORT TEST"
 echo "============================================"
-echo "[INFO] ROS2/Nav2/LiDAR are NOT started."
+echo "[INFO] ROS2/Nav2/LiDAR logic are NOT used."
 echo "[INFO] Sequence: START -> cargo -> lift up -> goal"
 echo "[INFO] Goal: x=1.30104, y=-0.06065"
+echo "[INFO] Cargo colliders are visible for debugging."
 echo "============================================"
 
 cd "$ROOT_DIR/isaac_sim"
-exec "$ISAAC_SIM_DIR/python.sh" tests/test_cargo_transport.py
+exec "$ISAAC_SIM_DIR/python.sh" tests/test_cargo_transport_simple.py
