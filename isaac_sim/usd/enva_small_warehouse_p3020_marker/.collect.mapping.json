@@ -1,0 +1,995 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Acrylic_Clear_Glossy_A_Rough.png",
+            "source_hash": "2e5d0da48eb243708e90e44904a5e2e8cdae8b60",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Acrylic_Clear_Glossy_A_Rough.png",
+            "target_hash": "940f37b641d8df58d180bb48e3adbbd57ac162c7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png",
+            "source_hash": "40e6ece214a7897b7bf997e2e9511fbe0203587c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png",
+            "target_hash": "aa7b65edf8fb022f57596fdff0ec7f9283e6973f"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_N.png",
+            "source_hash": "cae0b708c363571c93de54ee1fce2c91998bed36",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_N.png",
+            "target_hash": "0d849e4389ce3e31a9b6bce7159e282c88099478"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsC_D.png",
+            "source_hash": "7eccd3489ff43b9aa8335dddd7c1f4e190502377",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsC_D.png",
+            "target_hash": "2524e886f29c8c86e874cd4dfa7a23c2e70c03f1"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsC_ORM.png",
+            "source_hash": "7b29f382803ffe4dcb2c3283cf520792896cdc4a",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsC_ORM.png",
+            "target_hash": "4fdbff5d582006fc65770ae96e77a3bafa0326a1"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_D.png",
+            "source_hash": "3314d5e447868ce906b8d5a308c1396f43d81154",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_D.png",
+            "target_hash": "92e51e6d7b06615cb10b209db6c9e4a081d105c2"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_M.png",
+            "source_hash": "e3afedbc15133b951e8bf429c4db2d79b8fe04ed",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_M.png",
+            "target_hash": "9640976a9bd8c890cb863dc492505e8b6985e31e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_N.png",
+            "source_hash": "709eed04183ac7220e165b5edb5f8dba4177d4a0",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_N.png",
+            "target_hash": "2b2146bee56188abaab3832f570b523c18372f80"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_ORM.png",
+            "source_hash": "376aa871a31e8343f9a24f3e0c4009fb3036e5db",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PaletteA_01_ORM.png",
+            "target_hash": "b01eb7523867ddedce2ebb33e0790ba9f8a05198"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_D.png",
+            "source_hash": "43b7956f5b4af2022465b3ddb782d3303936c3dc",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_D.png",
+            "target_hash": "ecb55adc335e1fad5ea419596222476dc293de51"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_M.png",
+            "source_hash": "ed52a9b1419c67835a865468532882d92e9c5f0f",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_M.png",
+            "target_hash": "cc01e42e7953a27e1d5fe609721e82f224fcd6b2"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_N.png",
+            "source_hash": "1f3d7490ab2d684afc55feedbbc74b7c1a39a6f2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_N.png",
+            "target_hash": "a3139cebd47b1ca5a69425c2e7ba37c4a5a3e1ab"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_ORM.png",
+            "source_hash": "99bb56e94bb945d2493be84c2f527d09424f9c88",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BeamsA_ORM.png",
+            "target_hash": "5faf2bbf2c8903c23a6a10676817d81fbaf84e2e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BlankMask_M.png",
+            "source_hash": "cbbadf70788820c7e38b8ad2d2638a9cf67e8c57",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BlankMask_M.png",
+            "target_hash": "cf7510ddfa587ec5eed2664234c657e50f4ec9c0"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_01_D.png",
+            "source_hash": "e1f7166c169d851c65185a7520deba94bd9b10f8",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_01_D.png",
+            "target_hash": "0a2d16a823f43e033774b8bdf2faa99796802467"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_01_N.png",
+            "source_hash": "3aa6fea5d5f57dee5b570fc00a4c709d5de495fb",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_01_N.png",
+            "target_hash": "cdee22f3df1a2b293bb7d176b2b786feae233878"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_01_ORM.png",
+            "source_hash": "cfee63e173dc21bb4effe1946ded59ab64ba35d3",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_01_ORM.png",
+            "target_hash": "e8343be0e5813c79442b60a56f3ee6c56f2c352a"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CardBoxA_D.png",
+            "source_hash": "4f6d9be6bb06d23039801be663f329dbeddfb4d8",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CardBoxA_D.png",
+            "target_hash": "69e34f384c22c47f875764fb8a2cb91396b93a17"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CardBoxA_N.png",
+            "source_hash": "6a83024147e8142482c64392f9ac7942b4af07fe",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CardBoxA_N.png",
+            "target_hash": "a9039e00af13fe27e386671c04205bb3aacbcede"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CardBoxA_ORM.png",
+            "source_hash": "022d03fadb9e7b9d20ac2226236eedab0d4b3341",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CardBoxA_ORM.png",
+            "target_hash": "c8bf70db3be2f82d100aa5a7a57dd0f1b272d4c6"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallDetails_D.png",
+            "source_hash": "fade867d53b8ed365581ca35a637fb63b3492735",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallDetails_D.png",
+            "target_hash": "f374c7c7dadeeca4900cea129231ac6ce439f77c"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallDetails_N.png",
+            "source_hash": "42612fd532de4756799e38de9749fa6c18aa8ed0",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallDetails_N.png",
+            "target_hash": "42e82b09be93400b71d8311c5d30abe3661ecc06"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallDetails_ORM.png",
+            "source_hash": "144b9b9af5a36f1f30ba0f5ec6dde2dfa8af2003",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallDetails_ORM.png",
+            "target_hash": "1347d0f8a865c8347909831686cd2b2d7c7b4334"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Albedo.png",
+            "source_hash": "c90d2b5a0a9bb6d987911c3bfdd04c396b62e2c9",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Albedo.png",
+            "target_hash": "c5b94815fe43e84b5fe922afcf946fa7c6a26fd3"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Alpha.png",
+            "source_hash": "75eccf5c3df8cc2f88ad7f24cad81c1c81014da2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_Alpha.png",
+            "target_hash": "4b5d6ec2f9b59bd255801398f329600898c69795"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_ORM.png",
+            "source_hash": "66a62f630cd952b323c501878e0c1433c76f6ac3",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorsBelt_A01_Decal_ORM.png",
+            "target_hash": "6d2e70a24a369af49a0e0a91099d1a780a06fef2"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_D.png",
+            "source_hash": "991737c0d4ecdade95ca57716eb0076c9fa84871",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_D.png",
+            "target_hash": "bbe0a309a20895278cf441c4e654ee0a6731b50c"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_M.png",
+            "source_hash": "78b07173bbe2875bff846450dd3d046b6036f229",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_M.png",
+            "target_hash": "d0383c8229abc67e3b4b33d9382a061383862d7d"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_N.png",
+            "source_hash": "e69259d4ae674ef60f886d2bc96edac23cb91181",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_N.png",
+            "target_hash": "a5bf3cf9b744e2d9e5e88695d9712bf0738848ec"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_ORM.png",
+            "source_hash": "6955b70ae1cad82e59eba3eab568481a8a330dfb",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FrameA_ORM.png",
+            "target_hash": "f88c4bde818d5ed467e56d9edc32eab93e7c8991"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_02_D.png",
+            "source_hash": "a0f12eed78b2194ea2b7bceb3e2f62a2f910dc2f",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_02_D.png",
+            "target_hash": "6b5c7f22bf9f1fa49680b5158a8b8f2595ae2d35"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_02_N.png",
+            "source_hash": "aaefe16c60dc7d0dde92b82c8180ee281c99aa2c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_02_N.png",
+            "target_hash": "4739999ef6c984f0abd5d0ac22494d8510bc63f3"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_02_ORM.png",
+            "source_hash": "41bbbd752413c1eed595d075b39dba92ccfdb22d",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallA_02_ORM.png",
+            "target_hash": "b0c7370ccd4d92f88820c37137303c5a68e1f88e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_LampCeilingA_D.png",
+            "source_hash": "159732b0c7de9500e4992327105278c0590c0e90",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_LampCeilingA_D.png",
+            "target_hash": "bf395d3e044f05bc7bb1d9735a08b27c14222ac1"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_LampCeilingA_N.png",
+            "source_hash": "3088a391bccde26b410c19958c627b6c1624adca",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_LampCeilingA_N.png",
+            "target_hash": "13b9472e08e09c36e7c61d14e0f372f09605557f"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_LampCeilingA_ORM.png",
+            "source_hash": "f517c5b6084aff5a5e296a43ebd1f6f55f929e7f",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_LampCeilingA_ORM.png",
+            "target_hash": "53c1e0b9ed1cc263f1f8d81b6a63d747a5908380"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_D.png",
+            "source_hash": "f5ec97c2945684f85952076c50d84a02c8e34100",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_D.png",
+            "target_hash": "6f88ad3cc73b0fdb2de5cbda839ef3affa6e52d4"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_M.png",
+            "source_hash": "8225e9b76f2df56329bc441ba674c9417df9fdf9",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_M.png",
+            "target_hash": "41bbcd2422020d842ce0e406ae4eda91e9bb369b"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_N.png",
+            "source_hash": "2b76c2f13bca6cda90d065a000f25af803a3756c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_N.png",
+            "target_hash": "8118385cb03486de18a43339bc9d173db0a32180"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_ORM.png",
+            "source_hash": "060487b488486f26a5a8d69cadc038ea57b380a6",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_CeilingA_ORM.png",
+            "target_hash": "3f1a82d8bfd383f60d690dd3b95b61caa55be86b"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FireExtinguisher_D.png",
+            "source_hash": "f66fede0f646af12ef6ec72c868b27b4ab919cad",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FireExtinguisher_D.png",
+            "target_hash": "008408777cfd0b26bcb1ba3e086794be938e9b46"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FireExtinguisher_N.png",
+            "source_hash": "45808a4a29f3106d12d6640a2ef45292fea73e21",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FireExtinguisher_N.png",
+            "target_hash": "4d67be73344f6dd782c0ea159ace0e15c11662b8"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FireExtinguisher_ORM.png",
+            "source_hash": "1a39073367d4ab21dde2b1a7746040db4b5788ac",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FireExtinguisher_ORM.png",
+            "target_hash": "5bf943ce40fcb652e910c40e6f34815a081a2e17"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Metal_Glossy_A.mdl",
+            "source_hash": "1925e52ead1cc54f066662943d2f6f1af4276c2e",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Metal_Glossy_A.mdl",
+            "target_hash": "d1ea414a4c0400107edb60607d188903276fb6b8"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_LampCeilingA.mdl",
+            "source_hash": "f02f3fab4b906e782f8371bc16310ff19ab9c062",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_LampCeilingA.mdl",
+            "target_hash": "f3aea5fbdfdaaa28de6089c761207434f04cb862"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_CeilingA_06b.mdl",
+            "source_hash": "9115e3d66249f0f5dadca5061a616bff3296c6d5",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_CeilingA_06b.mdl",
+            "target_hash": "1fe54acd472d9bf4fdb59489c241f7e8a5b56372"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_Floor_01.mdl",
+            "source_hash": "15cda0200086c31faaa9c61de3f725addb4fcf2a",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_Floor_01.mdl",
+            "target_hash": "dec0502c82ac286417b34b4d5bf21f304716e449"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_FrameA_01.mdl",
+            "source_hash": "230c998eed6396179d66ecb9f2bfaf26b7f0487b",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_FrameA_01.mdl",
+            "target_hash": "20c0c8779c39326eab6ff34a64e8704f0a02fe6d"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/MetalPainted_White_Glossy_A.mdl",
+            "source_hash": "86a402a1c4dd8863930657352567495d4c8f1bab",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/MetalPainted_White_Glossy_A.mdl",
+            "target_hash": "0375e9cf4bb2bb3b878bcd7388bc27eafcf093bd"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_WallB_01.mdl",
+            "source_hash": "f9f2f226e6873781e40336a5f4e068be8212d628",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_WallB_01.mdl",
+            "target_hash": "08f023e5605d733ea4e122cdfd3faaf85169cf26"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/M_Glow.mdl",
+            "source_hash": "f29a5a2a0c98ceb6259cd3ba68586a301056e714",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/M_Glow.mdl",
+            "target_hash": "970adbc3417bce48e27cc968dfbd823fc3e63671"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Aluminum_Anodized.mdl",
+            "source_hash": "9eed780c07d232573591e2dbe9fb1ed4db00c9be",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Aluminum_Anodized.mdl",
+            "target_hash": "ca2087dc904f2ead073f50a0e870ff0f805b65df"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Aluminum_Cast.mdl",
+            "source_hash": "db4fcc8d9273dece35212e433e1179a75d5c8904",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Aluminum_Cast.mdl",
+            "target_hash": "91bd5babba86b521e364460bf93909fbad8b4700"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_ABS.mdl",
+            "source_hash": "f99acd64f48563974ef097facd9bd9380706c754",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_ABS.mdl",
+            "target_hash": "227051ae6bada4b9084db81731e4fe27016f78cd"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Steel_A.mdl",
+            "source_hash": "e87770af9b9a1ec56f6619da47c2d09074cc3251",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Steel_A.mdl",
+            "target_hash": "6766f975f65fa7b279c2b9e03ddecc9aa53d1543"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Rough_Black_A.mdl",
+            "source_hash": "9387a179b85f3e82ca86ca2a31376da990fbeb07",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Rough_Black_A.mdl",
+            "target_hash": "9eab75f6fe2bbb8574aee48b7850c78e68cd43a5"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/KLT_Bin/Materials/Textures/FOF_Map_Labels_D.png",
+            "source_hash": "a9ea28a5819ea73889ba4b6bdcee826238e4a59d",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/KLT_Bin/Materials/Textures/FOF_Map_Labels_D.png",
+            "target_hash": "5948a29a36bef80e6b88dff0734a5b2ad3c20cce"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/KLT_Bin/Materials/Textures/FOF_Map_Magenta_Box_D.png",
+            "source_hash": "e6b8d72f2f11be1d9e072e82bfdaa6b9f7abdbb3",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/KLT_Bin/Materials/Textures/FOF_Map_Magenta_Box_D.png",
+            "target_hash": "29547aa432fb18d9498379f3780fdaff925fe20b"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/KLT_Bin/Materials/Textures/FOF_Mesh_Labels_D.png",
+            "source_hash": "5fa9752e2469a64fdf674efa160f14a1c69849aa",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/KLT_Bin/Materials/Textures/FOF_Mesh_Labels_D.png",
+            "target_hash": "f5cd1fbabc9f996c3400ed044ed03da197101f47"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_D.png",
+            "source_hash": "bb5bc01af43201fdf0b1f4a2cef784c10aebcfcd",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_D.png",
+            "target_hash": "9f44373c5da538c64426f5051fb417d51ca2c092"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_M.png",
+            "source_hash": "c5cf2d559a3d9e83a03761170bb30d5a5b2ee45c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_M.png",
+            "target_hash": "fe1e33fbb96789dcdd7441361a5dd32c03152581"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_N.png",
+            "source_hash": "22d149ef61ef71bbf1221ed168ea0f7b89f56cf6",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_N.png",
+            "target_hash": "df9dfd10bea16aea874c9f06113c93661139c2c7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_ORM.png",
+            "source_hash": "7a3b748e12d66d438a487888bed16f7dc9786f84",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_02_ORM.png",
+            "target_hash": "36379b24f7ab321b8c3656110c9ed8f16f0b6137"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_D.png",
+            "source_hash": "35128bd79b63949c88bb04437427fe0dc6178a7c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_D.png",
+            "target_hash": "ef959d7df419398d41fbb53666563c287f4c7e75"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_M.png",
+            "source_hash": "46587ccf55d58a70c30a89f49823608cc8c90b75",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_M.png",
+            "target_hash": "8298dc89701f33d76fedfbdd725536432ed5f29a"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_N.png",
+            "source_hash": "ca0c5703f2e05400db4ea0f661326eabc0ff60e2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_N.png",
+            "target_hash": "0c90212cbfb8cef7897d3dfb1ef17c5dd60c0840"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_ORM.png",
+            "source_hash": "eee7239c92c1f96a3517933c351faefa41bcd815",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_03_ORM.png",
+            "target_hash": "07a4795cff48c7cb40a52047add334f94497091d"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsB_D.png",
+            "source_hash": "7261f2b1bd8201a992c7e9e0facbc3e51140e16e",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsB_D.png",
+            "target_hash": "23e6be5ba23cbf9c920ee81098f500ffa362bd52"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_D.png",
+            "source_hash": "0025a898b0d8488b586861d51f9b76ad481d54a2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_D.png",
+            "target_hash": "88e6eb605dafa43d95a62b75f2d4c99a142be92b"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_M.png",
+            "source_hash": "7da8675ab8f3854a7d8430398f6cc868dc5d7de3",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_M.png",
+            "target_hash": "ada73178bb3cdf2833cb4764e2381be7db685be9"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_N.png",
+            "source_hash": "6308f608d1594c5164b5082b6346413e15657e95",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_N.png",
+            "target_hash": "043c4c5526ad2f359e6044b32223717669818795"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_ORM.png",
+            "source_hash": "5c6f7250f801c9c32a196e8206b099937572ac64",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_FloorStripes_ORM.png",
+            "target_hash": "9f0fa7bef782b578704b45d32e548cc60a7c0800"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_D.png",
+            "source_hash": "019376150ac1e2a720864d543b5d9982aa923faf",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_D.png",
+            "target_hash": "4af94e014cbdd39663c71fe06b368bda5c341a50"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_M.png",
+            "source_hash": "cc4c7d9efb9a8941359d2f6c7e0372ea03e18e82",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_M.png",
+            "target_hash": "b387d3c9af527e966adf66dfc7446d6e2293b305"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_ORM.png",
+            "source_hash": "97660e646c533af2d169f8e2bf3e5b7b78bacd92",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_Floor_01_ORM.png",
+            "target_hash": "65275e178dfe4d76ec37967f64975964dd4ddd61"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_D.png",
+            "source_hash": "15cf1e8ec570780c82fe3e281633bc65774c5b75",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_D.png",
+            "target_hash": "2f2b98d6cde044664612d5653b570191ca9a7625"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_M.png",
+            "source_hash": "956855f287e7c0e1cb6299398811b74f8d640527",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_M.png",
+            "target_hash": "9103e25bc0cc207210ce18a543b4a775f175053f"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_N.png",
+            "source_hash": "ace492f62f457d81e072f6fbaa6d0fdc0399fe0a",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_N.png",
+            "target_hash": "fab9472e181c3982b5171a8a65732b7df20f842a"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_ORM.png",
+            "source_hash": "57664a1bb7d1dd1f18e2048c256ae732ec2ebcd2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_01_ORM.png",
+            "target_hash": "4382a5713874764c7dd5b5548742874cb8827e6b"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_D.png",
+            "source_hash": "5f21a0cafee74295417bb139ee80baba914e3971",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_D.png",
+            "target_hash": "7dae62944be5cc7767d6047d06ec240b1b82e7b7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_M.png",
+            "source_hash": "a8de7c4213e16b60a9c322840f76c199bf84d978",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_M.png",
+            "target_hash": "2e4d7073182129e3fd0708da852dc4b971cdee5e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_N.png",
+            "source_hash": "4cdee17d05401acb67f8782346a2fc1d9bcbdd57",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_N.png",
+            "target_hash": "3cc7df065923f6bf05f84a947a00a0c28894d5e7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_ORM.png",
+            "source_hash": "f50618a5224bcd652aa037c1d0dd369d0c9b7996",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackSetA_04_ORM.png",
+            "target_hash": "67afaf5fb3d4b0a16a503d0a500c45d7989d4cae"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Albedo.png",
+            "source_hash": "aeff5ffb8edc7d3edd1e75c545a0eff6cab679d6",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Albedo.png",
+            "target_hash": "99f60f107f4ef9734f4e0ad84bd06af1b97f71bf"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Normal.png",
+            "source_hash": "ae3c3b59418e524c25380fe6da4290c01023d506",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_MetalPainted_White_Glossy_A_Normal.png",
+            "target_hash": "cd92acbeed9aa69d032b6c9695f77c42abd68f14"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_MetalPainted_White_Glossy_A_ORM.png",
+            "source_hash": "5db15beddd7a5f2c12daaf038b9b8f42cb2fbaef",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_MetalPainted_White_Glossy_A_ORM.png",
+            "target_hash": "b0df203978657ad608fceb8399209fe31d5705d1"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_SignB.mdl",
+            "source_hash": "457858e68cc822511ffb1970dad9e3b8242f6a69",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_SignB.mdl",
+            "target_hash": "c78176a249fcf48e10ba7a45db59362ee8c6f9d0"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/M_WallBoard_01.mdl",
+            "source_hash": "0f379d5e121583b33c1312e1b08c0f4ea96cf8e2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/M_WallBoard_01.mdl",
+            "target_hash": "6a80b42e2ed78366c2ea52b26c82f988ec767ade"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Blue_A.mdl",
+            "source_hash": "4bb082d8d1448e7d22d177c67d0e34e6db047964",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Blue_A.mdl",
+            "target_hash": "46c505879d529647252b617ec0a3ce13cb3f953c"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Gray_A.mdl",
+            "source_hash": "7db5d8753a19bd2c05a1b4d2313edbcce8d1be8d",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Gray_A.mdl",
+            "target_hash": "9203d4fa10ef0c12781aaede55bc990c7ef8ea3e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Red_A.mdl",
+            "source_hash": "a89143abdda2fa20a74ef2af695e9dde78b8daa5",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Red_A.mdl",
+            "target_hash": "a21b26bcbd5cd7ac511b7ff7b600d1ba7310c807"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Rubber_Black_Rough_A.mdl",
+            "source_hash": "734909f704d6e7fcc7daf1807741f4826c7e82c4",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Rubber_Black_Rough_A.mdl",
+            "target_hash": "8c07940189dcb02e8d1657405615ffaae9557224"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Aluminium_Brushed_A.mdl",
+            "source_hash": "3f3288052496f2748ac5809d4a4a3a9559edd1ea",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Aluminium_Brushed_A.mdl",
+            "target_hash": "55f9e7f3f49b33cea472b8291a3ac212d91bb699"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/M_AisleSign.mdl",
+            "source_hash": "43b1279236f8288f48f640d243ba502b6fd5cdb8",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/M_AisleSign.mdl",
+            "target_hash": "60cd964de0aee9735148b24791f5383f02f23b81"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Orange_A.mdl",
+            "source_hash": "6c972a4fbf7fc0d55f06e7f6b328239e4d172cb7",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Orange_A.mdl",
+            "target_hash": "e6419fe567d76133784ca86420ced17c75ec1061"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Anodized_BaseColor.png",
+            "source_hash": "9720fe2f3b49e02dbbf9ad390661bf2408e2bba9",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Anodized_BaseColor.png",
+            "target_hash": "7d5c5c687d5c97f38396ee980f9079b7a4df02a5"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Steel_A1_Albedo.png",
+            "source_hash": "d5e3708bce56509888a262e46e212c92fc1e16e6",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Steel_A1_Albedo.png",
+            "target_hash": "b193180375939e40ff7365384a802e118cd92e3e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Anodized_ORM.png",
+            "source_hash": "41522605714ddc1c8a3683ebdddf3ae591e21acd",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Anodized_ORM.png",
+            "target_hash": "dd47307f457b5b1abc54b0536dcb63aaf8b5c242"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Glossy_A_Albedo.png",
+            "source_hash": "f90be5de6fefb5278d3775585969fb17b51c55b3",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Glossy_A_Albedo.png",
+            "target_hash": "7f23212efdf28039428bfe132fd9341d15b21353"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_Albedo.png",
+            "source_hash": "44439a6dcbafe413e8eae223502543a40e395711",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_Albedo.png",
+            "target_hash": "bfb04bc27b966823e4a59cba260295a48608d31d"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Cast_BaseColor.png",
+            "source_hash": "f20dcef01aa5c63dbb744494b3ef62d9d0ef0ab6",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Cast_BaseColor.png",
+            "target_hash": "cf27196c022e3dbc5636932a7210f2af0bf8e2f7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Steel_A1_Normal.png",
+            "source_hash": "b0e28d9632a0c663afd36267519367df39dad666",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Steel_A1_Normal.png",
+            "target_hash": "5f865a77898672962f52d52dcb939f852d8cef7d"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Anodized_Normal.png",
+            "source_hash": "c3c5e6768c8da57488486425d51543baea21863a",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Anodized_Normal.png",
+            "target_hash": "994bb3d63adc62c00a2f11388b411f6238819bd5"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Glossy_A_Normal.png",
+            "source_hash": "2697f3217b2d265b9acfd081645f3ed8a0121bc5",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Glossy_A_Normal.png",
+            "target_hash": "10dd75dd04bb7ef410268c616950c744ac115056"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_ORM.png",
+            "source_hash": "74fca7b02119fe5e2958cced6014906ab00fbba9",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_ORM.png",
+            "target_hash": "f71f2e63bf07fd912aefc2747c234c92dd2a6de6"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Cast_ORM.png",
+            "source_hash": "439a4d6c32c0d5dd820b46209be2a5039e837b34",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Cast_ORM.png",
+            "target_hash": "3b3b4d400f7c25099483af4a4ef563e8a061e649"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Steel_A1_ORM.png",
+            "source_hash": "b14a326484ff42d8480b11a6337bbbcf07bb9471",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Steel_A1_ORM.png",
+            "target_hash": "bb4a3e3f0886fa70ac6e6092d696efdb98aac1fb"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Glossy_A_ORM.png",
+            "source_hash": "545fd6db9a069e235c2a625dc80ed8ec17d34911",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Glossy_A_ORM.png",
+            "target_hash": "c75ae0f4f3c0c4696c8765f1e11358c28ee8e2e9"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Cast_N.png",
+            "source_hash": "dd1ea1d49e0902a00040e15dfa1c516d98f249ac",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/Aluminum_Cast_N.png",
+            "target_hash": "86a82e47bfcdb7a32b84cea92cf2f2b65a764f11"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/OmniUe4Function.mdl",
+            "source_hash": "c7b2132d85317c8edd5e2763d851a7230dd71081",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/OmniUe4Function.mdl",
+            "target_hash": "fe7637ccd84653acfa7ce5f95540c46bb1ba41b2"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/OmniUe4Base.mdl",
+            "source_hash": "8a787790dd2f7acf91666d346bc30ae728b8f821",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/OmniUe4Base.mdl",
+            "target_hash": "085dfacf0448f44109cbce3f50abedc918626f2e"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackShield_D.png",
+            "source_hash": "cc05ffb3e342bc29f75aead889e167ce32cd0b41",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackShield_D.png",
+            "target_hash": "3edf42cfe86036ac53056711cfe7dd81ed25868a"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackShield_N.png",
+            "source_hash": "d15e3edae36ba7bc1db8f529ee62021ae394f76f",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackShield_N.png",
+            "target_hash": "2413ac95d451c7ac6fda9e7f61e7133fe5a237d8"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackShield_ORM.png",
+            "source_hash": "878afa1456f7f780a226d3d7f1aff472f9d42667",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_RackShield_ORM.png",
+            "target_hash": "295f134212366d3c5ff067c1ea079901039e14bc"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/0001.png",
+            "source_hash": "48b6ec9c7f507b746fef08856c758c7560165ca4",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/0001.png",
+            "target_hash": "9c18f032568baec0fd3b7294a254ac7c26e6e16a"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Albedo.png",
+            "source_hash": "b9a7cf42c1d03b5f8db0dce2747e9775a39dcdec",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Albedo.png",
+            "target_hash": "e45de19ac689700f9ebb02d5c45fb69962bb6fa2"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Normal.png",
+            "source_hash": "c9f21c461f346f31a505a395485d0ff8e27255be",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorBelt_A01_Trim_Normal.png",
+            "target_hash": "6a62fc062e0246baf444876b6e3286cca4ecfdcc"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorBelt_A01_Trim_ORM.png",
+            "source_hash": "ab6a7b8910717d742045819d942f688c6585f83f",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_ConveyorBelt_A01_Trim_ORM.png",
+            "target_hash": "e69552c49ac4741330b06a23906cbfdd487018e6"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_D.png",
+            "source_hash": "05765ee9d6bf6bf146b0ba8a869f9fd8264c341d",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_D.png",
+            "target_hash": "a8618064d6cf93d693822b5c5fdd229d764f50af"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_M.png",
+            "source_hash": "782461980dda5b7e7c45c97c78e27c0176c47bd2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_M.png",
+            "target_hash": "20004a8fad2231b78705b9361084cd0bbfe5a603"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_N.png",
+            "source_hash": "535bc09141810b6ef133052e507c30f83d737a44",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_N.png",
+            "target_hash": "42847e59c46f5c46cf9be80659b8659e92b6b678"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_ORM.png",
+            "source_hash": "16ddcf23c8ce3330fff67d73bd17bc1ee5db94a9",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_PushcartA_ORM.png",
+            "target_hash": "6ab708ded237473f454fc4205b6a624783ad447c"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_RackShield_01.mdl",
+            "source_hash": "dba7dccd197c478b68287a5442067091276a27a2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_RackShield_01.mdl",
+            "target_hash": "4f7d3381312d1f23995f74e098ec354407d6558b"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_Barcode_0001.mdl",
+            "source_hash": "b0e6a15f25c5a451011c6d74c4e714de544ebd30",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_Barcode_0001.mdl",
+            "target_hash": "054ffce5ccebf8b312d1420e1062fd59b259fe44"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Metal_Rough_A.mdl",
+            "source_hash": "f93c4f6a822160c485a618643007970ba48fbbf5",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Metal_Rough_A.mdl",
+            "target_hash": "aea2d5619def31180f5975561100c185e49ba840"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Yellow_A.mdl",
+            "source_hash": "edade68b9cf4f96b8fceac46227bd4f774ffe84e",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/materials/Plastic_Yellow_A.mdl",
+            "target_hash": "8afda73c08023f909701bfbff4ce33cfa800b2d4"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_PushcartA_01.mdl",
+            "source_hash": "f1e04f0ba91b1d103cd9ad1dccdc7c568d47e21a",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/MI_PushcartA_01.mdl",
+            "target_hash": "2ca5070ca53aca097eb458bfcb7b9145de804b19"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_Albedo.png",
+            "source_hash": "ec292666f5b9d475b30df61116f1fcb34ee3d648",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_Albedo.png",
+            "target_hash": "02b79e6e9bf913df05a586f1912841d29ab4f5c9"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_ORM.png",
+            "source_hash": "57ed18d871d9972c6ab9a463df0a988bad82c327",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_ORM.png",
+            "target_hash": "a02daa416fdfd4d2c00522e0032f9534f895c6f1"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_Albedo.png",
+            "source_hash": "0b92667fc90d0397e5938f339a3137954fea7884",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_Albedo.png",
+            "target_hash": "e7e5f02613dae275314fff47b695eb9fc210c572"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_Albedo.png",
+            "source_hash": "a351f27fa1e29a643e64a0c56a1bb8d832221fde",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_Albedo.png",
+            "target_hash": "61804ace084816242512687aea2a39df3a2b9770"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Rubber_Black_Rough_A_Albedo.png",
+            "source_hash": "30d861a3f4880e0d48573586c092033ca47aa465",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Rubber_Black_Rough_A_Albedo.png",
+            "target_hash": "911bb644a28fbabdf4ba4a991812763bb0407ae7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_Albedo.png",
+            "source_hash": "3b478ab740d45f2158836a77047632386a32bfab",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_Albedo.png",
+            "target_hash": "52e421346fea509102bfeee8b4205218c9832322"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_Normal.png",
+            "source_hash": "365d15f38cd95a2d3040673cb04ae1332a88a407",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_Normal.png",
+            "target_hash": "a6878514f792d3e45a346fef8ba332538c372b50"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_ORM.png",
+            "source_hash": "4b5994c80caedaad1c5be11a67cbabb07a8820d7",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_ORM.png",
+            "target_hash": "7364aedc4d6ad748e7418ba2aa472eec41a60495"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_Normal.png",
+            "source_hash": "6801f84cca71ce3139c06a1d906a9eb928b12137",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_Normal.png",
+            "target_hash": "c6f01888975a0c93da48190f50eadc4f7b6ec6f1"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Rubber_Black_Rough_A_Normal.png",
+            "source_hash": "df7d9eeb8853d4aa2d8cc5e1527dc3b90b4cc874",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Rubber_Black_Rough_A_Normal.png",
+            "target_hash": "2d7f850ff34b0905d4de92e1bff3adc97caff0fe"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_ORM.png",
+            "source_hash": "9362b8337395b926808428ae2b3d3b129fb67ba4",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_ORM.png",
+            "target_hash": "cb03a4b5c5bbbbc25d2b60cf4d0c63c97c7752c0"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_Normal.png",
+            "source_hash": "73f87a13d3d561d59efef11d9ec8e239a38a495c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_Normal.png",
+            "target_hash": "60c4342da7eae1e746f9ec5ece487349eaf16815"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsA_D.png",
+            "source_hash": "0d9d2a014f5b21627d927750fa806cac85745b0e",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_SignsA_D.png",
+            "target_hash": "25b65435e728e860550f258f64ed9e9064aa75c8"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_ORM.png",
+            "source_hash": "b2450cc9525f78df9d47891708cc67cd6b062b4d",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_ORM.png",
+            "target_hash": "4813a34ccab87c7b40385e7a4d99fedfda3e09b7"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Rubber_Black_Rough_A_ORM.png",
+            "source_hash": "394ca4cf807bc45c83cfdb36a2398b550e5c3534",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Rubber_Black_Rough_A_ORM.png",
+            "target_hash": "b5e309a83d25931e4f7a60d9d6befcb73b503c85"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_Normal.png",
+            "source_hash": "62d67e903bf70fc872a58361c9723bb08d423873",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_Normal.png",
+            "target_hash": "405d6efeb63c052589ff6f0a5da20c37168504ee"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/AisleSign_Text_01.png",
+            "source_hash": "565fab208ed822a59726a2ced70461f23f8dc114",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/AisleSign_Text_01.png",
+            "target_hash": "f64de64b409bcb2206bbf926387b20172d326329"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_AisleSign_N.png",
+            "source_hash": "28f17fda548d4d2f59e97702b93a4cd8b0644b0b",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_AisleSign_N.png",
+            "target_hash": "d1cac1bce9f61a324d4d27fe0f00ca3cdf0c86de"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_AisleSign_D.png",
+            "source_hash": "061764760d8e6c5558b8ea01d529aef47384b5fe",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_AisleSign_D.png",
+            "target_hash": "3728300346de44e71efb2df8849a34dcab829460"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_AisleSign_ORM.png",
+            "source_hash": "b344785fc228bd675de99fbf9c6b7644842ecd20",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_AisleSign_ORM.png",
+            "target_hash": "b1071aecdaa08400a59dbb213120ae0cb348ffe3"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_N.png",
+            "source_hash": "94f5db68274ab790ea7bc7cfbf02da3bb81da004",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_N.png",
+            "target_hash": "a9fe961df0a675fe4a1068259f34e9f86973e470"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_D.png",
+            "source_hash": "4995cb0117d9cc26cae460477c96921931d69072",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_D.png",
+            "target_hash": "eccc570fbf254aca260feb4abb958503284524b3"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_ORM.png",
+            "source_hash": "c487e5d0fa1e2de7d7942eb233a0705f0b2b9636",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_ORM.png",
+            "target_hash": "832d95d3642864c84e9da15a4ac84161b3b8980f"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_M.png",
+            "source_hash": "3f3f4d1e71b889155be3ffff504427cb3d20d5b5",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_WallBoard_01_M.png",
+            "target_hash": "88a06efd8ec735e5b09119cbb8c1a1a90e581ab4"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Rough_A_Albedo.png",
+            "source_hash": "1a931508218dd2cb4d97bb5c0917af3d32188a28",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Rough_A_Albedo.png",
+            "target_hash": "30c24b0ae78d24c4692bfa95c42ed94c4c4dbc24"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Rough_A_Normal.png",
+            "source_hash": "f253ce8c6bca098a4a0cb3b8e53206012bf7be2d",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Rough_A_Normal.png",
+            "target_hash": "a73d51ae535e6cf5951d1b9ddb7b7a93ddbef4f0"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Rough_A_ORM.png",
+            "source_hash": "52076a27eb92ea24756af5090f29e8ece87f30dd",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Metal_Rough_A_ORM.png",
+            "target_hash": "5e65ac97024bc807f884973c0cd4c5c6aec3a3e8"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_Albedo.png",
+            "source_hash": "69c7417128bb266c05c6151cb14acbe36b69398c",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_Albedo.png",
+            "target_hash": "bc6d1b59346c7151aa47dc2a2a8e21698b033024"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Aluminium_Brushed_A1_Albedo.png",
+            "source_hash": "3c9a8619d1cd3fbdd5eabaee3b3c454bdef726a1",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Aluminium_Brushed_A1_Albedo.png",
+            "target_hash": "5208acb2bbcb254fc1903d08d03f13a1c7c9804a"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/Alum_Anodized_roughness.png",
+            "source_hash": "ee52296594ba494c6bca72d4462e28a28b886272",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/Alum_Anodized_roughness.png",
+            "target_hash": "b2edfedfd1ab851e8eaa5a6c710665c22d8b78f4"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_ORM.png",
+            "source_hash": "5f7a9d175ddff4c6f0a68d5a479552980fa5d0f2",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_ORM.png",
+            "target_hash": "287195a08ea2f3ec7ead3fe714a8c7d57f358b87"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Aluminium_Brushed_A1_Normal.png",
+            "source_hash": "d321087aa9980cd7506e101ec0f888b7ae6aeeae",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Aluminium_Brushed_A1_Normal.png",
+            "target_hash": "b7d14b27c9fbfa4a1b61f1a0eae2e1c30b753e88"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png",
+            "source_hash": "f795cc8fc84211e54397c1d1cc645567933898ba",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png",
+            "target_hash": "ce2453ad483fd3d4beea705b63eae1ff9a9e1ec4"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Aluminium_Brushed_A1_ORM.png",
+            "source_hash": "8e9877bfa44f5645417c0c59069b3b67efcd02e0",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Aluminium_Brushed_A1_ORM.png",
+            "target_hash": "39ab73fa46391e54b200ba83b6e92d544f9b6c3c"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_N.png",
+            "source_hash": "f6a3cebedcf433b6b220a72869944365698915f1",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_N.png",
+            "target_hash": "9669d794ec9546175ed19d1a88a372beecca0284"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_M.png",
+            "source_hash": "ab4bd2e3d7509a03f45240146cea208ed9a8c8b3",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_M.png",
+            "target_hash": "94a7bd6cc40a59182292cd38b592f6fa7851f1f4"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_D.png",
+            "source_hash": "3c46542c354e58724f67aa158171654df0c2b193",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_D.png",
+            "target_hash": "26eae2be17e5e136c4c8b2e91694750ec3b64c00"
+        },
+        {
+            "source_url": "/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_ORM.png",
+            "source_hash": "06ea53038231ad93026a779aaf35ac757ead5ea0",
+            "target_url": "./home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Materials/Textures/T_BarelPlasticA_ORM.png",
+            "target_hash": "70946327e285969c74c1f629326130c1be241388"
+        }
+    ]
+}

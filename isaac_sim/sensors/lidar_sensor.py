@@ -26,7 +26,7 @@ class IwHubLidarRos2Publisher:
         self.writer = rep.writers.get("RtxLidarROS2PublishLaserScan")
         self.writer.initialize(
             topicName=f"/{self.namespace}/scan",
-            frameId=f"{self.namespace}/lidar_link",
+            frameId="base_link",
         )
         self.writer.attach([self.render_product])
         print(
