@@ -41,13 +41,13 @@ TEST_OBSTACLES = []
 
 
 # Cargo pod converted from the selected cargo box STEP asset.
-# The CAD geometry is centered around the origin and is 1 m tall, so z=0.5
-# places its bottom on the warehouse floor. The open underside is then at
-# approximately z=0.25 m, matching the IW Hub lift geometry verified earlier.
+# The STEP model is 1000 mm x 1000 mm x 1000 mm and was tessellated to a
+# meter-scale USD mesh. Its local Z range is -0.5..0.5 m, so z=0.5 places
+# the bottom on the warehouse floor.
 CARGO_REGISTRY = [
     {
         "name": "cargo_pod",
-        "usd": "usd/cargo/cargo_box.usda",
+        "usd": "usd/cargo/cargo_box.usd",
         "spawn_xyz": (10.5, -1.5, 0.5),
         "spawn_yaw": 0.0,
     }
