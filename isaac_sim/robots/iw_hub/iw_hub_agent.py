@@ -15,12 +15,66 @@ _REQUIRED_TOPICS = (
 )
 
 
+def _normalized_topic(namespace, topic_name):
+    """Build the ROS topic exactly as an OmniGraph namespace/topic pair."""
+
+    topic_name = str(topic_name or "").strip()
+    namespace = str(namespace or "").strip()
+
+    if not topic_name:
+        return ""
+
+    if topic_name.startswith("/"):
+        return "/" + topic_name.strip("/")
+
+    if namespace:
+        return "/" + "/".join(
+            part
+            for part in (
+                namespace.strip("/"),
+                topic_name.strip("/"),
+            )
+            if part
+        )
+
+    return "/" + topic_name.strip("/")
+
+
 def _topic_node_paths(stage):
-    """Return OmniGraph prim paths that contain NVIDIA's required topics."""
+    """Return prim paths that publish/subscribe NVIDIA's Nav2 topics."""
 
     found = {topic: [] for topic in _REQUIRED_TOPICS}
 
     for prim in stage.Traverse():
+        topic_attr = prim.GetAttribute("inputs:topicName")
+        namespace_attr = prim.GetAttribute("inputs:nodeNamespace")
+
+        if topic_attr and topic_attr.IsValid():
+            try:
+                topic_name = topic_attr.Get()
+            except Exception:
+                topic_name = ""
+
+            try:
+                namespace = (
+                    namespace_attr.Get()
+                    if namespace_attr and namespace_attr.IsValid()
+                    else ""
+                )
+            except Exception:
+                namespace = ""
+
+            effective_topic = _normalized_topic(
+                namespace,
+                topic_name,
+            )
+
+            if effective_topic in found:
+                found[effective_topic].append(prim.GetPath())
+                continue
+
+        # Keep compatibility with graphs that store the complete topic string
+        # in another string attribute.
         for attribute in prim.GetAttributes():
             try:
                 value = attribute.Get()
@@ -30,8 +84,9 @@ def _topic_node_paths(stage):
             if not isinstance(value, str):
                 continue
 
-            if value in found:
-                found[value].append(prim.GetPath())
+            normalized_value = _normalized_topic("", value)
+            if normalized_value in found:
+                found[normalized_value].append(prim.GetPath())
 
     return found
 
