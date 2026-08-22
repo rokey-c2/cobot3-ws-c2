@@ -46,6 +46,13 @@ POD_Y = -1.5
 POD_Z = 0.5
 ROBOT_Z = 0.0
 
+# Measured from NVIDIA's current IW Hub Navigation robot.
+# The lift collision plate center is about -0.2559 m on the robot-local X axis,
+# so the robot root must be shifted +0.2559 m to center the lift under the pod.
+LIFT_LOCAL_CENTER_X = -0.255899694280196
+ROBOT_X = POD_X - LIFT_LOCAL_CENTER_X
+ROBOT_Y = POD_Y
+
 LIFT_DOWN = 0.0
 LIFT_UP = 0.04
 CARGO_MASS_KG = 20.0
@@ -69,7 +76,7 @@ def _spawn_cargo(stage):
 
     print(
         f"[TEST] cargo spawned at "
-        f"({POD_X:.2f}, {POD_Y:.2f}, {POD_Z:.2f})"
+        f"({POD_X:.3f}, {POD_Y:.3f}, {POD_Z:.3f})"
     )
 
 
@@ -84,14 +91,18 @@ def _spawn_iw_hub(stage):
 
     xform = UsdGeom.Xformable(prim)
     xform.ClearXformOpOrder()
-    xform.AddTranslateOp().Set(Gf.Vec3d(POD_X, POD_Y, ROBOT_Z))
+    xform.AddTranslateOp().Set(Gf.Vec3d(ROBOT_X, ROBOT_Y, ROBOT_Z))
     xform.AddRotateXYZOp().Set(Gf.Vec3f(0.0, 0.0, 0.0))
 
     stage.Load(ROBOT_PRIM_PATH)
 
     print(
-        f"[TEST] IW Hub spawned directly under cargo at "
-        f"({POD_X:.2f}, {POD_Y:.2f}, {ROBOT_Z:.2f})"
+        f"[TEST] IW Hub root spawned at "
+        f"({ROBOT_X:.3f}, {ROBOT_Y:.3f}, {ROBOT_Z:.3f})"
+    )
+    print(
+        f"[TEST] lift plate center aligned with pod center "
+        f"({POD_X:.3f}, {POD_Y:.3f})"
     )
 
 
@@ -163,7 +174,7 @@ def main():
     print("[INFO] ROS2 bridge: NOT started")
     print("[INFO] Nav2       : NOT started")
     print("[INFO] LiDAR test : NOT started")
-    print("[TEST] IW Hub is spawned directly under the pod")
+    print("[TEST] Lift plate is centered directly under the pod")
     print("[TEST] Lift sequence: 0.00 -> 0.04 -> 0.00 m")
     print("============================================")
     print()
