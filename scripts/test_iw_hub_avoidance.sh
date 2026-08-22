@@ -11,8 +11,15 @@ if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
 fi
 source "$ROOT_DIR/ros2_ws/install/setup.bash"
 
-ACTION_NAME="/amr_a/navigate_to_pose"
-LIFECYCLE_NODE="/amr_a/bt_navigator"
+if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
+    ISAAC_JAZZY_SETUP="$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
+    if [ -f "$ISAAC_JAZZY_SETUP" ]; then
+        source "$ISAAC_JAZZY_SETUP"
+    fi
+fi
+
+ACTION_NAME="/navigate_to_pose"
+LIFECYCLE_NODE="/bt_navigator"
 
 echo "[TEST] waiting for $LIFECYCLE_NODE to become active"
 lifecycle_state=""
@@ -27,49 +34,29 @@ done
 if ! printf '%s\n' "$lifecycle_state" | grep -q "active"; then
     echo "[ERROR] Nav2 did not become active: $LIFECYCLE_NODE"
     echo "[ERROR] current lifecycle state: ${lifecycle_state:-unavailable}"
-    echo "Check terminal 2 for lifecycle or TF errors."
     exit 1
 fi
-
-echo "[TEST] waiting for $ACTION_NAME"
-for _ in $(seq 1 30); do
-    if ros2 action list | grep -qx "$ACTION_NAME"; then
-        break
-    fi
-    sleep 1
-done
 
 if ! ros2 action list | grep -qx "$ACTION_NAME"; then
     echo "[ERROR] Nav2 action is not available: $ACTION_NAME"
-    echo "Run first: ./scripts/run_ros2.sh"
     exit 1
 fi
 
-echo "[TEST] checking /map"
 if ! timeout 10 ros2 topic echo /map --once \
     --qos-reliability reliable \
-    --qos-durability transient_local > /dev/null 2>&1; then
+    --qos-durability transient_local >/dev/null 2>&1; then
     echo "[ERROR] no static map received on /map"
-    echo "Check terminal 2 for static map publisher errors."
     exit 1
 fi
 
-echo "[TEST] checking live /amr_a/scan samples"
 scan_rate="$(timeout 8 ros2 topic hz /amr_a/scan --window 5 2>&1 || true)"
 if ! printf '%s\n' "$scan_rate" | grep -q 'average rate:'; then
-    echo "[ERROR] /amr_a/scan has no live LaserScan samples"
-    echo "Keep Isaac Sim playing and restart terminal 2."
+    echo "[ERROR] /amr_a/scan has no filtered LaserScan samples"
     exit 1
 fi
 printf '%s\n' "$scan_rate" | grep -m1 'average rate:'
 
-ros2 topic pub --once \
-    /amr_a/navigation_enabled \
-    std_msgs/msg/Bool \
-    "{data: true}"
-
-echo "[TEST] dynamic LiDAR avoidance: start=(1.5, 0.0), goal=(6.0, 0.0)"
-echo "[TEST] /map contains no obstacle; move /World/Obstacles while Play is running"
+echo "[TEST] filtered LiDAR navigation: goal=(6.0, 0.0)"
 exec ros2 action send_goal \
     "$ACTION_NAME" \
     nav2_msgs/action/NavigateToPose \
