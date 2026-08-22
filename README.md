@@ -12,51 +12,76 @@ Input Zone
 → 출고 IW Hub
 → 배송지
 
-## 장비 구성
-- IW Hub AMR
-  - 1차 구현: `amr_a` 한 대 Nav2 자율주행 검증
-  - 확장: 입고 1대, 출고 A/B 각 1대
-- Doosan P3020 × 3
-  - 입고 1대
-  - A 적재 1대
-  - B 적재 1대
-- Main Conveyor × 1
-- Branch Conveyor × 2
-- Wheel Sorter × 1
-
 ## 개발 환경
 - Isaac Sim 5.1.0
 - ROS 2 Jazzy
 - ROS_DOMAIN_ID=110
 - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-- Nav2
-- RTX LiDAR
-- PhysX
-- Python
+- NVIDIA `iw_hub_navigation`
+- Isaac Sim 기본 IW Hub Sensor 에셋
 
-## IW Hub 컨테이너 운반 실행
+## IW Hub 단일 자율주행 테스트
 
-현재 Isaac 실행 월드는 Ground Plane, 박스를 담은 컨테이너와
-`amr_a` IW Hub 한 대만 생성합니다.
-P3020, 컨베이어, ForkliftB는 이 실행 구성에 포함하지 않습니다.
+현재 `feat/iw-hub-single-navigation`은 Isaac Sim 기본 IW Hub Sensor 에셋의
+ROS graph와 LiDAR를 수정하지 않고 그대로 사용합니다.
 
-장애물 회피 실험은 출발 `(1.5, 0.0)`, 장애물 `(3.5, 0.0)`,
-목표 `(6.0, 0.0)` 구성입니다.
+기본 센서/주행 토픽:
 
-```bash
-./scripts/setup_ros.sh
-./scripts/run_isaac.sh
-./scripts/run_ros2.sh
-./scripts/test_iw_hub_container_mission.sh
+- `/front_2d_lidar/scan`
+- `/back_2d_lidar/scan`
+- `/chassis/odom`
+- `/cmd_vel`
+
+프로젝트에서 별도의 RTX LiDAR를 생성하거나 LiDAR range 값을 변경하지 않습니다.
+scan self-filter와 odom TF bridge도 사용하지 않습니다.
+
+출발 위치:
+
+```text
+x = 8.155903816223145
+y = -5.628969192504883
 ```
 
-세 번째 스크립트는 컨테이너 리프트 상승(0.30 m), 장애물 회피 주행,
-목표 `(6.0, 0.0)` 도착, 리프트 하강과 컨테이너 배치를 순서대로 수행합니다.
-주행만 다시 확인할 때는 `./scripts/test_iw_hub_avoidance.sh`를 사용합니다.
+목표 위치:
 
-상세 실행 및 목표 전송 방법은 [docs/iw_hub_navigation.md](docs/iw_hub_navigation.md)를 참고합니다.
+```text
+x = -13.813100814819336
+y = 0.7454315423965454
+```
+
+추가 테스트 장애물과 cargo는 생성하지 않습니다.
+
+## 실행
+
+터미널 1:
+
+```bash
+cd ~/collaboration/test/cobot3-ws-c2
+./scripts/run_isaac.sh
+```
+
+터미널 2:
+
+```bash
+cd ~/collaboration/test/cobot3-ws-c2
+./scripts/run_ros2.sh
+```
+
+`run_ros2.sh`는 기본 IW Hub의 front/back 2D LiDAR와 `/chassis/odom`이 실제로
+publish되는지 확인한 뒤 NVIDIA `iw_hub_navigation`을 프로젝트 맵으로 실행합니다.
+
+터미널 3:
+
+```bash
+cd ~/collaboration/test/cobot3-ws-c2
+./scripts/test_iw_hub_avoidance.sh
+```
+
+이 스크립트는 `map` 기준 목표 좌표 `(-13.813100814819336, 0.7454315423965454)`로
+`NavigateToPose` goal을 전송합니다.
 
 ## 중요
+
 `isaac_sim/project_config/`를 사용합니다.
 
 `config/`라는 일반 이름은 Isaac Sim/OpenCV 내부 모듈과 충돌할 수 있으므로 사용하지 않습니다.
