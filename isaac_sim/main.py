@@ -11,12 +11,16 @@ simulation_app = SimulationApp({"headless": HEADLESS})
 
 
 import omni.graph.core as og
+import omni.usd
+
+from pxr import Gf, UsdGeom
 
 from isaacsim.core.api import World
 from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 
 from project_config.robot_config import (
+    CARGO_REGISTRY,
     GOAL_XY,
     IW_HUB_USD,
     ROBOT_REGISTRY,
@@ -71,6 +75,42 @@ def _create_clock_graph():
     print("[ROS2] /clock publisher created")
 
 
+def _spawn_cargo_pods():
+    """Reference configured cargo USD assets into the current warehouse."""
+
+    if not CARGO_REGISTRY:
+        return
+
+    stage = omni.usd.get_context().get_stage()
+    cargo_root = UsdGeom.Xform.Define(stage, "/World/Cargo")
+    _ = cargo_root
+
+    for config in CARGO_REGISTRY:
+        name = config["name"]
+        usd_path = ISAAC_SIM_DIR / config["usd"]
+
+        if not usd_path.is_file():
+            raise FileNotFoundError(f"Cargo USD not found: {usd_path}")
+
+        prim_path = f"/World/Cargo/{name}"
+        prim = stage.DefinePrim(prim_path, "Xform")
+        prim.GetReferences().AddReference(str(usd_path))
+
+        xform = UsdGeom.Xformable(prim)
+        translate_op = xform.AddTranslateOp()
+        translate_op.Set(Gf.Vec3d(*config["spawn_xyz"]))
+
+        yaw = float(config.get("spawn_yaw", 0.0))
+        if yaw != 0.0:
+            rotate_op = xform.AddRotateZOp()
+            rotate_op.Set(yaw)
+
+        print(
+            f"[CARGO] spawned {name} at {config['spawn_xyz']} "
+            f"from {usd_path}"
+        )
+
+
 def main():
     if not WORLD_USD.is_file():
         raise FileNotFoundError(
@@ -100,6 +140,7 @@ def main():
     print("[WORLD] custom warehouse loaded")
 
     _create_clock_graph()
+    _spawn_cargo_pods()
 
     agents = []
 
