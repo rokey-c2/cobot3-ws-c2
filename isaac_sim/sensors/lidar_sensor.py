@@ -25,13 +25,13 @@ class IwHubLidarRos2Publisher:
         )
         self.writer = rep.writers.get("RtxLidarROS2PublishLaserScan")
         self.writer.initialize(
-            topicName=f"/{self.namespace}/scan",
+            topicName=f"/{self.namespace}/scan_raw",
             frameId="base_link",
         )
         self.writer.attach([self.render_product])
         print(
             f"[LIDAR] {self.lidar_prim_path} -> "
-            f"/{self.namespace}/scan (near range {self.MIN_RANGE_M:.2f} m)"
+            f"/{self.namespace}/scan_raw (near range {self.MIN_RANGE_M:.2f} m)"
         )
 
     def _get_or_create_sensor(self):
