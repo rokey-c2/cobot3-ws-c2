@@ -40,8 +40,18 @@ ROBOT_REGISTRY = [
 TEST_OBSTACLES = []
 
 
-# This test verifies navigation only. Do not attach a cargo payload.
-CARGO_REGISTRY = []
+# Cargo pod converted from the selected cargo box STEP asset.
+# The CAD geometry is centered around the origin and is 1 m tall, so z=0.5
+# places its bottom on the warehouse floor. The open underside is then at
+# approximately z=0.25 m, matching the IW Hub lift geometry verified earlier.
+CARGO_REGISTRY = [
+    {
+        "name": "cargo_pod",
+        "usd": "usd/cargo/cargo_box.usda",
+        "spawn_xyz": (10.5, -1.5, 0.5),
+        "spawn_yaw": 0.0,
+    }
+]
 
 
 SORTER_CONFIG = {
