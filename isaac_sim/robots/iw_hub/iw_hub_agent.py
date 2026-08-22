@@ -7,8 +7,12 @@ import omni.usd
 from robots.base_robot import BaseRobotAgent
 
 
-_REQUIRED_TOPICS = (
-    "/cmd_vel",
+# These three topics are authored in NVIDIA's IW Hub navigation scene and are
+# enough to identify the robot + dual-LiDAR setup. Do not require /cmd_vel
+# during static USD inspection: the running sample provides the command path,
+# but it is not reliably discoverable as a literal authored topic in the
+# source layer.
+_DISCOVERY_TOPICS = (
     "/chassis/odom",
     "/front_2d_lidar/scan",
     "/back_2d_lidar/scan",
@@ -41,9 +45,9 @@ def _normalized_topic(namespace, topic_name):
 
 
 def _topic_node_paths(stage):
-    """Return prim paths that publish/subscribe NVIDIA's Nav2 topics."""
+    """Return prim paths for NVIDIA's odom and front/back LiDAR topics."""
 
-    found = {topic: [] for topic in _REQUIRED_TOPICS}
+    found = {topic: [] for topic in _DISCOVERY_TOPICS}
 
     for prim in stage.Traverse():
         topic_attr = prim.GetAttribute("inputs:topicName")
@@ -73,8 +77,7 @@ def _topic_node_paths(stage):
                 found[effective_topic].append(prim.GetPath())
                 continue
 
-        # Keep compatibility with graphs that store the complete topic string
-        # in another string attribute.
+        # Some graphs store the full topic string in another string attribute.
         for attribute in prim.GetAttributes():
             try:
                 value = attribute.Get()
@@ -92,24 +95,20 @@ def _topic_node_paths(stage):
 
 
 def _navigation_robot_prim_path(stage):
-    """Find the robot prim that owns NVIDIA's complete IW Hub Nav2 graph.
+    """Find NVIDIA's IW Hub robot + dual-LiDAR prim without changing it."""
 
-    The code intentionally discovers the prim from NVIDIA's own navigation
-    scene. It does not recreate LiDAR positions, ranges, orientations, or
-    publisher settings in this project.
-    """
+    # Explicitly load payloads/references before inspecting the source scene.
+    stage.Load()
 
     topic_paths = _topic_node_paths(stage)
     missing = [topic for topic, paths in topic_paths.items() if not paths]
 
     if missing:
         raise RuntimeError(
-            "NVIDIA IW Hub navigation scene is missing required ROS topics: "
+            "NVIDIA IW Hub navigation scene is missing required sensor topics: "
             + ", ".join(missing)
         )
 
-    # Find an articulation root that contains every required ROS graph node.
-    # This keeps the entire NVIDIA robot/sensor setup under one reference.
     candidates = []
 
     for prim in stage.Traverse():
@@ -117,24 +116,18 @@ def _navigation_robot_prim_path(stage):
             continue
 
         root_path = prim.GetPath()
-        contains_all_topics = True
-
-        for paths in topic_paths.values():
-            if not any(path.HasPrefix(root_path) for path in paths):
-                contains_all_topics = False
-                break
-
-        if contains_all_topics:
+        if all(
+            any(path.HasPrefix(root_path) for path in paths)
+            for paths in topic_paths.values()
+        ):
             candidates.append(root_path)
 
     if candidates:
-        # Prefer the deepest articulation root when nested roots exist.
-        return max(candidates, key=lambda path: path.pathString.count("/"))
+        return max(
+            candidates,
+            key=lambda path: path.pathString.count("/"),
+        )
 
-    # Some sample scenes author the articulation API on a child while the ROS
-    # graphs live directly below the robot Xform. In that case, find the
-    # smallest common ancestor of all required topic nodes, but never import
-    # the entire /World scene by accident.
     all_paths = [
         path
         for paths in topic_paths.values()
@@ -163,8 +156,8 @@ def _navigation_robot_prim_path(stage):
         for topic, paths in topic_paths.items()
     )
     raise RuntimeError(
-        "Could not isolate NVIDIA IW Hub navigation robot prim without "
-        "importing the whole sample scene. Topic nodes: " + details
+        "Could not isolate NVIDIA IW Hub navigation robot prim. "
+        "Sensor topic nodes: " + details
     )
 
 
@@ -184,8 +177,8 @@ class IwHubAgent(BaseRobotAgent):
             return self._source_prim_path
 
         carb.log_info(
-            "[IW HUB] reading NVIDIA IW Hub Navigation sample to locate "
-            "the official robot + dual LiDAR setup"
+            "[IW HUB] reading NVIDIA IW Hub Navigation sample "
+            "for the official robot + dual LiDAR setup"
         )
 
         source_stage = Usd.Stage.Open(self.usd_path)
@@ -216,8 +209,8 @@ class IwHubAgent(BaseRobotAgent):
             source_prim_path,
         )
 
-        # Only the project spawn pose is overridden. All NVIDIA robot, LiDAR,
-        # ROS graph, sensor range, orientation, and topic settings stay intact.
+        # Only the requested spawn pose is overridden. NVIDIA's sensor type,
+        # position, orientation, range and ROS publisher settings are untouched.
         transform = UsdGeom.Xformable(prim)
         transform.ClearXformOpOrder()
         transform.AddTranslateOp().Set(Gf.Vec3d(*self.spawn_xyz))
@@ -229,7 +222,7 @@ class IwHubAgent(BaseRobotAgent):
 
         carb.log_info(
             f"[IW HUB] spawned {self.name} at {self.spawn_xyz}; "
-            "NVIDIA Navigation sample sensor settings unchanged"
+            "NVIDIA Navigation sensor settings unchanged"
         )
 
     def post_reset(self):
@@ -243,7 +236,7 @@ class IwHubAgent(BaseRobotAgent):
 
         topic_paths = _topic_node_paths(stage)
 
-        for topic in _REQUIRED_TOPICS:
+        for topic in _DISCOVERY_TOPICS:
             paths = [
                 path
                 for path in topic_paths[topic]
@@ -251,12 +244,12 @@ class IwHubAgent(BaseRobotAgent):
             ]
             if not paths:
                 raise RuntimeError(
-                    f"NVIDIA IW Hub default ROS graph missing topic: {topic}"
+                    f"NVIDIA IW Hub ROS graph missing sensor topic: {topic}"
                 )
 
         carb.log_info(
-            "[IW HUB] NVIDIA default Nav2 graph active: "
-            "/cmd_vel, /chassis/odom, front/back 2D LiDAR"
+            "[IW HUB] NVIDIA dual-LiDAR/odom graph active: "
+            "/chassis/odom, /front_2d_lidar/scan, /back_2d_lidar/scan"
         )
 
     def on_physics_step(self, dt):
