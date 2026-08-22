@@ -3,13 +3,16 @@ set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+GOAL_X="-13.813100814819336"
+GOAL_Y="0.7454315423965454"
+
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+
 if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
     unset FASTRTPS_DEFAULT_PROFILES_FILE
 fi
-source "$ROOT_DIR/ros2_ws/install/setup.bash"
 
 if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
     ISAAC_JAZZY_SETUP="$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
@@ -33,7 +36,6 @@ done
 
 if ! printf '%s\n' "$lifecycle_state" | grep -q "active"; then
     echo "[ERROR] Nav2 did not become active: $LIFECYCLE_NODE"
-    echo "[ERROR] current lifecycle state: ${lifecycle_state:-unavailable}"
     exit 1
 fi
 
@@ -49,16 +51,21 @@ if ! timeout 10 ros2 topic echo /map --once \
     exit 1
 fi
 
-scan_rate="$(timeout 8 ros2 topic hz /amr_a/scan --window 5 2>&1 || true)"
-if ! printf '%s\n' "$scan_rate" | grep -q 'average rate:'; then
-    echo "[ERROR] /amr_a/scan has no filtered LaserScan samples"
-    exit 1
-fi
-printf '%s\n' "$scan_rate" | grep -m1 'average rate:'
+for lidar_topic in /front_2d_lidar/scan /back_2d_lidar/scan; do
+    scan_rate="$(timeout 8 ros2 topic hz "$lidar_topic" --window 5 2>&1 || true)"
+    if ! printf '%s\n' "$scan_rate" | grep -q 'average rate:'; then
+        echo "[ERROR] default IW Hub LiDAR has no live samples: $lidar_topic"
+        exit 1
+    fi
+    printf '%s: ' "$lidar_topic"
+    printf '%s\n' "$scan_rate" | grep -m1 'average rate:'
+done
 
-echo "[TEST] filtered LiDAR navigation: goal=(6.0, 0.0)"
+echo "[TEST] default IW Hub Sensor navigation"
+echo "[TEST] goal=($GOAL_X, $GOAL_Y)"
+
 exec ros2 action send_goal \
     "$ACTION_NAME" \
     nav2_msgs/action/NavigateToPose \
-    "{pose: {header: {frame_id: map}, pose: {position: {x: 6.0, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}}" \
+    "{pose: {header: {frame_id: map}, pose: {position: {x: $GOAL_X, y: $GOAL_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}" \
     --feedback
