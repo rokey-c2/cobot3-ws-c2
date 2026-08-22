@@ -1,0 +1,6 @@
+# 로봇팔 -> 영상인식: 지금 카메라가 보고 있는 rgb/depth를 보내서
+# "방금 시도한 흡착이 성공했는지" 확인을 요청한다.
+sensor_msgs/Image rgb_image
+sensor_msgs/Image depth_image
+---
+bool grasp_success
