@@ -10,12 +10,14 @@ from project_config.simulation_config import HEADLESS
 simulation_app = SimulationApp({"headless": HEADLESS})
 
 
+import numpy as np
 import omni.graph.core as og
 import omni.usd
 
 from pxr import Gf, UsdGeom
 
 from isaacsim.core.api import World
+from isaacsim.core.api.objects import DynamicCuboid
 from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 
@@ -129,6 +131,24 @@ def _spawn_cargo_pods():
         )
 
 
+def _spawn_conveyor_test_cube(world):
+    """Spawn a rigid-body cube with collision for conveyor testing."""
+
+    cube = DynamicCuboid(
+        prim_path="/World/ConveyorTestCube",
+        name="conveyor_test_cube",
+        position=np.array([-0.5, 0.0, 1.2]),
+        scale=np.array([0.4, 0.4, 0.4]),
+    )
+
+    world.scene.add(cube)
+
+    print(
+        "[TEST CUBE] spawned at x=-0.5, y=0.0, z=1.2 "
+        "scale=0.4 with rigid body + collision"
+    )
+
+
 def main():
     if not WORLD_USD.is_file():
         raise FileNotFoundError(
@@ -159,6 +179,7 @@ def main():
 
     _create_clock_graph()
     _spawn_cargo_pods()
+    _spawn_conveyor_test_cube(world)
 
     conveyor = ConveyorController(speed=1.0)
     sorter = WheelSorterController(toggle_steps=120)
@@ -217,6 +238,7 @@ def main():
     print(f"[GOAL ] x={GOAL_XY[0]:.6f}, y={GOAL_XY[1]:.6f}")
     print("[CONVEYOR] speed=1.0")
     print("[SORTER] test mode: binary switch toggles every 120 steps")
+    print("[TEST CUBE] position=(-0.5, 0.0, 1.2), scale=0.4")
     print()
     print("[NVIDIA DEFAULT NAVIGATION TOPICS]")
     print("  command : /cmd_vel")
