@@ -56,6 +56,16 @@ y = 0.7454315423965454
 
 추가 테스트 장애물과 cargo는 현재 단일 주행 검증에서 생성하지 않습니다.
 
+## Conveyor / Wheel Sorter
+
+메인 컨베이어는 Python에서 속도 `1.0`으로 제어합니다.
+Wheel Sorter는 기존 ActionGraph의 `binary_switch` 값을 Python에서 변경해서 방향을 제어합니다.
+
+현재 테스트 단계에서는 Wheel Sorter가 일정 simulation step마다 자동으로 방향을 바꿉니다.
+나중에는 barcode / vision / mission 조건에 맞춰 `A` 또는 `B` 방향으로 보내도록 조건만 교체할 수 있습니다.
+
+상세 내용은 [docs/conveyor_sorter_control.md](docs/conveyor_sorter_control.md)를 참고합니다.
+
 ## 실행
 
 터미널 1:
@@ -79,7 +89,7 @@ cd ~/collaboration/test/cobot3-ws-c2
 ./scripts/test_iw_hub_avoidance.sh
 ```
 
-상세 내용은 [docs/iw_hub_navigation.md](docs/iw_hub_navigation.md)를 참고합니다.
+IW Hub 상세 내용은 [docs/iw_hub_navigation.md](docs/iw_hub_navigation.md)를 참고합니다.
 
 ## 중요
 `isaac_sim/project_config/`를 사용합니다.
