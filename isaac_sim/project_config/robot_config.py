@@ -7,6 +7,12 @@ IW_HUB_USD = (
     "iw_hub_warehouse_navigation.usd"
 )
 
+CARD_BOX_USD = (
+    "https://omniverse-content-production.s3-us-west-2.amazonaws.com/"
+    "Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/"
+    "SM_CardBoxB_01_359.usd"
+)
+
 
 # User-verified initial IW Hub transform.
 # Spawn: x=10.5, y=1.80122, yaw=0 deg.
@@ -46,14 +52,16 @@ CARGO_REGISTRY = [
 ]
 
 
-# One 15 kg parcel centered inside the 1 m cargo pod.
-# Cargo floor top is approximately world Z=0.30 m, so the parcel starts
-# 5 mm above it and settles naturally under gravity.
+# NVIDIA Simple Warehouse cardboard-box prop placed inside the cargo pod.
+# The source asset is uniformly scaled at runtime to fit inside this envelope,
+# preserving its original proportions/materials. Physics is enforced locally:
+# dynamic rigid body + gravity + collision + 15 kg mass.
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
+        "usd": CARD_BOX_USD,
         "spawn_xyz": (10.5, -1.5, 0.455),
-        "size_xyz": (0.50, 0.40, 0.30),
+        "max_size_xyz": (0.50, 0.40, 0.30),
         "mass_kg": 15.0,
     }
 ]
