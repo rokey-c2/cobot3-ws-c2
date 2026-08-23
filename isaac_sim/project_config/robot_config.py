@@ -1,89 +1,71 @@
-"""Robot registry.
+"""Runtime configuration for the single IW Hub navigation test."""
 
-spawn_xyz / spawn_yaw 값은 실제 Scene 배치 후 프로젝트 좌표에 맞게 수정하세요.
-"""
+
+IW_HUB_USD = (
+    "https://omniverse-content-production.s3-us-west-2.amazonaws.com/"
+    "Assets/Isaac/5.1/Isaac/Samples/ROS2/Scenario/"
+    "iw_hub_warehouse_navigation.usd"
+)
+
+CARD_BOX_USD = (
+    "https://omniverse-content-production.s3-us-west-2.amazonaws.com/"
+    "Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/"
+    "SM_CardBoxB_01_359.usd"
+)
+
+
+# User-verified initial IW Hub transform.
+# Spawn: x=10.5, y=1.80122, yaw=0 deg.
+START_XY = (
+    10.5,
+    1.80122,
+)
+
+GOAL_XY = (
+    1.0015223026275635,
+    0.018860459327697754,
+)
+
 
 ROBOT_REGISTRY = [
-    # Inbound AMR
     {
-        "type": "forklift_b",
-        "name": "amr_in_01",
-        "namespace": "/amr_in_01",
-        "role": "inbound",
-        "spawn_xyz": (0.0, 0.0, 0.0),
+        "type": "iw_hub",
+        "name": "amr_a",
+        "namespace": "/amr_a",
+        "role": "inbound_amr",
+        "spawn_xyz": (START_XY[0], START_XY[1], 0.0),
         "spawn_yaw": 0.0,
-    },
-    {
-        "type": "forklift_b",
-        "name": "amr_in_02",
-        "namespace": "/amr_in_02",
-        "role": "inbound",
-        "spawn_xyz": (0.0, 2.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-
-    # Outbound A
-    {
-        "type": "forklift_b",
-        "name": "amr_out_a_01",
-        "namespace": "/amr_out_a_01",
-        "role": "outbound_a",
-        "spawn_xyz": (10.0, 5.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "forklift_b",
-        "name": "amr_out_a_02",
-        "namespace": "/amr_out_a_02",
-        "role": "outbound_a",
-        "spawn_xyz": (10.0, 7.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-
-    # Outbound B
-    {
-        "type": "forklift_b",
-        "name": "amr_out_b_01",
-        "namespace": "/amr_out_b_01",
-        "role": "outbound_b",
-        "spawn_xyz": (10.0, -5.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "forklift_b",
-        "name": "amr_out_b_02",
-        "namespace": "/amr_out_b_02",
-        "role": "outbound_b",
-        "spawn_xyz": (10.0, -7.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-
-    # P3020
-    {
-        "type": "p3020",
-        "name": "arm_in_01",
-        "namespace": "/arm_in_01",
-        "role": "inbound_arm",
-        "spawn_xyz": (3.0, 0.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "p3020",
-        "name": "arm_a_01",
-        "namespace": "/arm_a_01",
-        "role": "loading_a",
-        "spawn_xyz": (8.0, 4.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
-    {
-        "type": "p3020",
-        "name": "arm_b_01",
-        "namespace": "/arm_b_01",
-        "role": "loading_b",
-        "spawn_xyz": (8.0, -4.0, 0.0),
-        "spawn_yaw": 0.0,
-    },
+    }
 ]
+
+
+TEST_OBSTACLES = []
+
+
+CARGO_REGISTRY = [
+    {
+        "name": "cargo_pod",
+        "usd": "usd/cargo/cargo_box.usd",
+        "spawn_xyz": (10.5, -1.5, 0.5),
+        "spawn_yaw": 0.0,
+    }
+]
+
+
+# NVIDIA Simple Warehouse cardboard-box prop placed inside the cargo pod.
+# The source asset is uniformly scaled at runtime to fit inside this envelope,
+# preserving its original proportions/materials. Physics is enforced locally:
+# dynamic rigid body + gravity + collision + 15 kg mass.
+PARCEL_REGISTRY = [
+    {
+        "name": "parcel_box_01",
+        "usd": CARD_BOX_USD,
+        "spawn_xyz": (10.5, -1.5, 0.455),
+        "max_size_xyz": (0.50, 0.40, 0.30),
+        "mass_kg": 15.0,
+    }
+]
+
 
 SORTER_CONFIG = {
     "name": "sorter_01",
