@@ -1,3 +1,5 @@
+import re
+
 import omni.graph.core as og
 import omni.usd
 
@@ -11,14 +13,14 @@ class WheelSorterController:
         f"{ACTION_GRAPH_PATH}/binary_switch.inputs:value"
     )
 
-    def __init__(self, toggle_steps: int = 120, speed: float = 1.0):
+    def __init__(self, toggle_steps: int = 120, speed: float = -1.0):
         self.toggle_steps = int(toggle_steps)
         self.speed = float(speed)
         self.step_count = 0
         self.state = False
 
     def setup(self):
-        """Set a known initial direction and synchronize sorter speed."""
+        """Set a known initial direction and apply the sorter speed."""
 
         self.step_count = 0
         self.set_speed(self.speed)
@@ -30,7 +32,7 @@ class WheelSorterController:
         )
 
     def _set_graph_variable_speed(self):
-        """Set a speed/velocity variable on the sorter graph if it exists."""
+        """Set the ActionGraph variable used by the wheel sorter speed."""
 
         try:
             graph = og.Controller.graph(self.ACTION_GRAPH_PATH)
@@ -40,7 +42,18 @@ class WheelSorterController:
         context = graph.get_default_graph_context()
         changed = 0
 
-        for name in ("Velocity", "velocity", "Speed", "speed"):
+        variable_names = (
+            "Sorter Speed",
+            "SorterSpeed",
+            "sorter_speed",
+            "sorterSpeed",
+            "Velocity",
+            "velocity",
+            "Speed",
+            "speed",
+        )
+
+        for name in variable_names:
             variable = graph.find_variable(name)
             if variable is None or not variable.valid:
                 continue
@@ -53,56 +66,64 @@ class WheelSorterController:
 
         return changed
 
-    def _set_node_speed_inputs(self):
-        """Set velocity/speed inputs only inside the sorter subtree."""
+    @staticmethod
+    def _normalize_name(name: str):
+        return re.sub(r"[^a-z0-9]", "", name.lower())
+
+    def _set_sorter_speed_usd_attributes(self):
+        """Find the USD attribute shown as 'Sorter Speed' and set it."""
 
         stage = omni.usd.get_context().get_stage()
         if stage is None:
             raise RuntimeError("USD stage is not available")
 
-        sorter_prim = stage.GetPrimAtPath(self.SORTER_ROOT)
-        if not sorter_prim.IsValid():
+        action_graph = stage.GetPrimAtPath(self.ACTION_GRAPH_PATH)
+        if not action_graph.IsValid():
             raise RuntimeError(
-                f"Wheel sorter prim was not found: {self.SORTER_ROOT}"
+                f"Wheel sorter ActionGraph was not found: {self.ACTION_GRAPH_PATH}"
             )
 
         changed = 0
 
         for prim in stage.Traverse():
             prim_path = str(prim.GetPath())
-            if not prim_path.startswith(self.SORTER_ROOT + "/"):
+            if not (
+                prim_path == self.ACTION_GRAPH_PATH
+                or prim_path.startswith(self.ACTION_GRAPH_PATH + "/")
+            ):
                 continue
 
-            # IsaacConveyor-style speed input.
-            for input_name in ("inputs:velocity", "inputs:speed"):
-                usd_attr = prim.GetAttribute(input_name)
-                if not usd_attr:
+            for attr in prim.GetAttributes():
+                attr_name = attr.GetName()
+                normalized = self._normalize_name(attr_name)
+
+                # Match the actual property displayed in the graph as
+                # "Sorter Speed" without depending on USD punctuation.
+                if "sorter" not in normalized or "speed" not in normalized:
                     continue
 
-                usd_attr.Set(self.speed)
-
-                og_attr = og.Controller.attribute(
-                    f"{prim_path}.{input_name}"
-                )
-                if og_attr.is_valid():
-                    og_attr.set(self.speed)
+                try:
+                    attr.Set(self.speed)
+                except Exception:
+                    continue
 
                 changed += 1
                 print(
-                    f"[SORTER] {prim_path}.{input_name}="
-                    f"{self.speed:.2f}"
+                    f"[SORTER] {prim_path}.{attr_name}={self.speed:.2f}"
                 )
 
-            # Some graphs feed speed through a ConstantFloat node.
-            node_name = prim.GetName().lower()
-            if "speed" not in node_name and "velocity" not in node_name:
+            node_name = self._normalize_name(prim.GetName())
+            if "sorter" not in node_name or "speed" not in node_name:
                 continue
 
             value_attr = prim.GetAttribute("inputs:value")
             if not value_attr:
                 continue
 
-            value_attr.Set(self.speed)
+            try:
+                value_attr.Set(self.speed)
+            except Exception:
+                continue
 
             og_attr = og.Controller.attribute(
                 f"{prim_path}.inputs:value"
@@ -118,18 +139,22 @@ class WheelSorterController:
         return changed
 
     def set_speed(self, speed: float):
-        """Match the wheel-sorter transport speed to the conveyor speed."""
+        """Set the signed wheel-sorter speed.
+
+        The existing graph uses a negative value for the current forward
+        direction, so -1.0 matches the conveyor's 1.0 speed magnitude.
+        """
 
         self.speed = float(speed)
 
         changed = 0
         changed += self._set_graph_variable_speed()
-        changed += self._set_node_speed_inputs()
+        changed += self._set_sorter_speed_usd_attributes()
 
         if changed == 0:
             print(
-                "[SORTER] WARNING: no speed/velocity input was found "
-                "inside the sorter graph"
+                "[SORTER] WARNING: 'Sorter Speed' property was not found "
+                "inside the ActionGraph"
             )
 
     def set_state(self, state: bool):
