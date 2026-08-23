@@ -1,14 +1,10 @@
 """IW Hub local cargo handling around a Nav2 mission.
 
-Pickup sequence is intentionally simple and uses the user-verified transforms:
-1) spawn at x=10.5, y=1.80122, yaw=0 deg,
-2) rotate in place to +90 deg,
-3) move straight along Y to x=10.5, y=-1.25,
-4) lift the cargo,
-5) hand wheel control to Nav2 only after PICKUP_DONE.
-
+Nav2 is NOT used before pickup. The local controller:
+start -> rotate +90 -> drive to cargo dock -> lift.
 After delivery/P3020, Nav2 returns near the cargo area and the local
-controller restores the original cargo pose before lift-down.
+controller restores the dock pose, lowers the lift, then returns the IW Hub
+to its original spawn pose.
 """
 
 import math
@@ -38,11 +34,10 @@ CARGO_HOME_X = 10.5
 CARGO_HOME_Y = -1.5
 CARGO_HOME_YAW = 0.0
 
-# Nav2 return approach. The final return placement is handled locally.
-APPROACH_X = 10.5
-APPROACH_Y = -0.50
+SPAWN_X = 10.5
+SPAWN_Y = 1.80122
+SPAWN_YAW = 0.0
 
-# User-verified IW Hub transform under the container.
 TARGET_ROOT_X = 10.5
 TARGET_ROOT_Y = -1.25
 TARGET_YAW = math.radians(90.0)
@@ -53,9 +48,9 @@ ROTATE_MAX_SPEED = 0.50
 LOCAL_MAX_ANGULAR_SPEED = 0.35
 
 YAW_TOLERANCE = math.radians(0.7)
-APPROACH_TOLERANCE = 0.025
 DOCK_X_TOLERANCE = 0.025
 DOCK_Y_TOLERANCE = 0.005
+SPAWN_POS_TOLERANCE = 0.025
 MIN_CARGO_LIFT = 0.005
 PICKUP_TIMEOUT = 8.0
 
@@ -145,9 +140,6 @@ class MissionIwHubAgent(IwHubAgent):
             return True
         if self.mission_state != "IDLE":
             return False
-
-        # Start exactly as requested: rotate to +90 deg first,
-        # then move straight to the user-verified lift position.
         self._set_state("ROTATE_TO_DOCK")
         return True
 
@@ -156,7 +148,7 @@ class MissionIwHubAgent(IwHubAgent):
             return True
         if self.mission_state != "PICKUP_DONE":
             return False
-        self._set_state("RETURN_TURN_TO_APPROACH")
+        self._set_state("RETURN_ROTATE_TO_DOCK")
         return True
 
     def request_lower(self):
@@ -165,6 +157,14 @@ class MissionIwHubAgent(IwHubAgent):
         if self.mission_state != "RETURN_DOCK_DONE":
             return False
         self._set_state("LOWERING")
+        return True
+
+    def request_return_spawn(self):
+        if self.mission_state == "SPAWN_DONE":
+            return True
+        if self.mission_state != "LOWER_DONE":
+            return False
+        self._set_state("RETURN_TO_SPAWN")
         return True
 
     def reset_mission(self):
@@ -250,75 +250,9 @@ class MissionIwHubAgent(IwHubAgent):
 
         return float(p[0]), float(p[1]), float(p[2]), yaw
 
-    def _turn_toward_approach(self, next_state, hold_lift=False):
-        if hold_lift:
-            self._hold_lift(LIFT_TARGET)
-
-        p, q = self.robot.get_world_pose()
-        dx = APPROACH_X - float(p[0])
-        dy = APPROACH_Y - float(p[1])
-
-        if math.hypot(dx, dy) <= APPROACH_TOLERANCE:
-            self._stop()
-            self._set_state(next_state)
-            return
-
-        desired_yaw = math.atan2(dy, dx)
-        error = _wrap_angle(desired_yaw - _yaw_from_quaternion(q))
-
-        if abs(error) <= YAW_TOLERANCE:
-            self._stop()
-            self._set_state(next_state)
-            return
-
-        angular = float(
-            np.clip(
-                1.8 * error,
-                -ROTATE_MAX_SPEED,
-                ROTATE_MAX_SPEED,
-            )
-        )
-        self._drive(0.0, angular)
-
-    def _drive_to_approach(self, next_state, hold_lift=False):
-        if hold_lift:
-            self._hold_lift(LIFT_TARGET)
-
-        p, q = self.robot.get_world_pose()
-        dx = APPROACH_X - float(p[0])
-        dy = APPROACH_Y - float(p[1])
-        distance = math.hypot(dx, dy)
-
-        if distance <= APPROACH_TOLERANCE:
-            self._stop()
-            self._set_state(next_state)
-            return
-
-        desired_yaw = math.atan2(dy, dx)
-        yaw_error = _wrap_angle(desired_yaw - _yaw_from_quaternion(q))
-
-        linear = 0.0
-        if abs(yaw_error) <= math.radians(20.0):
-            linear = min(
-                LOCAL_MAX_LINEAR_SPEED,
-                max(LOCAL_MIN_LINEAR_SPEED, 0.45 * distance),
-            )
-
-        angular = float(
-            np.clip(
-                1.5 * yaw_error,
-                -LOCAL_MAX_ANGULAR_SPEED,
-                LOCAL_MAX_ANGULAR_SPEED,
-            )
-        )
-        self._drive(linear, angular)
-
-    def _rotate_to_dock(self, next_state, hold_lift=False):
-        if hold_lift:
-            self._hold_lift(LIFT_TARGET)
-
+    def _rotate_to_yaw(self, target_yaw, next_state):
         _, q = self.robot.get_world_pose()
-        error = _wrap_angle(TARGET_YAW - _yaw_from_quaternion(q))
+        error = _wrap_angle(target_yaw - _yaw_from_quaternion(q))
 
         if abs(error) <= YAW_TOLERANCE:
             self._stop()
@@ -334,13 +268,13 @@ class MissionIwHubAgent(IwHubAgent):
         )
         self._drive(0.0, angular)
 
-    def _drive_y_to_dock(self, next_state, hold_lift=False):
+    def _drive_y_to_target(self, target_y, next_state, hold_lift=False):
         if hold_lift:
             self._hold_lift(LIFT_TARGET)
 
         p, q = self.robot.get_world_pose()
         error_x = TARGET_ROOT_X - float(p[0])
-        error_y = TARGET_ROOT_Y - float(p[1])
+        error_y = target_y - float(p[1])
         yaw_error = _wrap_angle(TARGET_YAW - _yaw_from_quaternion(q))
 
         if (
@@ -353,7 +287,37 @@ class MissionIwHubAgent(IwHubAgent):
 
         if abs(error_x) > DOCK_X_TOLERANCE:
             self._fail(
-                f"dock x alignment lost: error={error_x:.4f} m"
+                f"x alignment lost: error={error_x:.4f} m"
+            )
+            return
+
+        linear = math.copysign(
+            min(
+                LOCAL_MAX_LINEAR_SPEED,
+                max(LOCAL_MIN_LINEAR_SPEED, 0.55 * abs(error_y)),
+            ),
+            error_y,
+        )
+        angular = float(np.clip(1.3 * yaw_error, -0.10, 0.10))
+        self._drive(linear, angular)
+
+    def _drive_to_spawn(self):
+        p, q = self.robot.get_world_pose()
+        error_x = SPAWN_X - float(p[0])
+        error_y = SPAWN_Y - float(p[1])
+        yaw_error = _wrap_angle(TARGET_YAW - _yaw_from_quaternion(q))
+
+        if (
+            abs(error_x) <= SPAWN_POS_TOLERANCE
+            and abs(error_y) <= SPAWN_POS_TOLERANCE
+        ):
+            self._stop()
+            self._set_state("ROTATE_TO_SPAWN_YAW")
+            return
+
+        if abs(error_x) > DOCK_X_TOLERANCE:
+            self._fail(
+                f"spawn return x alignment lost: error={error_x:.4f} m"
             )
             return
 
@@ -398,31 +362,20 @@ class MissionIwHubAgent(IwHubAgent):
     def on_physics_step(self, dt):
         self._state_elapsed += float(dt)
 
-        # Nav2 owns wheel DOFs only after pickup succeeds.
         if self.mission_state == "PICKUP_DONE":
             self._hold_lift(LIFT_TARGET)
             return
 
-        if self.mission_state in {"IDLE", "LOWER_DONE", "ERROR"}:
-            return
-
-        # Legacy approach states are retained for compatibility, but the
-        # normal pickup command now starts directly with ROTATE_TO_DOCK.
-        if self.mission_state == "TURN_TO_APPROACH":
-            self._turn_toward_approach("DRIVE_TO_APPROACH")
-            return
-
-        if self.mission_state == "DRIVE_TO_APPROACH":
-            self._drive_to_approach("ROTATE_TO_DOCK")
+        if self.mission_state in {"IDLE", "LOWER_DONE", "SPAWN_DONE", "ERROR"}:
             return
 
         if self.mission_state == "ROTATE_TO_DOCK":
-            self._rotate_to_dock("ENTER_CARGO")
+            self._rotate_to_yaw(TARGET_YAW, "ENTER_CARGO")
             return
 
         if self.mission_state == "ENTER_CARGO":
             before = self.mission_state
-            self._drive_y_to_dock("LIFTING")
+            self._drive_y_to_target(TARGET_ROOT_Y, "LIFTING")
             if before == "ENTER_CARGO" and self.mission_state == "LIFTING":
                 pose = self._world_pose(CARGO_PRIM_PATH)
                 self._cargo_before_z = None if pose is None else pose[2]
@@ -457,29 +410,14 @@ class MissionIwHubAgent(IwHubAgent):
                 )
             return
 
-        if self.mission_state == "RETURN_TURN_TO_APPROACH":
-            self._turn_toward_approach(
-                "RETURN_DRIVE_TO_APPROACH",
-                hold_lift=True,
-            )
-            return
-
-        if self.mission_state == "RETURN_DRIVE_TO_APPROACH":
-            self._drive_to_approach(
-                "RETURN_ROTATE_TO_DOCK",
-                hold_lift=True,
-            )
-            return
-
         if self.mission_state == "RETURN_ROTATE_TO_DOCK":
-            self._rotate_to_dock(
-                "RETURN_ENTER_HOME",
-                hold_lift=True,
-            )
+            self._hold_lift(LIFT_TARGET)
+            self._rotate_to_yaw(TARGET_YAW, "RETURN_ENTER_HOME")
             return
 
         if self.mission_state == "RETURN_ENTER_HOME":
-            self._drive_y_to_dock(
+            self._drive_y_to_target(
+                TARGET_ROOT_Y,
                 "RETURN_DOCK_DONE",
                 hold_lift=True,
             )
@@ -500,4 +438,12 @@ class MissionIwHubAgent(IwHubAgent):
                     self._fail(reason)
                     return
                 self._set_state("LOWER_DONE")
+            return
+
+        if self.mission_state == "RETURN_TO_SPAWN":
+            self._drive_to_spawn()
+            return
+
+        if self.mission_state == "ROTATE_TO_SPAWN_YAW":
+            self._rotate_to_yaw(SPAWN_YAW, "SPAWN_DONE")
             return
