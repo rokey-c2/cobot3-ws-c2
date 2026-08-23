@@ -10,6 +10,7 @@ venv/
 build/
 install/
 log/
+/home/ # except later
 
 # Frontend
 node_modules/
@@ -54,3 +55,29 @@ isaac_sim/robots/p3020/vision/models/
 # Offline test ros2 bags (large binaries, keep outside Git)
 tests/ros2/*/
 !tests/ros2/.gitkeep
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1001.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_Normal.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1002.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Red_A_Normal.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Gray_A_Normal.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1006.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1004.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Blue_A_Normal.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1008.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1007.png
+/isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1003.png
+/isaac_sim/usd/env_to_mon_p3020_gripper/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png
+/isaac_sim/usd/env_to_mon_p3020_gripper/SubUSDs/textures/T_Plastic_Orange_A_Normal.png
+/isaac_sim/usd/env_to_mon_p3020_gripper/SubUSDs/textures/T_Plastic_Red_A_Normal.png
+/isaac_sim/usd/env_to_mon_p3020_gripper/SubUSDs/textures/T_Plastic_Gray_A_Normal.png
+/isaac_sim/usd/env_to_mon_p3020_gripper/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png
+/isaac_sim/usd/env_to_mon_p3020_gripper/SubUSDs/textures/T_Plastic_Blue_A_Normal.png
+/isaac_sim/usd/enva_small_warehouse_p3020_marker/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png
+/isaac_sim/usd/enva_small_warehouse_p3020_marker/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Orange_A_Normal.png
+/isaac_sim/usd/enva_small_warehouse_p3020_marker/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Red_A_Normal.png
+/isaac_sim/usd/enva_small_warehouse_p3020_marker/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Gray_A_Normal.png
+/isaac_sim/usd/enva_small_warehouse_p3020_marker/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Rough_Black_A_Normal.png
+/isaac_sim/usd/enva_small_warehouse_p3020_marker/home/runo/collaboration/cobot3-ws-c2/isaac_sim/usd/env_small_warehouse_p3020/SubUSDs/textures/T_Plastic_Blue_A_Normal.png
+/home/
