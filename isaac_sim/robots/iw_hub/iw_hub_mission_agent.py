@@ -2,9 +2,9 @@
 
 Nav2 is NOT used before pickup. The local controller:
 start -> rotate +90 -> drive to cargo dock -> lift.
-After delivery/P3020, Nav2 returns near the cargo area and the local
-controller restores the dock pose, lowers the lift, then returns the IW Hub
-to its original spawn pose.
+After delivery/P3020, Nav2 returns near the cargo area. The local controller
+first corrects X, restores the dock pose, lowers the lift, then returns the
+IW Hub to its original spawn pose.
 """
 
 import math
@@ -41,13 +41,16 @@ SPAWN_YAW = 0.0
 TARGET_ROOT_X = 10.5
 TARGET_ROOT_Y = -1.25
 TARGET_YAW = math.radians(90.0)
+RETURN_X_YAW = 0.0
 
 LOCAL_MAX_LINEAR_SPEED = 0.24
 LOCAL_MIN_LINEAR_SPEED = 0.03
+RETURN_X_MAX_LINEAR_SPEED = 0.12
 ROTATE_MAX_SPEED = 0.50
 LOCAL_MAX_ANGULAR_SPEED = 0.35
 
 YAW_TOLERANCE = math.radians(0.7)
+RETURN_X_TOLERANCE = 0.01
 DOCK_X_TOLERANCE = 0.025
 DOCK_Y_TOLERANCE = 0.005
 SPAWN_POS_TOLERANCE = 0.025
@@ -148,7 +151,9 @@ class MissionIwHubAgent(IwHubAgent):
             return True
         if self.mission_state != "PICKUP_DONE":
             return False
-        self._set_state("RETURN_ROTATE_TO_DOCK")
+        # Nav2 can finish with a small lateral X error. Correct X first,
+        # then rotate back to +90 deg and enter the original dock pose.
+        self._set_state("RETURN_ALIGN_X_YAW")
         return True
 
     def request_lower(self):
@@ -250,7 +255,10 @@ class MissionIwHubAgent(IwHubAgent):
 
         return float(p[0]), float(p[1]), float(p[2]), yaw
 
-    def _rotate_to_yaw(self, target_yaw, next_state):
+    def _rotate_to_yaw(self, target_yaw, next_state, hold_lift=False):
+        if hold_lift:
+            self._hold_lift(LIFT_TARGET)
+
         _, q = self.robot.get_world_pose()
         error = _wrap_angle(target_yaw - _yaw_from_quaternion(q))
 
@@ -267,6 +275,33 @@ class MissionIwHubAgent(IwHubAgent):
             )
         )
         self._drive(0.0, angular)
+
+    def _drive_x_to_target(self, next_state, hold_lift=False):
+        if hold_lift:
+            self._hold_lift(LIFT_TARGET)
+
+        p, q = self.robot.get_world_pose()
+        error_x = TARGET_ROOT_X - float(p[0])
+        yaw_error = _wrap_angle(RETURN_X_YAW - _yaw_from_quaternion(q))
+
+        if abs(error_x) <= RETURN_X_TOLERANCE:
+            self._stop()
+            print(
+                "[MISSION IW HUB] return X aligned: "
+                f"x={float(p[0]):.4f}, error={error_x:.4f} m"
+            )
+            self._set_state(next_state)
+            return
+
+        linear = math.copysign(
+            min(
+                RETURN_X_MAX_LINEAR_SPEED,
+                max(LOCAL_MIN_LINEAR_SPEED, 0.55 * abs(error_x)),
+            ),
+            error_x,
+        )
+        angular = float(np.clip(1.3 * yaw_error, -0.10, 0.10))
+        self._drive(linear, angular)
 
     def _drive_y_to_target(self, target_y, next_state, hold_lift=False):
         if hold_lift:
@@ -287,7 +322,7 @@ class MissionIwHubAgent(IwHubAgent):
 
         if abs(error_x) > DOCK_X_TOLERANCE:
             self._fail(
-                f"x alignment lost: error={error_x:.4f} m"
+                f"x alignment lost after correction: error={error_x:.4f} m"
             )
             return
 
@@ -410,9 +445,27 @@ class MissionIwHubAgent(IwHubAgent):
                 )
             return
 
+        if self.mission_state == "RETURN_ALIGN_X_YAW":
+            self._rotate_to_yaw(
+                RETURN_X_YAW,
+                "RETURN_ALIGN_X",
+                hold_lift=True,
+            )
+            return
+
+        if self.mission_state == "RETURN_ALIGN_X":
+            self._drive_x_to_target(
+                "RETURN_ROTATE_TO_DOCK",
+                hold_lift=True,
+            )
+            return
+
         if self.mission_state == "RETURN_ROTATE_TO_DOCK":
-            self._hold_lift(LIFT_TARGET)
-            self._rotate_to_yaw(TARGET_YAW, "RETURN_ENTER_HOME")
+            self._rotate_to_yaw(
+                TARGET_YAW,
+                "RETURN_ENTER_HOME",
+                hold_lift=True,
+            )
             return
 
         if self.mission_state == "RETURN_ENTER_HOME":
