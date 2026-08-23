@@ -1,11 +1,12 @@
 """AMR mission orchestration for cargo delivery and P3020 handoff.
 
 Sequence:
-1) local IW Hub control moves from start to cargo and lifts it.
+1) local IW Hub control rotates +90, drives to cargo, and lifts it.
 2) Nav2 starts only after PICKUP_DONE.
 3) delivery Nav2 success triggers P3020 PickPlace action.
 4) P3020 success triggers Nav2 return to cargo area.
-5) local controller restores cargo original pose and lowers the lift.
+5) local controller restores IW Hub to the cargo dock pose and lowers lift.
+6) after cargo pose verification, local controller returns IW Hub to spawn.
 
 For AMR-only testing before the P3020 server is ready:
     simulate_p3020:=true
@@ -385,6 +386,10 @@ class AmrP3020Mission(Node):
             self._publish_pickup_command("RETURN_DOCK")
 
             if self.pickup_state == "RETURN_DOCK_DONE":
+                self.get_logger().info(
+                    "IW Hub restored to cargo dock: "
+                    "x=10.5, y=-1.25, yaw=90 deg"
+                )
                 self._set_state("REQUEST_LOWER")
             elif self.pickup_state == "ERROR":
                 self._fail(
@@ -396,16 +401,31 @@ class AmrP3020Mission(Node):
             self._publish_pickup_command("LOWER")
 
             if self.pickup_state == "LOWER_DONE":
-                self._set_state("COMPLETE")
+                self.get_logger().info(
+                    "lift down complete; returning IW Hub to spawn"
+                )
+                self._set_state("REQUEST_RETURN_SPAWN")
             elif self.pickup_state == "ERROR":
                 self._fail(
                     "Isaac lift-down/cargo pose verification ERROR"
                 )
             return
 
+        if self.state == "REQUEST_RETURN_SPAWN":
+            self._publish_pickup_command("RETURN_SPAWN")
+
+            if self.pickup_state == "SPAWN_DONE":
+                self._set_state("COMPLETE")
+            elif self.pickup_state == "ERROR":
+                self._fail(
+                    "Isaac spawn return controller reported ERROR"
+                )
+            return
+
         if self.state == "COMPLETE":
             self.get_logger().info(
-                "AMR mission complete: cargo restored at original pose",
+                "AMR mission complete: cargo restored and IW Hub returned "
+                "to spawn (10.5, 1.80122, yaw=0 deg)",
                 throttle_duration_sec=5.0,
             )
             return
