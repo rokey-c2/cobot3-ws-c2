@@ -46,7 +46,7 @@ enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
 simulation_app.update()
 
-from cargo.cargo_pod_physics import add_cargo_pod_physics, add_parcel_box
+from cargo.cargo_pod_physics import add_cargo_pod_physics, add_parcel_asset
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 
 
@@ -116,11 +116,12 @@ def _spawn_parcels():
 
     for config in PARCEL_REGISTRY:
         prim_path = f"/World/Parcels/{config['name']}"
-        add_parcel_box(
+        add_parcel_asset(
             stage,
             prim_path,
+            asset_url=config["usd"],
             center=config["spawn_xyz"],
-            size=config["size_xyz"],
+            max_size=config["max_size_xyz"],
             mass_kg=float(config.get("mass_kg", 15.0)),
         )
 
@@ -230,7 +231,8 @@ def main():
     print("[LOCAL] drive to: (10.5, -1.25), yaw=90 deg")
     print("[LOCAL] lift target: 0.04 m")
     print("[CARGO] blue cargo pod: (10.5, -1.5), yaw=0 deg")
-    print("[PARCEL] 0.50 x 0.40 x 0.30 m, mass=15 kg")
+    print("[PARCEL] NVIDIA SM_CardBoxB_01_359, mass=15 kg")
+    print("[PARCEL] runtime fit envelope: 0.50 x 0.40 x 0.30 m")
     print("[NAV2] starts only after PICKUP_DONE")
     print("[DELIVERY] (1.30104, -0.06065)")
     print("[RETURN] Nav2 -> cargo area -> local precision dock")
