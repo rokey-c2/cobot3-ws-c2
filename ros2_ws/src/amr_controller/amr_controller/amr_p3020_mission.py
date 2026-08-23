@@ -1,10 +1,14 @@
-"""AMR mission: Nav2 -> pickup -> delivery -> P3020 -> return.
+"""AMR mission orchestration for cargo delivery and P3020 handoff.
 
-P3020 vision is intentionally omitted here. The existing PickPlace action is
-called with fixed pickup/place poses supplied as ROS parameters.
+Sequence:
+1) local IW Hub control moves from start to cargo and lifts it.
+2) Nav2 starts only after PICKUP_DONE.
+3) delivery Nav2 success triggers P3020 PickPlace action.
+4) P3020 success triggers Nav2 return to cargo area.
+5) local controller restores cargo original pose and lowers the lift.
 
-For AMR-only testing before the P3020 teammate is ready, the default is
-simulate_p3020:=true.
+For AMR-only testing before the P3020 server is ready:
+    simulate_p3020:=true
 """
 
 import math
@@ -28,17 +32,16 @@ class AmrP3020Mission(Node):
     def __init__(self):
         super().__init__("amr_p3020_mission")
 
-        self.declare_parameter("predock_x", 10.5)
-        self.declare_parameter("predock_y", -0.50)
-        self.declare_parameter("predock_yaw", math.radians(90.0))
-
         self.declare_parameter("delivery_x", 1.30104)
         self.declare_parameter("delivery_y", -0.06065)
         self.declare_parameter("delivery_yaw", 0.0)
 
-        self.declare_parameter("home_x", 10.581993103027344)
-        self.declare_parameter("home_y", 0.3304140567779541)
-        self.declare_parameter("home_yaw", 0.0)
+        self.declare_parameter("return_x", 10.5)
+        self.declare_parameter("return_y", -0.50)
+        self.declare_parameter(
+            "return_yaw",
+            math.radians(90.0),
+        )
 
         self.declare_parameter(
             "p3020_action_name",
@@ -46,7 +49,7 @@ class AmrP3020Mission(Node):
         )
         self.declare_parameter("simulate_p3020", True)
         self.declare_parameter("simulated_p3020_duration", 3.0)
-        self.declare_parameter("object_id", "cargo_pod")
+        self.declare_parameter("object_id", "box")
 
         for prefix in ("pickup", "place"):
             for field, default in (
@@ -71,11 +74,7 @@ class AmrP3020Mission(Node):
         self.p3020_client = ActionClient(
             self,
             PickPlace,
-            str(
-                self.get_parameter(
-                    "p3020_action_name"
-                ).value
-            ),
+            str(self.get_parameter("p3020_action_name").value),
         )
 
         self.pickup_command_pub = self.create_publisher(
@@ -95,7 +94,7 @@ class AmrP3020Mission(Node):
             10,
         )
 
-        self.state = "WAIT_NAV2"
+        self.state = "WAIT_READY"
         self.pickup_state = "UNKNOWN"
         self.current_nav_purpose = None
         self.phase_started_at = self._now_seconds()
@@ -224,12 +223,13 @@ class AmrP3020Mission(Node):
             )
             return
 
-        if purpose == "PRE_DOCK":
-            self._set_state("REQUEST_PICKUP")
-        elif purpose == "DELIVERY":
+        if purpose == "DELIVERY":
+            self.get_logger().info(
+                "IW Hub destination arrived: sending P3020 action"
+            )
             self._set_state("P3020_START")
-        elif purpose == "HOME":
-            self._set_state("COMPLETE")
+        elif purpose == "RETURN_APPROACH":
+            self._set_state("REQUEST_RETURN_DOCK")
         else:
             self._fail(
                 f"unknown Nav2 purpose completed: {purpose}"
@@ -288,9 +288,9 @@ class AmrP3020Mission(Node):
             and bool(result.success)
         ):
             self.get_logger().info(
-                f"P3020 complete: {result.message}"
+                f"P3020 PickPlace complete: {result.message}"
             )
-            self._set_state("REQUEST_LOWER")
+            self._set_state("NAV_TO_RETURN")
             return
 
         self._fail(
@@ -304,28 +304,25 @@ class AmrP3020Mission(Node):
         self._set_state("ERROR")
 
     def _tick(self):
-        if self.state == "WAIT_NAV2":
-            if self.navigate_client.server_is_ready():
-                self._set_state("NAV_TO_PRE_DOCK")
-            return
-
-        if self.state == "NAV_TO_PRE_DOCK":
-            self._send_nav_goal(
-                "PRE_DOCK",
-                float(self.get_parameter("predock_x").value),
-                float(self.get_parameter("predock_y").value),
-                float(self.get_parameter("predock_yaw").value),
-            )
+        if self.state == "WAIT_READY":
+            if (
+                self.navigate_client.server_is_ready()
+                and self.pickup_state != "UNKNOWN"
+            ):
+                self._set_state("REQUEST_PICKUP")
             return
 
         if self.state == "REQUEST_PICKUP":
             self._publish_pickup_command("PICKUP")
 
             if self.pickup_state == "PICKUP_DONE":
+                self.get_logger().info(
+                    "cargo lift confirmed; Nav2 starts now"
+                )
                 self._set_state("NAV_TO_DELIVERY")
             elif self.pickup_state == "ERROR":
                 self._fail(
-                    "Isaac docking/lift controller reported ERROR"
+                    "Isaac local pickup/lift controller reported ERROR"
                 )
             return
 
@@ -345,7 +342,7 @@ class AmrP3020Mission(Node):
 
             if simulate:
                 self.get_logger().warning(
-                    "P3020 simulated: no vision/action server"
+                    "P3020 simulated: action/OpenCV server not connected"
                 )
                 self._set_state("P3020_SIMULATING")
                 return
@@ -366,35 +363,49 @@ class AmrP3020Mission(Node):
                 ).value
             )
             if self._now_seconds() - self.phase_started_at >= duration:
-                self._set_state("REQUEST_LOWER")
+                self.get_logger().info(
+                    "simulated P3020 PickPlace complete"
+                )
+                self._set_state("NAV_TO_RETURN")
             return
 
         if self.state in {"P3020_GOAL_SENT", "P3020_WORKING"}:
+            return
+
+        if self.state == "NAV_TO_RETURN":
+            self._send_nav_goal(
+                "RETURN_APPROACH",
+                float(self.get_parameter("return_x").value),
+                float(self.get_parameter("return_y").value),
+                float(self.get_parameter("return_yaw").value),
+            )
+            return
+
+        if self.state == "REQUEST_RETURN_DOCK":
+            self._publish_pickup_command("RETURN_DOCK")
+
+            if self.pickup_state == "RETURN_DOCK_DONE":
+                self._set_state("REQUEST_LOWER")
+            elif self.pickup_state == "ERROR":
+                self._fail(
+                    "Isaac return docking controller reported ERROR"
+                )
             return
 
         if self.state == "REQUEST_LOWER":
             self._publish_pickup_command("LOWER")
 
             if self.pickup_state == "LOWER_DONE":
-                self._set_state("NAV_HOME")
+                self._set_state("COMPLETE")
             elif self.pickup_state == "ERROR":
                 self._fail(
-                    "Isaac lift controller reported ERROR"
+                    "Isaac lift-down/cargo pose verification ERROR"
                 )
-            return
-
-        if self.state == "NAV_HOME":
-            self._send_nav_goal(
-                "HOME",
-                float(self.get_parameter("home_x").value),
-                float(self.get_parameter("home_y").value),
-                float(self.get_parameter("home_yaw").value),
-            )
             return
 
         if self.state == "COMPLETE":
             self.get_logger().info(
-                "AMR mission complete",
+                "AMR mission complete: cargo restored at original pose",
                 throttle_duration_sec=5.0,
             )
             return

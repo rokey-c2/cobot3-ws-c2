@@ -1,6 +1,8 @@
-"""Custom warehouse + NVIDIA IW Hub + local docking/lift mission bridge.
+"""Custom warehouse + NVIDIA IW Hub + mission bridge.
 
-Local integration runner. Existing main.py stays untouched.
+Final order:
+local start -> cargo -> lift -> Nav2 delivery -> P3020 action
+-> Nav2 return -> local precision return -> lift down.
 """
 
 from pathlib import Path
@@ -128,6 +130,8 @@ class AmrMissionBridge(Node):
 
         if command == "PICKUP":
             self.agent.request_pickup()
+        elif command == "RETURN_DOCK":
+            self.agent.request_return_dock()
         elif command == "LOWER":
             self.agent.request_lower()
         elif command == "RESET":
@@ -197,11 +201,15 @@ def main():
 
     print()
     print("============================================")
-    print(" IW HUB NAV2 + DOCK/LIFT MISSION READY")
+    print(" IW HUB CARGO + NAV2 + P3020 MISSION READY")
     print("============================================")
-    print("[NAV2] long-distance travel: existing /cmd_vel")
-    print("[LOCAL] docking max speed: 0.24 m/s")
-    print("[LOCAL] lift target: 0.04 m")
+    print("[START] IW Hub: (1.5, 0.0)")
+    print("[LOCAL] start -> cargo -> lift")
+    print("[CARGO] original: (10.5, -1.5), yaw=0 deg")
+    print("[NAV2] starts only after PICKUP_DONE")
+    print("[DELIVERY] (1.30104, -0.06065)")
+    print("[RETURN] Nav2 -> cargo area -> local precision dock")
+    print("[LOCAL] verify original cargo pose -> lift down")
     print("[ROS2] /amr_a/pickup_command")
     print("[ROS2] /amr_a/pickup_state")
     print("============================================")

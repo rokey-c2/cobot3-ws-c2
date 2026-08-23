@@ -25,14 +25,15 @@ if ! ros2 interface show logistics_interfaces/action/PickPlace >/dev/null 2>&1; 
 fi
 
 echo "============================================"
-echo " AMR -> P3020 MISSION"
+echo " IW HUB -> P3020 CARGO MISSION"
 echo "============================================"
-echo "[1] Nav2 PRE_DOCK"
-echo "[2] local dock + lift"
-echo "[3] Nav2 delivery: (1.30104, -0.06065)"
-echo "[4] P3020 fixed-pose PickPlace"
-echo "[5] lift down"
-echo "[6] Nav2 home"
+echo "[1] local: start (1.5,0.0) -> cargo"
+echo "[2] local: dock + lift 0.04 m"
+echo "[3] Nav2 starts -> delivery (1.30104,-0.06065)"
+echo "[4] delivery SUCCESS -> P3020 PickPlace Action"
+echo "[5] P3020 success -> Nav2 return to cargo area"
+echo "[6] local precision return -> lift down"
+echo "[7] verify cargo: (10.5,-1.5), yaw=0 deg"
 echo
 echo "[TEST DEFAULT] simulate_p3020:=true"
 echo "============================================"

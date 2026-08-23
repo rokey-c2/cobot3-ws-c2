@@ -4,8 +4,8 @@ set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/maps/warehouse_navigation.yaml"
 
-START_X="10.581993103027344"
-START_Y="0.3304140567779541"
+START_X="1.5"
+START_Y="0.0"
 
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
@@ -15,7 +15,6 @@ if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
     unset FASTRTPS_DEFAULT_PROFILES_FILE
 fi
 
-# NVIDIA's official IW Hub Nav2 package lives in the Isaac Sim ROS workspace.
 if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
     ISAAC_JAZZY_SETUP="$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
     if [ -f "$ISAAC_JAZZY_SETUP" ]; then
@@ -47,7 +46,7 @@ wait_for_publisher() {
     done
 
     echo "[ERROR] no publisher found for $topic_name"
-    echo "[ERROR] Start Isaac Sim first with ./scripts/run_isaac.sh"
+    echo "[ERROR] Start Isaac Sim first with ./scripts/run_isaac_mission.sh"
     return 1
 }
 
@@ -66,7 +65,6 @@ wait_for_samples() {
     return 1
 }
 
-# Use only the topics already provided by the default IW Hub Sensor asset.
 wait_for_publisher /clock
 wait_for_publisher /front_2d_lidar/scan
 wait_for_publisher /back_2d_lidar/scan
@@ -89,7 +87,6 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Wait for AMCL to become active before setting the map-frame start pose.
 echo "[ROS2] waiting for AMCL"
 for _ in $(seq 1 60); do
     amcl_state="$(ros2 lifecycle get /amcl 2>/dev/null || true)"

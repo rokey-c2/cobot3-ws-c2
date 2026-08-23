@@ -1,11 +1,6 @@
 """Runtime configuration for the single IW Hub navigation test."""
 
 
-# NVIDIA's official Isaac Sim 5.1 IW Hub Navigation sample.
-# The navigation scene contains the IW Hub setup used by NVIDIA Nav2,
-# including the front/back 2D LiDAR configuration and ROS 2 publishers.
-# We reference the robot setup from this scene instead of creating LiDARs
-# ourselves or changing their sensor parameters.
 IW_HUB_USD = (
     "https://omniverse-content-production.s3-us-west-2.amazonaws.com/"
     "Assets/Isaac/5.1/Isaac/Samples/ROS2/Scenario/"
@@ -14,8 +9,8 @@ IW_HUB_USD = (
 
 
 START_XY = (
-    10.581993103027344,
-    0.3304140567779541,
+    1.5,
+    0.0,
 )
 
 GOAL_XY = (
@@ -36,14 +31,9 @@ ROBOT_REGISTRY = [
 ]
 
 
-# This test uses the saved warehouse only. Do not create extra test obstacles.
 TEST_OBSTACLES = []
 
 
-# Cargo pod converted from the selected cargo box STEP asset.
-# The STEP model is 1000 mm x 1000 mm x 1000 mm and was tessellated to a
-# meter-scale USD mesh. Its local Z range is -0.5..0.5 m, so z=0.5 places
-# the bottom on the warehouse floor.
 CARGO_REGISTRY = [
     {
         "name": "cargo_pod",
