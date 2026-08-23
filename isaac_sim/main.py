@@ -181,8 +181,12 @@ def main():
     _spawn_cargo_pods()
     _spawn_conveyor_test_cube(world)
 
-    conveyor = ConveyorController(speed=1.0)
-    sorter = WheelSorterController(toggle_steps=120)
+    equipment_speed = 1.0
+    conveyor = ConveyorController(speed=equipment_speed)
+    sorter = WheelSorterController(
+        toggle_steps=120,
+        speed=equipment_speed,
+    )
 
     conveyor.setup()
     sorter.setup()
@@ -225,6 +229,7 @@ def main():
 
     # Apply the conveyor value again after OmniGraph playback becomes active.
     conveyor.start()
+    sorter.set_speed(equipment_speed)
 
     # Give NVIDIA's built-in front/back RTX LiDAR publishers time to start.
     for _ in range(30):
@@ -236,8 +241,8 @@ def main():
     print("============================================")
     print(f"[START] x={START_XY[0]:.6f}, y={START_XY[1]:.6f}")
     print(f"[GOAL ] x={GOAL_XY[0]:.6f}, y={GOAL_XY[1]:.6f}")
-    print("[CONVEYOR] speed=1.0")
-    print("[SORTER] test mode: binary switch toggles every 120 steps")
+    print(f"[CONVEYOR] speed={equipment_speed:.1f}")
+    print(f"[SORTER] speed={equipment_speed:.1f}, binary switch toggles every 120 steps")
     print("[TEST CUBE] position=(-0.5, 0.0, 1.2), scale=0.4")
     print()
     print("[NVIDIA DEFAULT NAVIGATION TOPICS]")
