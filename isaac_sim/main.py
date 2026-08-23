@@ -202,6 +202,9 @@ def main():
 
     world.play()
 
+    # Apply the conveyor value again after OmniGraph playback becomes active.
+    conveyor.start()
+
     # Give NVIDIA's built-in front/back RTX LiDAR publishers time to start.
     for _ in range(30):
         world.step(render=True)
