@@ -1,15 +1,16 @@
+import omni.graph.core as og
 import omni.usd
 
 
 class ConveyorController:
-    """Control the conveyor belt graph velocities in the loaded warehouse."""
+    """Control conveyor speed through the existing OmniGraph variables."""
 
     def __init__(self, speed: float = 1.0):
         self.speed = float(speed)
         self._graph_paths = []
 
     def setup(self):
-        """Find conveyor graphs and set their initial speed."""
+        """Find ConveyorBeltGraph prims and apply the initial speed."""
 
         stage = omni.usd.get_context().get_stage()
         if stage is None:
@@ -21,32 +22,10 @@ class ConveyorController:
             if not prim.GetName().startswith("ConveyorBeltGraph"):
                 continue
 
-            velocity_attr = prim.GetAttribute("Velocity")
-            if not velocity_attr:
-                velocity_attr = prim.GetAttribute("velocity")
-
-            if not velocity_attr:
-                continue
-
-            velocity_attr.Set(self.speed)
             graph_path = str(prim.GetPath())
             self._graph_paths.append(graph_path)
-            print(f"[CONVEYOR] {graph_path} speed={self.speed:.2f}")
 
-        if not self._graph_paths:
-            print("[CONVEYOR] WARNING: no ConveyorBeltGraph velocity found")
-
-    def set_speed(self, speed: float):
-        """Change the speed of every conveyor graph found during setup."""
-
-        self.speed = float(speed)
-        stage = omni.usd.get_context().get_stage()
-
-        for graph_path in self._graph_paths:
-            prim = stage.GetPrimAtPath(graph_path)
-            if not prim.IsValid():
-                continue
-
+            # Keep the USD-backed default value in sync as well.
             velocity_attr = prim.GetAttribute("Velocity")
             if not velocity_attr:
                 velocity_attr = prim.GetAttribute("velocity")
@@ -54,8 +33,83 @@ class ConveyorController:
             if velocity_attr:
                 velocity_attr.Set(self.speed)
 
+        if not self._graph_paths:
+            print("[CONVEYOR] WARNING: no ConveyorBeltGraph found")
+            return
+
+        self.set_speed(self.speed)
+
+    def _find_velocity_variable(self, graph):
+        """Return the graph's Velocity variable."""
+
+        for name in ("Velocity", "velocity"):
+            variable = graph.find_variable(name)
+            if variable is not None and variable.valid:
+                return variable
+
+        return None
+
+    def _set_graph_speed(self, graph_path: str, speed: float):
+        """Set the current OmniGraph runtime velocity."""
+
+        try:
+            graph = og.Controller.graph(graph_path)
+        except Exception as exc:
+            print(
+                f"[CONVEYOR] ERROR: graph lookup failed "
+                f"{graph_path}: {exc}"
+            )
+            return
+
+        variable = self._find_velocity_variable(graph)
+
+        if variable is None:
+            print(
+                f"[CONVEYOR] WARNING: Velocity variable not found: "
+                f"{graph_path}"
+            )
+            return
+
+        context = graph.get_default_graph_context()
+
+        if not variable.set(context, float(speed)):
+            print(
+                f"[CONVEYOR] ERROR: runtime Velocity set failed: "
+                f"{graph_path}"
+            )
+            return
+
+        runtime_speed = variable.get(context)
+        print(
+            f"[CONVEYOR] graph={graph_path} "
+            f"runtime_speed={float(runtime_speed):.2f}"
+        )
+
+    def set_speed(self, speed: float):
+        """Change the runtime speed of every conveyor graph."""
+
+        self.speed = float(speed)
+        stage = omni.usd.get_context().get_stage()
+
+        for graph_path in self._graph_paths:
+            prim = stage.GetPrimAtPath(graph_path)
+            if prim.IsValid():
+                velocity_attr = prim.GetAttribute("Velocity")
+                if not velocity_attr:
+                    velocity_attr = prim.GetAttribute("velocity")
+
+                if velocity_attr:
+                    velocity_attr.Set(self.speed)
+
+            self._set_graph_speed(graph_path, self.speed)
+
     def start(self):
+        """Re-apply speed after simulation playback has started."""
+
         self.set_speed(self.speed)
 
     def stop(self):
-        self.set_speed(0.0)
+        """Stop every conveyor graph."""
+
+        for graph_path in self._graph_paths:
+            self._set_graph_speed(graph_path, 0.0)
