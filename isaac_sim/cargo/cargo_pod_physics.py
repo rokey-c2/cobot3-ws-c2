@@ -1,12 +1,11 @@
-"""Rigid-body physics and simple parcel assets for the cargo pod."""
+"""Rigid-body physics and parcel assets for the cargo pod."""
 
-from pxr import Gf, Sdf, UsdGeom, UsdPhysics, UsdShade
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade
 
 
 BLUE = Gf.Vec3f(0.05, 0.25, 0.95)
-PARCEL_BROWN = Gf.Vec3f(0.55, 0.32, 0.12)
 
-# The STEP model is 1.0 x 1.0 x 1.0 m.
+# The STEP cargo pod is 1.0 x 1.0 x 1.0 m.
 # Local Z = -0.5 is the bottom of the four legs.
 # Local Z = -0.25 is the underside of the cargo floor.
 # This leaves about 0.25 m of clearance for the IW Hub.
@@ -26,7 +25,7 @@ def _create_collision_box(stage, path, center, size):
 
     UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
 
-    # Keep the simplified physics boxes visible while we debug docking/lift.
+    # Keep the simplified cargo colliders visible while docking/lift is tested.
     UsdGeom.Imageable(cube.GetPrim()).MakeVisible()
 
 
@@ -62,12 +61,7 @@ def _apply_blue_material(stage, prim_path):
 
 
 def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
-    """Turn the referenced STEP mesh into one compound rigid body.
-
-    Physics uses simple box colliders so the open space below the pod stays
-    open for the IW Hub. The visible STEP mesh and debug colliders are both
-    recolored blue for the current warehouse scenario.
-    """
+    """Turn the referenced STEP mesh into one compound rigid body."""
 
     cargo_prim = stage.GetPrimAtPath(prim_path)
     if not cargo_prim.IsValid():
@@ -103,7 +97,7 @@ def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
         )
 
     # The cargo floor is about 50 mm thick.
-    # Its underside is at local Z = -0.25 m, which is where the lift contacts.
+    # Its underside is local Z=-0.25 m, where the IW Hub lift contacts it.
     _create_collision_box(
         stage,
         f"{collision_root_path}/floor",
@@ -149,32 +143,123 @@ def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
     )
 
 
-def add_parcel_box(stage, prim_path, center, size, mass_kg=15.0):
-    """Create one dynamic parcel box sized to fit inside the cargo pod.
+def _disable_referenced_physics(asset_prim):
+    """Disable physics authored inside a referenced visual asset.
 
-    The parcel is intentionally a separate rigid body, not a child rigid body
-    of the cargo pod, so Isaac/PhysX can simulate it resting inside the pod.
+    The parcel root below owns the one authoritative rigid body and collider.
+    This avoids nested rigid bodies or duplicate collision shapes if the prop
+    asset later gains its own physics schemas.
     """
 
-    cube = UsdGeom.Cube.Define(stage, prim_path)
-    cube.CreateSizeAttr(1.0)
-    cube.CreateDisplayColorAttr([PARCEL_BROWN])
+    for prim in Usd.PrimRange(asset_prim):
+        if prim.IsInstanceProxy():
+            continue
 
-    xform = UsdGeom.Xformable(cube.GetPrim())
-    xform.AddTranslateOp().Set(Gf.Vec3d(*center))
-    xform.AddScaleOp().Set(Gf.Vec3f(*size))
+        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            api = UsdPhysics.RigidBodyAPI(prim)
+            api.CreateRigidBodyEnabledAttr(False)
 
-    rigid_body = UsdPhysics.RigidBodyAPI.Apply(cube.GetPrim())
+        if prim.HasAPI(UsdPhysics.CollisionAPI):
+            api = UsdPhysics.CollisionAPI(prim)
+            api.CreateCollisionEnabledAttr(False)
+
+
+def add_parcel_asset(
+    stage,
+    prim_path,
+    asset_url,
+    center,
+    max_size,
+    mass_kg=15.0,
+):
+    """Spawn a referenced cardboard-box asset as a dynamic 15 kg parcel.
+
+    The NVIDIA visual asset keeps its original materials and shape. Its visual
+    is uniformly scaled to fit inside ``max_size`` without distortion. A
+    separate invisible box collider is created from the resulting dimensions,
+    while the parcel root owns gravity-driven rigid-body physics and mass.
+    """
+
+    root = UsdGeom.Xform.Define(stage, prim_path)
+    root_xform = UsdGeom.Xformable(root.GetPrim())
+    root_xform.AddTranslateOp().Set(Gf.Vec3d(*center))
+
+    scale_path = f"{prim_path}/VisualScale"
+    offset_path = f"{scale_path}/VisualOffset"
+    asset_path = f"{offset_path}/Asset"
+
+    scale_prim = UsdGeom.Xform.Define(stage, scale_path)
+    offset_prim = UsdGeom.Xform.Define(stage, offset_path)
+    asset_prim = stage.DefinePrim(asset_path)
+    asset_prim.GetReferences().AddReference(str(asset_url))
+
+    # Measure the referenced asset at runtime, so the code remains valid even
+    # if the source USD's native dimensions or units differ from our scene.
+    bbox_cache = UsdGeom.BBoxCache(
+        Usd.TimeCode.Default(),
+        [UsdGeom.Tokens.default_],
+        useExtentsHint=True,
+    )
+    local_range = bbox_cache.ComputeLocalBound(asset_prim).GetRange()
+
+    if local_range.IsEmpty():
+        raise RuntimeError(
+            f"Parcel asset has no measurable bounds: {asset_url}"
+        )
+
+    source_min = local_range.GetMin()
+    source_max = local_range.GetMax()
+    source_center = (source_min + source_max) * 0.5
+    source_size = source_max - source_min
+
+    source_dims = tuple(float(source_size[i]) for i in range(3))
+    target_dims = tuple(float(v) for v in max_size)
+
+    if any(v <= 1.0e-6 for v in source_dims):
+        raise RuntimeError(
+            f"Invalid parcel asset bounds {source_dims}: {asset_url}"
+        )
+
+    uniform_scale = min(
+        target_dims[i] / source_dims[i]
+        for i in range(3)
+    )
+    final_dims = tuple(
+        source_dims[i] * uniform_scale
+        for i in range(3)
+    )
+
+    UsdGeom.Xformable(scale_prim.GetPrim()).AddScaleOp().Set(
+        Gf.Vec3f(uniform_scale, uniform_scale, uniform_scale)
+    )
+    UsdGeom.Xformable(offset_prim.GetPrim()).AddTranslateOp().Set(
+        Gf.Vec3d(
+            -float(source_center[0]),
+            -float(source_center[1]),
+            -float(source_center[2]),
+        )
+    )
+
+    _disable_referenced_physics(asset_prim)
+
+    rigid_body = UsdPhysics.RigidBodyAPI.Apply(root.GetPrim())
     rigid_body.CreateRigidBodyEnabledAttr(True)
     rigid_body.CreateKinematicEnabledAttr(False)
 
-    UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
-
-    mass = UsdPhysics.MassAPI.Apply(cube.GetPrim())
+    mass = UsdPhysics.MassAPI.Apply(root.GetPrim())
     mass.CreateMassAttr(float(mass_kg))
 
+    # Stable simple collider: the NVIDIA USD is the visual, while PhysX uses
+    # one invisible box matching the final scaled bounding dimensions.
+    collider = UsdGeom.Cube.Define(stage, f"{prim_path}/PhysicsCollider")
+    collider.CreateSizeAttr(1.0)
+    collider_xform = UsdGeom.Xformable(collider.GetPrim())
+    collider_xform.AddScaleOp().Set(Gf.Vec3f(*final_dims))
+    UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+    UsdGeom.Imageable(collider.GetPrim()).MakeInvisible()
+
     print(
-        f"[PARCEL] spawned {prim_path}: "
-        f"size={tuple(float(v) for v in size)} m, "
-        f"mass={float(mass_kg):.1f} kg"
+        f"[PARCEL] NVIDIA CardBox spawned {prim_path}: "
+        f"source={source_dims}, fit={final_dims} m, "
+        f"mass={float(mass_kg):.1f} kg, dynamic=True"
     )
