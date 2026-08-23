@@ -2,7 +2,7 @@
 
 Final order:
 local start -> cargo -> lift -> Nav2 delivery -> P3020 action
--> Nav2 return -> local precision return -> lift down.
+-> Nav2 return -> local precision return -> lift down -> local spawn return.
 """
 
 from pathlib import Path
@@ -134,6 +134,8 @@ class AmrMissionBridge(Node):
             self.agent.request_return_dock()
         elif command == "LOWER":
             self.agent.request_lower()
+        elif command == "RETURN_SPAWN":
+            self.agent.request_return_spawn()
         elif command == "RESET":
             self.agent.reset_mission()
         else:
@@ -211,7 +213,8 @@ def main():
     print("[NAV2] starts only after PICKUP_DONE")
     print("[DELIVERY] (1.30104, -0.06065)")
     print("[RETURN] Nav2 -> cargo area -> local precision dock")
-    print("[LOCAL] verify original cargo pose -> lift down")
+    print("[LOCAL] lift down at: (10.5, -1.25), yaw=90 deg")
+    print("[LOCAL] return spawn: (10.5, 1.80122), yaw=0 deg")
     print("[ROS2] /amr_a/pickup_command")
     print("[ROS2] /amr_a/pickup_state")
     print("============================================")
