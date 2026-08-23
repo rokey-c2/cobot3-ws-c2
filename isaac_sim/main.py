@@ -40,6 +40,15 @@ WORLD_USD = (
 # Required by NVIDIA's IW Hub Navigation sample ROS 2 / RTX setup.
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
+
+# Enable PhysX authoring UI when Isaac Sim is started through run_isaac.sh.
+# This makes Physics properties and the Physics entries under the Add button
+# available without manually enabling the extensions from the Extensions window.
+enable_extension("omni.kit.property.physx")
+enable_extension("omni.physx.ui")
+enable_extension("omni.physx.supportui")
+enable_extension("omni.usdphysics.ui")
+
 simulation_app.update()
 
 
