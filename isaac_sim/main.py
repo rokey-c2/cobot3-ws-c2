@@ -41,6 +41,9 @@ WORLD_USD = (
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 
+# Conveyor runtime support. The UI extension is not required for normal runs.
+enable_extension("isaacsim.asset.gen.conveyor")
+
 # Enable PhysX authoring UI when Isaac Sim is started through run_isaac.sh.
 # This makes Physics properties and the Physics entries under the Add button
 # available without manually enabling the extensions from the Extensions window.
@@ -53,6 +56,8 @@ simulation_app.update()
 
 
 from cargo.cargo_pod_physics import add_cargo_pod_physics
+from equipment.conveyor.conveyor_controller import ConveyorController
+from equipment.wheel_sorter.wheel_sorter_controller import WheelSorterController
 from robots.iw_hub.iw_hub_agent import IwHubAgent
 
 
@@ -155,6 +160,12 @@ def main():
     _create_clock_graph()
     _spawn_cargo_pods()
 
+    conveyor = ConveyorController(speed=1.0)
+    sorter = WheelSorterController(toggle_steps=120)
+
+    conveyor.setup()
+    sorter.setup()
+
     agents = []
 
     for config in ROBOT_REGISTRY:
@@ -185,6 +196,10 @@ def main():
     for agent in agents:
         agent.post_reset()
 
+    # Re-apply equipment values after reset so the test starts deterministically.
+    conveyor.setup()
+    sorter.setup()
+
     world.play()
 
     # Give NVIDIA's built-in front/back RTX LiDAR publishers time to start.
@@ -197,6 +212,8 @@ def main():
     print("============================================")
     print(f"[START] x={START_XY[0]:.6f}, y={START_XY[1]:.6f}")
     print(f"[GOAL ] x={GOAL_XY[0]:.6f}, y={GOAL_XY[1]:.6f}")
+    print("[CONVEYOR] speed=1.0")
+    print("[SORTER] test mode: binary switch toggles every 120 steps")
     print()
     print("[NVIDIA DEFAULT NAVIGATION TOPICS]")
     print("  command : /cmd_vel")
@@ -212,6 +229,7 @@ def main():
     try:
         while simulation_app.is_running():
             world.step(render=True)
+            sorter.update()
 
     except KeyboardInterrupt:
         print()
@@ -219,6 +237,7 @@ def main():
 
     finally:
         _ = agents
+        conveyor.stop()
         print("[WORLD] stopping simulation")
         world.stop()
         simulation_app.close()
