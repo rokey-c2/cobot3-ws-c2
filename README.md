@@ -55,14 +55,14 @@ NVIDIA Navigation sample의 front/back 2D LiDAR와 ROS 2 graph를 그대로 사�
 ### Terminal 1 — Isaac Sim
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 ./scripts/run_isaac_mission.sh
 ```
 
 ### Terminal 2 — Nav2
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 ./scripts/run_ros2.sh
 ```
 
@@ -71,7 +71,7 @@ cd ~/collaboration/test/cobot3-ws-c2
 P3020 simulation mode:
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 source /opt/ros/jazzy/setup.bash
 source ros2_ws/install/setup.bash
 ./scripts/run_amr_p3020_mission.sh --ros-args -p simulate_p3020:=true

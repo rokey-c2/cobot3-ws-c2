@@ -108,7 +108,7 @@ False -> True -> False -> True ...
 ## 실행
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 git pull
 ./scripts/run_isaac.sh
 ```

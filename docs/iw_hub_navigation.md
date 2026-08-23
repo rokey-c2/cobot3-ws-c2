@@ -59,7 +59,7 @@ z = 0.0
 터미널 1:
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 ./scripts/run_isaac.sh
 ```
 
@@ -68,7 +68,7 @@ Isaac 실행 시 코드는 NVIDIA 공식 Navigation scene을 읽어서 `/cmd_vel
 터미널 2:
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 ./scripts/run_ros2.sh
 ```
 
@@ -86,7 +86,7 @@ cd ~/collaboration/test/cobot3-ws-c2
 터미널 3:
 
 ```bash
-cd ~/collaboration/test/cobot3-ws-c2
+cd ~/collaboration/cobot3-ws-c2
 ./scripts/test_iw_hub_avoidance.sh
 ```
 
