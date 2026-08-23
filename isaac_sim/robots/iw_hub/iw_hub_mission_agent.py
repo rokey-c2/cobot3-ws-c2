@@ -1,7 +1,12 @@
 """IW Hub local cargo handling around a Nav2 mission.
 
-Nav2 is NOT used before pickup. The local controller:
-start -> cargo approach -> dock -> lift.
+Pickup sequence is intentionally simple and uses the user-verified transforms:
+1) spawn at x=10.5, y=1.80122, yaw=0 deg,
+2) rotate in place to +90 deg,
+3) move straight along Y to x=10.5, y=-1.25,
+4) lift the cargo,
+5) hand wheel control to Nav2 only after PICKUP_DONE.
+
 After delivery/P3020, Nav2 returns near the cargo area and the local
 controller restores the original cargo pose before lift-down.
 """
@@ -33,10 +38,13 @@ CARGO_HOME_X = 10.5
 CARGO_HOME_Y = -1.5
 CARGO_HOME_YAW = 0.0
 
+# Nav2 return approach. The final return placement is handled locally.
 APPROACH_X = 10.5
 APPROACH_Y = -0.50
+
+# User-verified IW Hub transform under the container.
 TARGET_ROOT_X = 10.5
-TARGET_ROOT_Y = -1.244100305719804
+TARGET_ROOT_Y = -1.25
 TARGET_YAW = math.radians(90.0)
 
 LOCAL_MAX_LINEAR_SPEED = 0.24
@@ -137,7 +145,10 @@ class MissionIwHubAgent(IwHubAgent):
             return True
         if self.mission_state != "IDLE":
             return False
-        self._set_state("TURN_TO_APPROACH")
+
+        # Start exactly as requested: rotate to +90 deg first,
+        # then move straight to the user-verified lift position.
+        self._set_state("ROTATE_TO_DOCK")
         return True
 
     def request_return_dock(self):
@@ -387,7 +398,7 @@ class MissionIwHubAgent(IwHubAgent):
     def on_physics_step(self, dt):
         self._state_elapsed += float(dt)
 
-        # Nav2 owns wheel DOFs only in this state.
+        # Nav2 owns wheel DOFs only after pickup succeeds.
         if self.mission_state == "PICKUP_DONE":
             self._hold_lift(LIFT_TARGET)
             return
@@ -395,6 +406,8 @@ class MissionIwHubAgent(IwHubAgent):
         if self.mission_state in {"IDLE", "LOWER_DONE", "ERROR"}:
             return
 
+        # Legacy approach states are retained for compatibility, but the
+        # normal pickup command now starts directly with ROTATE_TO_DOCK.
         if self.mission_state == "TURN_TO_APPROACH":
             self._turn_toward_approach("DRIVE_TO_APPROACH")
             return
