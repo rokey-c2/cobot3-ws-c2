@@ -1,6 +1,6 @@
 """Rigid-body physics and simple parcel assets for the cargo pod."""
 
-from pxr import Gf, UsdGeom, UsdPhysics, UsdShade
+from pxr import Gf, Sdf, UsdGeom, UsdPhysics, UsdShade
 
 
 BLUE = Gf.Vec3f(0.05, 0.25, 0.95)
@@ -43,15 +43,15 @@ def _apply_blue_material(stage, prim_path):
     material = UsdShade.Material.Define(stage, material_path)
     shader = UsdShade.Shader.Define(stage, shader_path)
     shader.CreateIdAttr("UsdPreviewSurface")
-    shader.CreateInput("diffuseColor", "color3f").Set(BLUE)
-    shader.CreateInput("roughness", "float").Set(0.55)
-    shader.CreateInput("metallic", "float").Set(0.0)
+    shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(BLUE)
+    shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.55)
+    shader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
     material.CreateSurfaceOutput().ConnectToSource(
         shader.ConnectableAPI(),
         "surface",
     )
 
-    for prim in UsdGeom.Imageable(cargo_prim).GetPrim().GetStage().Traverse():
+    for prim in stage.Traverse():
         path = prim.GetPath().pathString
         if not path.startswith(f"{prim_path}/"):
             continue
