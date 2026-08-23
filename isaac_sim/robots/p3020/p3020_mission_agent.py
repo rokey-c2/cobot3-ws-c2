@@ -103,21 +103,37 @@ SPEC_REACH = 2.0
 
 TCP_OFFSET = np.array([0.0049, 0.0321, 0.0942])
 
-# 파라셀(NVIDIA CardBox)은 project_config/robot_config.py의 PARCEL_REGISTRY에
-# spawn_xyz=(10.5, -1.5, 0.455)로 정의돼 있는데, add_parcel_asset()이 root
-# prim 원점을 박스의 "기하학적 중심"에 맞춰서 만든다 (예전 p3020_pick_place_poc.py
-# 의 박스 애셋처럼 바닥면 원점이 아님) -- 그래서 이 프로젝트의 다른 높이
-# 상수들과 달리 PICK_Z를 "중심 + 반높이"로 계산한다. max_size_xyz의 z=0.30m는
-# 상한이고 실제로는 종횡비 때문에 더 작게 스케일될 수 있어서, 정확한 높이는
-# 첫 실기 테스트로 확인 후 조정이 필요할 수 있다.
-PARCEL_CENTER_Z = 0.455
+# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 측정해서 확인함
+# (min=(10.35,-1.65,0.3), max=(10.65,-1.35,0.6), 즉 0.3m 정육면체) -- 반높이
+# 0.15m가 실측치와 정확히 일치한다. 박스 프림 원점은 add_parcel_asset()이
+# "기하학적 중심"에 맞춰서 만들기 때문에(예전 p3020_pick_place_poc.py의 박스
+# 애셋처럼 바닥면 원점이 아님), ContactGripper의 snap_distance/contact_threshold
+# 도 전체 높이가 아니라 반높이 기준으로 잡는다.
 PARCEL_HALF_HEIGHT = 0.15
+PARCEL_SNAP_DISTANCE = PARCEL_HALF_HEIGHT + 0.01
 
-PICK_Z = PARCEL_CENTER_Z + PARCEL_HALF_HEIGHT   # 박스 윗면
-PLACE_Z = PICK_Z + 0.01
-APPROACH_HEIGHT = PICK_Z + 0.35
-LIFT_HEIGHT = PICK_Z + 0.30
-SCAN_HEIGHT = PICK_Z + 0.9
+# 픽업 쪽(카고 포드 위)과 플레이스 쪽(컨베이어) 높이가 서로 많이 달라서
+# (박스는 Z~0.3~0.6m인데 컨베이어 벨트 상단은 Z~1.17m로 그보다 훨씬 높다),
+# "박스 기준 고정 오프셋 하나"로는 이동 중 컨베이어 구조물에 부딪힌다 -- 처음
+# PLACE_Z를 PICK_Z+0.01로 잡았다가 실기 테스트에서 박스 아래쪽이 컨베이어에
+# 걸리는 문제가 났던 원인이 이것이었다. 그래서:
+#   1) 픽업 높이(PICK_Z)는 더 이상 고정 상수가 아니라, 매 사이클 depth
+#      카메라로 실측한 박스 윗면 Z를 그대로 쓴다 (run_pick_place 참고) --
+#      depth로 높이를 못 구하는 게 아니라, 예전 코드가 역투영 결과에서 z를
+#      버리고 안 쓰고 있었을 뿐이었다.
+#   2) 플레이스 높이(PLACE_Z)는 컨베이어 벨트 상단을 헤드리스로 직접 측정한
+#      값(ConveyorTrack bbox: min z=0.0, max z=1.1663)을 기준으로, 박스
+#      바닥이 정확히 그 표면에 닿도록 반높이+snap_distance를 역산해서 구한다.
+CONVEYOR_SURFACE_Z = 1.1663
+PLACE_CLEARANCE = 0.01
+PLACE_Z = CONVEYOR_SURFACE_Z + PARCEL_HALF_HEIGHT + PARCEL_SNAP_DISTANCE + PLACE_CLEARANCE
+
+# 스캔 높이는 (아직 박스를 실측하기 전이라) 대략적인 카고 포드 위 박스 높이
+# 추정치를 기준으로 삼는다 -- 정밀도가 필요한 게 아니라 카메라 시야 확보용.
+_APPROX_PICK_Z_FOR_SCAN = 0.45 + PARCEL_HALF_HEIGHT
+APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여유
+SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
+APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
 # amr_p3020_mission.py의 delivery_x/y 기본값과 동일 (AMR이 화물을 내려놓고
 # 서는 월드 좌표) -- 준비 자세가 엉뚱한 방향(컨베이어 반대쪽)을 보고 있던
@@ -244,26 +260,38 @@ class PickPlaceFSM:
     GRIPPER_STATES = {2: "close", 6: "open"}
     DONE_STATE = 7
 
-    def __init__(self, ee_frame, robot, ik_solver, pick_xy, place_xy):
+    def __init__(self, ee_frame, robot, ik_solver, pick_xy, place_xy,
+                 pick_z, place_z=PLACE_Z):
+        """pick_z: depth 카메라로 실측한 박스 윗면의 실제 world Z (고정 상수가
+        아니라 매 사이클 라이브로 측정한 값을 넘겨받는다 -- 모듈 상단 설명
+        참고). place_z는 기본적으로 컨베이어 표면 실측치 기반 상수를 쓴다."""
         self._ee_frame = ee_frame
         self._robot = robot
         self._ik_solver = ik_solver
         self.pick_xy = pick_xy
         self.place_xy = place_xy
+        self.pick_z = float(pick_z)
+        self.place_z = float(place_z)
         self._build_waypoints()
         self.reset()
 
     def _build_waypoints(self):
         px, py = self.pick_xy
         gx, gy = self.place_xy
+        approach_z = self.pick_z + APPROACH_HEIGHT_OFFSET
+        # 이동 중(리프트/이송) 높이는 픽/플레이스 중 "더 높은" 쪽 장애물을
+        # 기준으로 여유를 둔다 -- 컨베이어(플레이스)가 카고 포드 박스(픽)보다
+        # 훨씬 높아서, 픽 쪽 기준으로만 여유를 두면 이송 중 컨베이어 구조물에
+        # 부딪힌다.
+        transit_z = max(self.pick_z, self.place_z) + 0.20
         self.waypoints = [
-            np.array([px, py, APPROACH_HEIGHT]),
-            np.array([px, py, PICK_Z]),
-            np.array([px, py, PICK_Z]),
-            np.array([px, py, LIFT_HEIGHT]),
-            np.array([gx, gy, LIFT_HEIGHT]),
-            np.array([gx, gy, PLACE_Z]),
-            np.array([gx, gy, PLACE_Z]),
+            np.array([px, py, approach_z]),
+            np.array([px, py, self.pick_z]),
+            np.array([px, py, self.pick_z]),
+            np.array([px, py, transit_z]),
+            np.array([gx, gy, transit_z]),
+            np.array([gx, gy, self.place_z]),
+            np.array([gx, gy, self.place_z]),
         ]
 
     def reset(self):
@@ -446,8 +474,12 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
         return None
     world_pos = camera.pixel_to_world(cx, cy, depth_val)
     print(f"   scanning     detected box conf={conf:.3f} "
-          f"pixel=({cx:.1f},{cy:.1f}) -> world_xy=({world_pos[0]:.3f}, {world_pos[1]:.3f})")
-    return np.array([world_pos[0], world_pos[1]])
+          f"pixel=({cx:.1f},{cy:.1f}) -> world=({world_pos[0]:.3f}, {world_pos[1]:.3f}, {world_pos[2]:.3f})")
+    # z도 그대로 반환한다 -- depth 역투영은 원래 3D 점을 주는데, 예전 코드가
+    # x,y만 쓰고 z(박스 윗면의 실제 높이)를 버리고 있었다. 그 z를 그대로
+    # 픽업 높이로 써야, 카고 포드 위 박스 높이가 가정치와 달라도 정확히
+    # 그 높이까지만 내려간다 (run_pick_place 참고).
+    return np.array([world_pos[0], world_pos[1], world_pos[2]])
 
 
 def _disable_baked_camera_graph(stage):
@@ -541,7 +573,7 @@ class P3020PickPlaceAgent:
             gripper_body_path=GRIPPER_BODY_PATH,
             local_pos=Gf.Vec3f(0.0, -0.064, 0.0),
             contact_threshold=PARCEL_HALF_HEIGHT + 0.03,
-            snap_distance=PARCEL_HALF_HEIGHT + 0.01,
+            snap_distance=PARCEL_SNAP_DISTANCE,
         )
 
         lula = LulaKinematicsSolver(
@@ -679,12 +711,19 @@ class P3020PickPlaceAgent:
 
         print("\nVISION")
         ros_node.publish_status("SCANNING")
-        pick_xy = self._locate_box_and_descend(ros_node, scan_xy_world, tick_others, dt)
-        if pick_xy is None:
+        pick_xyz = self._locate_box_and_descend(ros_node, scan_xy_world, tick_others, dt)
+        if pick_xyz is None:
             self._return_to_ready_pose(tick_others=tick_others, dt=dt)
             message = "카메라로 박스를 찾지 못했습니다."
             ros_node.publish_status(f"DONE_FAIL:{message}")
             return False, message
+
+        pick_xy = pick_xyz[:2]
+        # depth 역투영으로 실측한 박스 윗면의 실제 world Z -- 카고 포드 위
+        # 박스 높이가 가정치와 달라도(팀원이 포드 높이를 낮추는 등) 이 실측값을
+        # 그대로 픽업 높이로 쓴다 (모듈 상단 설명 참고).
+        detected_pick_z = float(pick_xyz[2])
+        print(f"   scanning     실측 박스 윗면 Z={detected_pick_z:.3f}m")
 
         if not is_within_reach(pick_xy):
             self._return_to_ready_pose(tick_others=tick_others, dt=dt)
@@ -700,7 +739,8 @@ class P3020PickPlaceAgent:
         print("\nRUN")
         ros_node.publish_status("APPROACHING")
         fsm = PickPlaceFSM(self.ee_frame, self.robot, self.ik_solver,
-                            pick_xy=pick_xy, place_xy=place_xy_world)
+                            pick_xy=pick_xy, place_xy=place_xy_world,
+                            pick_z=detected_pick_z)
         gripper_was_attached = False
         ever_attached = False
 
