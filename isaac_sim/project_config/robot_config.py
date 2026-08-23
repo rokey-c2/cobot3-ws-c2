@@ -8,9 +8,11 @@ IW_HUB_USD = (
 )
 
 
+# User-verified initial IW Hub transform.
+# Spawn: x=10.5, y=1.80122, yaw=0 deg.
 START_XY = (
-    1.5,
-    0.0,
+    10.5,
+    1.80122,
 )
 
 GOAL_XY = (
