@@ -11,9 +11,14 @@ Subscribes:
     /rgb        (sensor_msgs/msg/Image)
 
 Publishes:
-    /box_pixel  (geometry_msgs/msg/Point)
-        x, y: 감지된 박스 중심의 픽셀 좌표
-        z   : confidence (0~1). 감지 실패 시 이 토픽 자체를 발행하지 않는다.
+    /box_pixel  (geometry_msgs/msg/PointStamped)
+        point.x, point.y: 감지된 박스 중심의 픽셀 좌표
+        point.z         : confidence (0~1). 감지 실패 시 이 토픽 자체를 발행하지 않는다.
+        header.stamp    : 입력으로 쓴 /rgb 이미지의 header.stamp를 그대로 echo한다.
+            이 노드는 별도 프로세스로 실제 처리 시간이 걸리기 때문에, 응답을
+            받는 쪽(p3020_pick_place_poc.py)에서 "이 결과가 언제 찍힌 이미지에서
+            나온 건지" 알아야 팔이 이미 움직인 뒤에 도착한 오래된 탐지 결과를
+            걸러낼 수 있다 (Point에는 header가 없어서 PointStamped로 바꿨다).
 
 이 노드는 Isaac Sim 프로세스가 아니라 일반 시스템 python3(+ /opt/ros/jazzy)
 에서 실행한다:
@@ -36,7 +41,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 
 from object_detector import ObjectDetector
 
@@ -67,7 +72,7 @@ class BoxDetectorNode(Node):
         self.image_sub = self.create_subscription(
             Image, image_topic, self.image_callback, qos_profile_sensor_data
         )
-        self.pixel_pub = self.create_publisher(Point, pixel_topic, 10)
+        self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
 
         self.get_logger().info(f"listening: {image_topic} | publishing: {pixel_topic}")
 
@@ -98,11 +103,12 @@ class BoxDetectorNode(Node):
         if det is None:
             return
 
-        point = Point()
-        point.x = det["cx"]
-        point.y = det["cy"]
-        point.z = det["conf"]
-        self.pixel_pub.publish(point)
+        stamped = PointStamped()
+        stamped.header.stamp = msg.header.stamp   # 어느 /rgb 프레임에서 나온 결과인지 echo
+        stamped.point.x = det["cx"]
+        stamped.point.y = det["cy"]
+        stamped.point.z = det["conf"]
+        self.pixel_pub.publish(stamped)
         self.get_logger().info(
             f"box detected  pixel=({det['cx']:.1f},{det['cy']:.1f})  conf={det['conf']:.3f}"
         )

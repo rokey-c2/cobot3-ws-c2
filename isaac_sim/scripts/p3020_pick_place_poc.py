@@ -21,32 +21,45 @@ M0609의 6_pick_place.py 와 동일한 구조:
     돌려서 중력으로 자연스럽게 떨어뜨린다. VGP20 모델(하드웨어)은 그대로
     쓰고, 판정/유지 로직만 대체한 것.
   - 박스 인식은 "카메라 PC / 인식 PC 분리" 구조를 따른다: 이 스크립트가 카메라
-    이미지를 /rgb, /depth 로 발행하고, 별도 ROS2 노드인
-    ros2_ws/src/vision_node/vision_node/locate_box_node.py (YOLO onnx로 박스를
-    찾아 depth 역투영까지 끝낸 3D 좌표를 서비스로 돌려줌)가 /locate_box 서비스로
-    응답한다. 이 스크립트는 그 서비스를 직접 호출하지 않고,
-    robots/p3020/vision/locate_box_relay.py 가 대신 호출해서 표준
-    geometry_msgs/Point 토픽(/box_position_camera)으로 중계한 걸 구독한다.
+    이미지를 /rgb 로 발행하고, 별도 프로세스인
+    robots/p3020/vision/box_detector_node.py (시스템 Python + YOLO onnx, /rgb를
+    구독해서 박스의 픽셀 좌표만 돌려줌)가 /box_pixel 로 응답한다. 3D 위치
+    계산(깊이 역투영, camera.pixel_to_world)은 depth를 직접 가진 이 스크립트
+    쪽에서 한다 (실제 로봇도 depth 센서는 로봇 쪽에만 있는 경우가 많은 것과
+    같은 이유). 한 번은 커스텀 ROS2 서비스(로봇팔 프로세스가 아예 depth
+    역투영까지 끝난 3D 좌표를 서비스로 받아오는 방식)로 만들어봤었는데,
+    Isaac Sim 내장 Python(3.11)과 커스텀 인터페이스 패키지의 빌드 Python(3.12)
+    ABI가 달라서 그 프로세스 안에서 커스텀 서비스 타입을 import를 못 하는
+    문제가 있었고(직접 재현 확인), 우회하려고 중계 프로세스를 하나 더 두는 것도
+    실패 지점만 늘어나서 다시 이 방식(표준 타입만 오가는 토픽 두 개)으로
+    되돌렸다. 가동범위(SPEC_REACH) 안에 있는지도 확인한다.
 
-    ※ 왜 서비스를 직접 호출하지 않는가: Isaac Sim은 자체 내장 Python(3.11)
-    +내장 rclpy를 쓰는데, logistics_interfaces는 시스템 ROS2(3.12)로 빌드돼
-    있어서 이 스크립트 프로세스 안에서 `from logistics_interfaces.srv import
-    LocateBox`가 ImportError로 죽는다 (직접 재현 확인, NVIDIA의
-    IsaacSim-ros_workspaces도 커스텀 메시지를 Isaac 내장 Python이 아니라
-    별도 Python 3.12 환경으로 빌드하는 걸 보면 공식 우회 경로도 없어
-    보임). locate_box_relay.py는 시스템 Python에서 돌면서 이 문제를 피하고,
-    표준 타입(geometry_msgs/Point, sensor_msgs/Image)만 이 스크립트와
-    주고받는다 -- 표준 타입은 Isaac Sim이 자체 Python 3.11용으로 이미
-    빌드해뒀기 때문에 문제없다.
+  - 스캔(탐지)과 픽 접근은 하나의 연속 동작이다(locate_box_and_descend).
+    원래는 (1) 고정 스캔 자세로 내려가서 찾고 (2) 준비 자세로 리셋했다가
+    (3) 찾은 위치로 다시 접근하는 3단계였는데, 그러면 팔이 박스 쪽으로
+    갔다가 물러났다가 다시 가는 것처럼 부자연스럽게 "2번 움직이는" 것으로
+    보였다(사용자 피드백). 그래서 지금은 스캔 높이에서 처음 한 번만 확실히
+    탐지한 뒤, 리셋 없이 그 자리에서 곧장 박스 쪽/아래(중간 높이)로 연속
+    이동하고, 거기서 잠깐 멈춰 한 번 더 탐지해 중심을 보정한 다음, 접근
+    높이까지 마저 내려간다. 처음엔 "내려가는 동안 멈추지 않고 계속
+    (non-blocking) 재탐지"하는 방식으로 만들었었는데, box_detector_node.py는
+    별도 프로세스라 응답에 실제 처리 시간이 걸리고, 그동안 팔은 이미 계속
+    움직여버려서 "오래된 픽셀"을 도착 시점의 "새 카메라 자세"로 잘못
+    역투영하는 문제가 그리드 테스트에서 실제로 나타났다(정상 위치와 0.5m
+    이상 어긋남). 그래서 재탐지 순간만큼은 짧게라도 팔을 멈추고 기다리도록
+    바꿨다 -- 멈춰있는 동안은 카메라 자세가 고정되니, 응답이 늦게 와도
+    여전히 유효하다.
 
-    locate_box_relay.py가 반환하는 좌표는 "카메라 좌표계"(광학 프레임:
-    X=오른쪽, Y=아래, Z=전방)라서, 이 스크립트에서 카메라 prim의 월드
-    트랜스폼으로 다시 월드 좌표로 변환한다(camera_point_to_world_xy). 가동범위
-    (SPEC_REACH) 안에 있는지도 확인한다.
-
-    ※ 실행 전에 ros2_ws를 빌드/source하고, locate_box_node.py와
-    locate_box_relay.py를 먼저 띄워야 한다 (둘 다 시스템 Python +
-    /opt/ros/jazzy). docs/architecture/locate_box_pipeline.md 참고.
+  - 픽/플레이스 방향에 따라 손목 yaw를 그때그때 계산한다(yaw_toward). 예전엔
+    전체 사이클 내내 yaw를 하나로 고정해뒀었는데, P3020이 5축이라 베이스
+    기준 반대쪽(Y가 음수인 쪽 등)으로 뻗을 때는 그 고정된 자세로는 팔꿈치
+    (joint_3)나 손목(joint_5)이 안전 관절 범위를 넘어서는 IK 해가 나왔다.
+    IK 자체는 "풀렸다"고 보고하는데, 그 다음 clamp_to_safe_limits()가 범위
+    밖 관절값을 조용히 깎아버려서, 실제로는 목표와 다른 자세로 굳어버리는
+    문제였다(그리퍼가 엉뚱한 위치에서 멈춰 흡착 실패) -- 넓은 범위로 그리드
+    테스트를 돌려서 직접 재현/확인함. 매 웨이포인트의 (x, y) 방향을 보고
+    yaw = atan2(y, x)로 손목을 "베이스에서 바깥쪽을 보게" 돌리면, 어느 방향으로
+    뻗든 팔꿈치가 비슷한 상대 자세를 유지해서 이 문제가 없어진다.
 
 이번 세션에서 검증 완료된 값 (USD 계층 구조로 직접 계산, 자세 무관 고정값):
   - 흡착 컵 중심의 vgp20 로컬 오프셋: (0, -0.064, 0)
@@ -73,7 +86,19 @@ def _ensure_ros2_bridge_ld_path():
     """ROS2 브릿지가 필요로 하는 LD_LIBRARY_PATH는 프로세스 시작 "전"에
     설정돼 있어야 동적 링커가 실제로 반영한다. 이미 실행 중인 인터프리터
     안에서 os.environ만 바꾸는 건 효과가 없어서(직접 확인함), 필요하면
-    올바른 환경으로 자기 자신을 한 번 재실행한다."""
+    올바른 환경으로 자기 자신을 한 번 재실행한다.
+
+    시스템 ROS2(source /opt/ros/*/setup.bash, 예: ros_set 알리아스)를 이 스크립트
+    실행 전에 같은 터미널에서 돌려놨으면 LD_LIBRARY_PATH뿐 아니라 PYTHONPATH에도
+    시스템 ROS2의 site-packages가 섞여 들어온다. 그러면:
+      - LD_LIBRARY_PATH 쪽 오염: Isaac Sim 내장 rclpy 빌드와 버전이 안 맞아서
+        Node 생성 시점에 바로 크래시(rcl_interfaces 타입 바인딩 assertion).
+      - PYTHONPATH 쪽 오염: "import rclpy"가 Isaac Sim 내장 python(3.11)이 아니라
+        시스템 ROS2의 python3.12용 rclpy를 찾아버려서 컴파일된 확장 모듈이 안 맞아
+        ImportError로 즉시 죽음.
+    둘 다 직접 재현/확인함. 그래서 앞에 추가만 하는 게 아니라, 기존에 섞여
+    있던 /opt/ros/*/lib(LD_LIBRARY_PATH)과 /opt/ros/*/site-packages(PYTHONPATH)
+    항목은 아예 걸러내고 Isaac Sim 내장 경로만 쓰도록 한다."""
     marker = "P3020_ROS2_LD_FIXED"
     if os.environ.get(marker) == "1":
         return
@@ -81,8 +106,13 @@ def _ensure_ros2_bridge_ld_path():
     if not os.path.isdir(ros2_lib):
         return
     env = os.environ.copy()
-    existing = env.get("LD_LIBRARY_PATH", "")
-    env["LD_LIBRARY_PATH"] = ros2_lib + (":" + existing if existing else "")
+    existing_ld = [p for p in env.get("LD_LIBRARY_PATH", "").split(":") if p and "/opt/ros/" not in p]
+    env["LD_LIBRARY_PATH"] = ":".join([ros2_lib] + existing_ld)
+    existing_pp = [p for p in env.get("PYTHONPATH", "").split(":") if p and "/opt/ros/" not in p]
+    if existing_pp:
+        env["PYTHONPATH"] = ":".join(existing_pp)
+    else:
+        env.pop("PYTHONPATH", None)
     env.setdefault("ROS_DISTRO", "jazzy")
     env.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
     env.setdefault("ROS_DOMAIN_ID", "55")
@@ -119,7 +149,8 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
+from rclpy.time import Time
 
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleArticulation, XFormPrim
@@ -208,12 +239,18 @@ SCAN_HEIGHT = BOX_HEIGHT + 0.9
 # 일단 이 좌표 위에서 아래를 내려다보며 카메라로 실제 위치를 찾는다.
 SCAN_XY = np.array([1.0, 0.3])
 
-# 랜덤 스폰 범위 -- SCAN_XY 기준으로 카메라 시야(오프셋 ±0.5~0.6m까지 conf 0.95+
-# 로 직접 검증됨)와 가동범위(SPEC_REACH) 양쪽 다 여유 있게 들어오는 구간으로
-# 보수적으로 잡았다. 이 사각형 안이면 "카메라로 보이면서 동시에 팔이 집을 수
-# 있는" 영역이라고 볼 수 있다.
-SPAWN_X_RANGE = (0.7, 1.4)
-SPAWN_Y_RANGE = (0.0, 0.7)
+# 랜덤 스폰 범위 -- SCAN_XY 기준 카메라 시야(오프셋 ±0.5~0.6m까지 conf 0.95+ 로
+# 직접 검증됨)와 가동범위(SPEC_REACH) 양쪽 다 들어오는 구간. X는 0.5~1.6
+# 전체가 그리드 테스트로 흡착까지 확인됐다. Y는 양수 쪽(베이스 기준 카메라가
+# 보는 방향)만 넣었다 -- yaw_toward로 방향 보정을 해도, Y가 음수인 가까운
+# 거리에서는 "흡착판이 항상 바닥을 보게"라는 고정 자세 제약 때문에 팔꿈치/
+# 손목이 안전 관절 범위를 넘는 IK 해만 나오는 지점들이 그리드 테스트에서
+# 확인됐다 (멀리 떨어진 한두 지점만 우연히 됨 -- 실용적인 범위로 골라내기엔
+# 애매해서 아예 뺐다). 이 제약을 없애려면 접근 자세(roll/pitch) 자체를
+# 위치에 따라 바꾸는 IK 재설계가 필요한데, 이번엔 범위를 검증된 쪽으로
+# 좁히는 실용적인 선택을 했다.
+SPAWN_X_RANGE = (0.5, 1.6)
+SPAWN_Y_RANGE = (0.0, 1.1)
 
 # 한 사이클(스폰->탐지->집기->놓기) 끝난 뒤 다음 박스를 스폰하기까지 대기하는
 # 스텝 수 -- "일정 시간마다"에 해당.
@@ -225,8 +262,25 @@ RESPAWN_WAIT_STEPS = 180
 CAMERA_PRIM_PATH = "/World/vgp20/rsd455/RSD455/Camera_Pseudo_Depth"
 IMAGE_TOPIC = "/rgb"
 DEPTH_TOPIC = "/depth"
-BOX_POSITION_CAMERA_TOPIC = "/box_position_camera"   # locate_box_relay.py 가 발행
+BOX_PIXEL_TOPIC = "/box_pixel"   # box_detector_node.py 가 발행
 VISION_WAIT_TIMEOUT_STEPS = 300   # 위 토픽 응답을 기다리는 최대 스텝 수
+REFINE_WAIT_TIMEOUT_STEPS = 100   # 중간 높이에서 재탐지를 기다리는 최대 스텝 수
+
+# 스캔 중 실제 박스는 항상 이 거리보다 멀리 있다 (SCAN_MID_HEIGHT에서 바로
+# 아래를 봐도 박스 상단까지 최소 ~0.6m). 그런데 그리퍼(vgp20)가 카메라
+# 바로 옆/아래에 붙어있어서, 카메라 시야 아래쪽에 그리퍼 자체가 걸리는
+# 경우가 있다 -- box_detector_node.py의 YOLO가 이 그리퍼 몸체(은색 돔)를
+# "박스"로 오탐지하는 경우를 실제로 확인했다(스캔 프레임을 저장해서 확인:
+# 오탐지된 픽셀이 정확히 그리퍼 위치와 겹침). 그리퍼는 카메라에 훨씬 가깝게
+# 붙어있으므로(수십 cm 이내), depth가 이 값보다 가까우면 진짜 박스가 아니라
+# 자기 자신(그리퍼/팔)을 본 것으로 보고 무시한다.
+MIN_VALID_SCAN_DEPTH = 0.4
+
+# 최초 탐지 이후, 스캔 높이(SCAN_HEIGHT)에서 접근 높이(APPROACH_HEIGHT)까지
+# 리셋 없이 연속으로 내려가는 전체 스텝 수(절반씩 두 구간으로 나눠 쓴다),
+# 그리고 그 중간에 한 번 멈춰서 재탐지하는 높이 (locate_box_and_descend 참고).
+SCAN_DESCEND_STEPS = 150
+SCAN_MID_HEIGHT = (SCAN_HEIGHT + APPROACH_HEIGHT) / 2.0
 
 GRIPPER_WAIT = 90
 
@@ -236,7 +290,6 @@ MAX_STEPS  = 600
 
 APPROACH_ROLL_DEG  = 180.0   # 흡착판이 바닥(-Z)을 보게
 APPROACH_PITCH_DEG = 0.0
-GRIPPER_YAW_DEG    = 0.0
 
 
 # ══════════════════════════════════════════════════════════════
@@ -265,6 +318,13 @@ def make_target_quat(roll_deg, pitch_deg, yaw_deg):
                  quat_from_axis([0, 1, 0], pitch_deg))
     q = quat_mul(q, quat_from_axis([0, 0, 1], yaw_deg))
     return q / np.linalg.norm(q)
+
+
+def yaw_toward(xy: np.ndarray) -> float:
+    """베이스(원점)에서 xy 방향을 바라보는 yaw(도) -- 손목을 "바깥쪽"으로
+    향하게 해서, 반대쪽으로 뻗을 때 팔꿈치가 안전 관절 범위를 넘는 문제를
+    피한다 (파일 상단 docstring 참고)."""
+    return float(np.degrees(np.arctan2(xy[1], xy[0])))
 
 
 def quat_to_matrix(q):
@@ -611,16 +671,28 @@ def create_ik_solver(robot):
     )
 
 
-def capture_home_pose(robot):
-    """시뮬레이션을 처음 불러왔을 때(=Play를 누르기 전 USD에 저장돼 있던 자세)의
-    관절 값을 그대로 캡처한다. 이후 모든 "제자리로" 동작은 [0,0,0,0,0](수직으로
-    쭉 편 자세)이 아니라 이 값을 기준으로 한다 -- 사용자가 의도한 "시작 자세"는
-    USD에 원래 저장돼 있던 자세이지, 임의로 정한 0도 자세가 아니었다.
+def compute_ready_pose(world, robot, ik_solver, steps=200):
+    """"준비 자세" = 스캔 자세와 같다: 흡착판/카메라가 아래(작업 영역)를 보게.
 
-    robot.initialize() 직후, 아직 이 값으로 명령을 내리기 전에 호출해야 한다.
-    캡처 직후 바로 같은 값으로 한 번 다시 명령해두는데, 그렇지 않으면 강한
-    위치 드라이브(stiffness 1e8)가 물리 스텝이 도는 순간 관절을 0으로
-    끌어당겨버린다 (드라이브의 목표값이 아직 이 자세로 설정된 적이 없어서)."""
+    처음엔 USD에 저장돼 있던 자세를 그대로 캡처해서 썼는데, 그 자세는 흡착판이
+    천장을 보고 있어서 실전에 안 맞는다 -- 나중에 통합하면 그리퍼에 붙은
+    카메라가 AMR/컨베이어 위를 계속 내려다보면서 움직이는 박스를 찾아야 하므로,
+    쉬는 자세도 카메라가 작업 영역(SCAN_XY)을 내려다보는 자세여야 한다. 그래서
+    임의 자세를 캡처하는 대신, 스캔 자세와 똑같은 목표로 IK를 풀어서 그 결과를
+    "제자리"로 쓴다."""
+    target_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(SCAN_XY))
+    tcp_target = np.array([SCAN_XY[0], SCAN_XY[1], SCAN_HEIGHT])
+    flange_target = tcp_to_flange(tcp_target, target_quat)
+    for _ in range(steps):
+        action, solved = ik_solver.compute_inverse_kinematics(
+            target_position=flange_target,
+            target_orientation=target_quat,
+            orientation_tolerance=0.15,
+        )
+        if solved:
+            action = clamp_to_safe_limits(action, robot.dof_names)
+            robot.apply_action(action)
+        world.step(render=True)
     home_q = np.array(robot.get_joint_positions(), dtype=float)
     robot.set_joint_positions(home_q)
     return home_q
@@ -652,31 +724,43 @@ def return_to_ready_pose(world, robot, home_q, dof_names, steps=90):
 class RosBridge(Node):
     """M0609 9_camera_color_sort.py 의 RosBridge 와 같은 역할.
     이 프로세스(시뮬레이션/카메라 쪽)는 /rgb, /depth 를 발행하고,
-    locate_box_relay.py(별도 시스템 Python 프로세스)가 /locate_box 서비스
-    결과를 중계하는 /box_position_camera(geometry_msgs/Point)를 구독한다.
-    (직접 서비스를 호출하지 않는 이유는 파일 상단 docstring 참고 -- Isaac
-    Sim 내장 Python과 logistics_interfaces의 Python ABI가 다름)."""
+    box_detector_node.py(별도 시스템 Python + YOLO onnx 프로세스)가 돌려주는
+    /box_pixel(geometry_msgs/PointStamped: point.x=cx, point.y=cy, point.z=confidence,
+    header.stamp=처리에 쓰인 /rgb 프레임의 타임스탬프)을 구독한다.
+
+    header.stamp을 echo 받는 이유: box_detector_node.py는 별도 프로세스라 YOLO
+    추론에 실제 처리 시간이 걸리고, 그동안 팔이 이미 다른 곳으로 움직여버릴 수
+    있다. 응답이 "언제 찍힌 프레임"에서 나온 건지 모르면, 팔이 이미 움직인 뒤에
+    도착한 오래된(stale) 탐지 결과를 최신 카메라 자세로 잘못 역투영하는 문제가
+    실제로 발생했다 (그리드 테스트에서 재현: 같은 픽셀이 서로 다른 두 시점에
+    "탐지"돼서 전혀 다른 월드 좌표로 계산됨). take_pixel_after()로 "이 시각
+    이후에 찍힌 프레임"에서 나온 응답만 받아들이도록 걸러낸다."""
 
     def __init__(self):
         super().__init__("p3020_camera_bridge")
-        # locate_box_node.py 의 구독 QoS(qos_profile_sensor_data, best-effort)와
+        # box_detector_node.py 의 구독 QoS(qos_profile_sensor_data, best-effort)와
         # 반드시 맞춰야 한다 -- 안 맞으면 DDS가 둘을 아예 연결하지 않아서
         # (경고도 없이 조용히) 이미지가 한 장도 전달되지 않는다 (직접 겪은 버그).
         self.image_pub = self.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
         self.depth_pub = self.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
-        self.box_position_sub = self.create_subscription(
-            Point, BOX_POSITION_CAMERA_TOPIC, self._on_box_position, 10
-        )
-        self.latest_box_position = None
+        self.pixel_sub = self.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
+        self.latest_pixel = None   # (cx, cy, conf, stamp: rclpy.time.Time)
 
-    def _on_box_position(self, msg: Point):
-        self.latest_box_position = msg
+    def _on_pixel(self, msg: PointStamped):
+        stamp = Time.from_msg(msg.header.stamp)
+        self.latest_pixel = (msg.point.x, msg.point.y, msg.point.z, stamp)
 
-    def take_box_position(self):
-        """받은 좌표를 꺼내고 초기화한다 (없으면 None)."""
-        point = self.latest_box_position
-        self.latest_box_position = None
-        return point
+    def take_pixel_after(self, not_before: Time):
+        """not_before 시각 "이후"에 찍힌 /rgb 프레임에서 나온 결과만 꺼내서
+        반환한다 (없거나 그보다 오래된 것뿐이면 None) -- 오래된 건 버린다."""
+        pixel = self.latest_pixel
+        if pixel is None:
+            return None
+        cx, cy, conf, stamp = pixel
+        if stamp < not_before:
+            return None
+        self.latest_pixel = None
+        return (cx, cy, conf)
 
     def publish_image(self, rgba):
         rgb = np.ascontiguousarray(rgba[:, :, :3])
@@ -710,32 +794,108 @@ class RosBridge(Node):
         self.depth_pub.publish(msg)
 
 
-def camera_point_to_world_xy(stage, camera_prim_path, point) -> np.ndarray:
-    """locate_box_node.py가 반환한 카메라 좌표계(광학/ROS 프레임: X=오른쪽,
-    Y=아래, Z=전방) 3D 점을 월드 좌표로 변환한다.
+def _looks_like_box_color(frame, cx, cy, patch=6):
+    """탐지된 지점 주변 색이 박스(카드보드, 갈색/탁한 노란색)에 가까운지 본다.
+    (cx, cy)에 실제로 있는 게 창고 바닥(청회색 타일)의 그림자라면, depth는
+    (그림자는 바닥과 같은 높이라) 박스처럼 보이지만 색은 명백히 어둡고
+    푸른 계열이라 이걸로 걸러낼 수 있다."""
+    if frame is None:
+        return True   # 프레임이 없으면 색으로 걸러낼 방법이 없으니 통과시킨다.
+    h, w = frame.shape[:2]
+    y0, y1 = max(0, int(cy) - patch), min(h, int(cy) + patch + 1)
+    x0, x1 = max(0, int(cx) - patch), min(w, int(cx) + patch + 1)
+    region = frame[y0:y1, x0:x1, :3].astype(np.float32)
+    if region.size == 0:
+        return True
+    mean_r, mean_g, mean_b = region[..., 0].mean(), region[..., 1].mean(), region[..., 2].mean()
+    brightness = (mean_r + mean_g + mean_b) / 3.0
+    # 카드보드 박스: 밝고 붉은/노란 쪽(R,G > B). 바닥 그림자: 어둡고 푸른 쪽(B가 R과
+    # 비슷하거나 더 큼). 그림자에 걸린 그레이/블루 타일을 걸러내되, 조명이 약간
+    # 어두운 실제 박스는 통과시키도록 여유 있게 잡았다.
+    return brightness > 20.0 and mean_r > mean_b + 8.0
 
-    Isaac Sim의 Camera 클래스(isaacsim.sensors.camera.camera.Camera)가 정확히
-    같은 계산을 한다는 걸 소스코드로 확인함: get_world_points_from_image_coords
-    가 카메라 프레임 점을 U_R_TRANSFORM = diag(1,-1,-1,1) 로 USD 로컬 프레임
-    으로 바꾼 뒤 카메라 prim의 ComputeLocalToWorldTransform 역행렬(의 역, 즉
-    local-to-world)을 곱한다 -- 아래 코드와 동일한 변환이다."""
-    optical = Gf.Vec3d(point.x, -point.y, -point.z)
-    xf = UsdGeom.Xformable(stage.GetPrimAtPath(camera_prim_path)).ComputeLocalToWorldTransform(
-        Usd.TimeCode.Default()
-    )
-    world = xf.Transform(optical)
-    return np.array([world[0], world[1]])
+
+def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
+    """/box_pixel 로 받은 (cx, cy, conf) 를 이 스크립트가 가진 depth map으로
+    역투영해 박스의 월드 (x, y)를 반환한다. 유효하지 않으면 None."""
+    cx, cy, conf = pixel
+    py = int(np.clip(cy, 0, depth_map.shape[0] - 1))
+    px = int(np.clip(cx, 0, depth_map.shape[1] - 1))
+    depth_val = float(depth_map[py, px])
+    if not np.isfinite(depth_val):
+        print("   scanning     [warn] 탐지 지점의 depth 값이 유효하지 않습니다.")
+        return None
+    if depth_val < MIN_VALID_SCAN_DEPTH:
+        print(f"   scanning     [warn] 탐지 지점이 카메라에 너무 가깝습니다"
+              f"(depth={depth_val:.3f}m < {MIN_VALID_SCAN_DEPTH}m) -- 박스가 아니라"
+              " 그리퍼/팔 자신을 오탐지한 것으로 보고 무시합니다.")
+        return None
+    if not _looks_like_box_color(frame, cx, cy):
+        print(f"   scanning     [warn] 탐지 지점의 색이 박스 같지 않습니다"
+              " -- 바닥에 드리운 팔 그림자를 오탐지한 것으로 보고 무시합니다.")
+        return None
+    world_pos = camera.pixel_to_world(cx, cy, depth_val)
+    print(f"   scanning     detected box conf={conf:.3f} "
+          f"pixel=({cx:.1f},{cy:.1f}) -> world_xy=({world_pos[0]:.3f}, {world_pos[1]:.3f})")
+    return np.array([world_pos[0], world_pos[1]])
 
 
-def locate_box_via_camera(world, stage, robot, ik_solver, target_quat, camera, ros_node):
-    """SCAN_XY 위 SCAN_HEIGHT 높이에서 아래를 내려다보고 /rgb, /depth 를
-    발행하면서 locate_box_relay.py 가 중계하는 /box_position_camera 를
-    구독해 박스의 월드 (x, y)를 반환한다. 못 찾으면 None."""
-    scan_pos = np.array([SCAN_XY[0], SCAN_XY[1], SCAN_HEIGHT])
-    flange_target = tcp_to_flange(scan_pos, target_quat)
+def _wait_for_detection(world, camera, ros_node, timeout_steps):
+    """팔을 그 자리에 멈춘 채(별도 apply_action 없이), box_detector_node.py의
+    /box_pixel 응답을 최대 timeout_steps 스텝까지 기다린다. 응답을 기다리는
+    동안 팔이 움직이지 않아야, 그 사이 늦게 도착한 탐지 결과라도 "지금 카메라
+    자세"와 여전히 일치해서 역투영이 안전하다 (아래 locate_box_and_descend
+    docstring의 비동기 지연 문제 설명 참고).
 
-    print("   scanning     moving to scan pose...")
-    for _ in range(150):
+    pixel_to_world_xy가 (그리퍼 자기 자신을 오탐지한 경우 등으로) None을
+    반환해도 바로 포기하지 않고, 남은 시간 동안 계속 기다려서 다음 응답을
+    본다 -- box_detector_node.py가 계속 새 프레임을 처리해서 여러 번 응답을
+    주므로, 한 번 걸러졌다고 이 스캔 자체를 실패로 볼 필요는 없다.
+
+    box_detector_node.py는 실제 처리 시간이 걸리는 별도 프로세스라, 이전
+    단계(예: locate_box_and_descend의 첫 탐지)에서 빠르게 여러 프레임을
+    보내둔 게 아직 처리 중일 수 있다 -- 그러면 "이번 대기"를 시작한 뒤에도
+    한동안 그 "이전" 프레임들에 대한 응답(오래된 픽셀)이 계속 도착한다.
+    이걸 그대로 쓰면 팔이 이미 옮겨간 지금 자세로 오래된 픽셀을 역투영하게
+    돼서 위치가 크게 틀어진다 (그리드 테스트에서 재현: 완전히 같은 pixel이
+    두 번 "새로 탐지"됐다고 나오면서 서로 다른 엉뚱한 좌표를 냄). 그래서
+    take_pixel_after(not_before)로, 이 함수가 시작된 시각 "이후"에 찍힌
+    프레임에서 나온 응답만 받아들이고, 그보다 오래된 건 계속 버리고 기다린다.
+    끝까지 유효한 탐지를 못 받으면 None."""
+    not_before = ros_node.get_clock().now()
+    depth_map = None
+    last_frame = None
+    for _ in range(timeout_steps):
+        frame = camera.get_frame()
+        if frame is not None:
+            last_frame = frame
+            ros_node.publish_image(frame)
+            depth_map = camera.get_depth()
+            ros_node.publish_depth(depth_map)
+        rclpy.spin_once(ros_node, timeout_sec=0.05)
+        pixel = ros_node.take_pixel_after(not_before)
+        if pixel is not None and depth_map is not None:
+            world_xy = pixel_to_world_xy(pixel, depth_map, camera, last_frame)
+            if world_xy is not None:
+                return world_xy
+        world.step(render=True)
+    print(f"   scanning     [warn] 유효한 박스 탐지를 못 받았습니다 "
+          f"({BOX_PIXEL_TOPIC} 응답 없음 또는 전부 거부됨 -- box_detector_node.py"
+          " 실행 여부/ROS_DOMAIN_ID를 확인하세요).")
+    return None
+
+
+def _move_to(world, robot, ik_solver, xy, height_from, height_to, steps):
+    """xy 상공에서 height_from -> height_to 로 연속 하강(또는 상승)하며
+    이동한다. 매 스텝 목표 xy를 향해 손목 yaw도 같이 맞춘다(yaw_toward)."""
+    for i in range(steps):
+        if not still_running(world):
+            break
+        alpha = (i + 1) / steps
+        height = lerp(height_from, height_to, alpha)
+        target_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(xy))
+        tcp_target = np.array([xy[0], xy[1], height])
+        flange_target = tcp_to_flange(tcp_target, target_quat)
         action, solved = ik_solver.compute_inverse_kinematics(
             target_position=flange_target,
             target_orientation=target_quat,
@@ -746,46 +906,55 @@ def locate_box_via_camera(world, stage, robot, ik_solver, target_quat, camera, r
             robot.apply_action(action)
         world.step(render=True)
 
-    for _ in range(30):
-        world.step(render=True)
 
-    print(f"   scanning     /rgb, /depth 발행 시작, {BOX_POSITION_CAMERA_TOPIC} 응답 대기 중...")
+def locate_box_and_descend(world, robot, ik_solver, camera, ros_node):
+    """카메라 스캔과 픽 접근을 하나의 연속 동작으로 합친다.
+
+    예전엔 (1) 고정 스캔 자세로 내려가서 박스를 찾고 (2) 준비 자세로 리셋
+    했다가 (3) 다시 찾은 위치로 접근하는 식이라, 팔이 박스 쪽으로 갔다가
+    한 번 물러났다가 다시 가는 것처럼(부자연스럽게 "2번 움직이는") 보인다는
+    피드백을 받았다. 그리고 스캔 높이 자체는 그대로였는데도, 접근/하강
+    단계에서 카메라가 박스에 너무 가까워지면 시야가 좁아져서 박스가 프레임을
+    벗어나 버리는 문제도 있었다.
+
+    그래서 지금은: 높은 스캔 위치(SCAN_HEIGHT)에서 먼저 한 번 확실하게
+    탐지하고, 리셋 없이 그 자리에서 곧장 박스 쪽/아래(SCAN_MID_HEIGHT)로
+    연속 이동한 다음, 거기서 잠깐 멈춰서 한 번 더 탐지해 중심을 보정하고,
+    마지막으로 접근 높이(APPROACH_HEIGHT)까지 마저 내려간다.
+
+    처음엔 "내려가는 동안 계속(non-blocking) 재탐지"하는 방식으로 만들었는데,
+    box_detector_node.py는 별도 프로세스라 응답까지 실제 처리 시간이 걸리고,
+    그동안 팔은 이미 계속 이동해버린다 -- 그러면 "오래된 픽셀"을 도착 시점의
+    "새 카메라 자세"로 역투영하게 돼서 위치가 크게 틀어지는 문제가 그리드
+    테스트에서 실제로 나타났다(박스가 (0.69, 1.06)인데 pick_xy가 (0.26, 1.39)
+    처럼 엉뚱하게 나온 경우 등). 그래서 재탐지할 때는 짧게라도 팔을 멈추고
+    기다린다(_wait_for_detection) -- 멈춰있는 동안은 카메라 자세가 안 바뀌니,
+    늦게 온 응답이라도 여전히 유효하다.
+
+    못 찾으면(최초 탐지 실패) None을 반환하고, 이 경우 팔은 스캔 자세 그대로
+    움직이지 않은 상태다."""
+    print("   scanning     (스캔 자세) /rgb, /depth 발행 시작, "
+          f"{BOX_PIXEL_TOPIC} 응답 대기 중...")
     print(f"                (rqt 등에서 /rgb 를 구독해서 라이브로 볼 수 있습니다)")
 
-    # 한 번만 발행하면 rqt 같은 뷰어가 그 뒤에 구독을 시작했을 때 그 한 프레임을
-    # 이미 놓쳐서 화면이 계속 비어 보인다 (durability가 기본 volatile이라 과거
-    # 메시지를 안 준다). 그래서 대기하는 동안 계속 최신 프레임을 다시 캡처해서
-    # 발행한다 -- 실제 로봇 카메라처럼 라이브 스트림으로 보이게.
-    # locate_box_relay.py가 /locate_box를 release_lock=True로 계속 호출하고
-    # 있어서, 여기서 받는 값은 항상 최신 검출 결과다 (locate_box_pipeline.md
-    # 흐름 문서 참고).
-    got_frame = False
-    ros_node.take_box_position()   # 이전 결과 찌꺼기 비우기
-    point = None
-    for _ in range(VISION_WAIT_TIMEOUT_STEPS):
-        frame = camera.get_frame()
-        if frame is not None:
-            got_frame = True
-            ros_node.publish_image(frame)
-            ros_node.publish_depth(camera.get_depth())
-        rclpy.spin_once(ros_node, timeout_sec=0.05)
-        point = ros_node.take_box_position()
-        if point is not None:
-            break
-        world.step(render=True)
-    if not got_frame:
-        print("   scanning     [warn] 카메라 프레임을 못 받았습니다.")
-        return None
-    if point is None:
-        print(f"   scanning     [warn] {BOX_POSITION_CAMERA_TOPIC} 로부터 응답이 없습니다"
-              " (locate_box_node.py / locate_box_relay.py 가 실행 중인지,"
-              " ROS_DOMAIN_ID가 같은지 확인).")
+    box_xy = _wait_for_detection(world, camera, ros_node, VISION_WAIT_TIMEOUT_STEPS)
+    if box_xy is None:
         return None
 
-    world_xy = camera_point_to_world_xy(stage, CAMERA_PRIM_PATH, point)
-    print(f"   scanning     detected box camera_xyz=({point.x:.3f},{point.y:.3f},{point.z:.3f}) "
-          f"-> world_xy=({world_xy[0]:.3f}, {world_xy[1]:.3f})")
-    return world_xy
+    # 1단계: 스캔 높이 -> 중간 높이, 최초 탐지 위치 쪽으로 연속 이동.
+    _move_to(world, robot, ik_solver, box_xy, SCAN_HEIGHT, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2)
+
+    # 중간 높이에서 잠깐 멈춰 재탐지 (더 가까워졌으니 더 정확함, 실패해도 이전 추정치 유지).
+    refined = _wait_for_detection(world, camera, ros_node, REFINE_WAIT_TIMEOUT_STEPS)
+    if refined is not None:
+        box_xy = refined
+
+    # 2단계: 중간 높이 -> 접근 높이, 보정된 위치로 마저 하강. 여기서부터는
+    # 카메라가 박스에 너무 가까워져 시야를 벗어나기 쉬우므로 더 재탐지하지 않는다.
+    _move_to(world, robot, ik_solver, box_xy, SCAN_MID_HEIGHT, APPROACH_HEIGHT, SCAN_DESCEND_STEPS // 2)
+
+    print(f"   scanning     최종 pick_xy=({box_xy[0]:.3f}, {box_xy[1]:.3f})")
+    return box_xy
 
 
 # ══════════════════════════════════════════════════════════════
@@ -795,7 +964,7 @@ def still_running(world):
     return simulation_app.is_running() and world.is_playing()
 
 
-def run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver, target_quat,
+def run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver,
                           camera, ros_node, gripper, home_q):
     """스폰 -> 카메라 탐지 -> 픽 -> 플레이스, 한 사이클 전체. 가동범위 밖이면
     이번 사이클만 건너뛴다 (스크립트를 멈추지 않음)."""
@@ -810,22 +979,30 @@ def run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver, target_quat,
         world.step(render=True)
 
     print("\nVISION")
-    pick_xy = locate_box_via_camera(world, stage, robot, ik_solver, target_quat, camera, ros_node)
+    # 스캔에서 픽 접근까지 리셋 없이 한 번에 이어지는 연속 동작 (locate_box_and_descend
+    # 참고). 실패(최초 탐지 안 됨)하면 팔은 스캔 자세 그대로 안 움직인 상태이므로
+    # 그냥 스폰 위치로 fallback한다.
+    pick_xy = locate_box_and_descend(world, robot, ik_solver, camera, ros_node)
     if pick_xy is None:
         print("   [warn] 카메라로 박스를 못 찾아서 스폰 위치를 그대로 씁니다 (fallback).")
         pick_xy = box_xy
-    set_ready_pose(robot, home_q)
-    for _ in range(30):
-        world.step(render=True)
 
     print("\nREACH CHECK")
     if not is_within_reach(pick_xy):
         print("   박스가 가동범위 밖입니다. 이번 사이클은 건너뜁니다.")
+        return_to_ready_pose(world, robot, home_q, robot.dof_names)
         return
+
+    # 픽 쪽/플레이스 쪽 방향에 맞춰 손목 yaw를 따로 계산한다 (파일 상단
+    # docstring의 yaw_toward 설명 참고 -- 반대쪽으로 뻗을 때 팔꿈치/손목이
+    # 안전 관절 범위를 넘어서 조용히 clamp되던 문제의 수정).
+    pick_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(pick_xy))
+    place_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(PLACE_XY))
 
     print("\nRUN")
     fsm = PickPlaceFSM(ee_frame, robot, ik_solver, pick_xy=pick_xy, place_xy=PLACE_XY)
     gripper_was_attached = False
+    ever_attached = False
 
     def on_gripper_change(new_state):
         # "close"가 됐다고 바로 붙잡는 게 아니라, 그때부터 매 스텝 거리를
@@ -838,6 +1015,9 @@ def run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver, target_quat,
     while still_running(world) and fsm.state < fsm.DONE_STATE:
         world.step(render=True)
         time.sleep(0.005)
+
+        # MOVE(state 4)부터는 플레이스 쪽 방향으로 손목을 돌린다.
+        target_quat = pick_quat if fsm.state < 4 else place_quat
 
         # advance() 가 먼저 상태 진입 처리(_enter_state)를 해서 이번 상태의
         # mode/목표를 정하고, current_action() 이 그 mode에 맞는 액션을 만든다.
@@ -857,6 +1037,7 @@ def run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver, target_quat,
         # (조인트 솔버에 맡기면 몇 cm씩 어긋나는 문제가 있어서 kinematic 직접 갱신으로 대체).
         if gripper.is_attached():
             gripper.update()
+            ever_attached = True
         gripper_was_attached = gripper.is_attached()
 
         # /rgb·/depth를 계속 발행해서, rqt 등으로 보는 사람이 픽앤플레이스
@@ -880,6 +1061,12 @@ def run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver, target_quat,
         step += 1
 
     if fsm.state >= fsm.DONE_STATE:
+        if ever_attached:
+            print(f"\n[RESULT] 흡착 성공 -- 박스를 pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f})에서"
+                  f" place({PLACE_XY[0]:.3f}, {PLACE_XY[1]:.3f})로 옮겼습니다.")
+        else:
+            print(f"\n[RESULT] 흡착 실패 -- pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서"
+                  f" 박스에 닿지 못했습니다 (그리퍼가 빈 채로 사이클이 끝났습니다).")
         print("\n복귀")
         return_to_ready_pose(world, robot, home_q, robot.dof_names)
 
@@ -911,25 +1098,31 @@ def main():
     # 실제 박스 애셋은 로컬 원점이 "바닥면" 기준이다 (USD Cube처럼 중심이 아님).
     # 그래서 snap_distance는 반높이가 아니라 "박스 전체 높이"여야 원점(바닥)이
     # 흡착 컵 바로 아래로 내려가 윗면이 컵에 닿는 모양이 된다.
+    #
+    # contact_threshold를 예전엔 BOX_HEIGHT+0.15(15cm 여유)로 넉넉하게 뒀었는데,
+    # 그러면 DESCEND가 아직 박스 위 15cm 높이에 있을 때부터 이미 "접촉"으로
+    # 잡혀버려서(그것도 박스 중심에서 좀 벗어나 있어도), 실제로 닿기도 전에
+    # 흡착돼 보이는 원인이었다. 실제로 거의 맞닿았을 때만 잡히도록 여유를
+    # 훨씬 좁혔다 (DESCEND 목표(PICK_Z)에 도달하면 간격이 거의 0이 되는 걸
+    # 헤드리스로 확인함 -- 그 지점 근처에서만 붙게).
     gripper = ContactGripper(
         stage=stage,
         gripper_body_path=GRIPPER_BODY_PATH,
         local_pos=Gf.Vec3f(0.0, -0.064, 0.0),
-        contact_threshold=BOX_HEIGHT + 0.15,
+        contact_threshold=BOX_HEIGHT + 0.03,
         snap_distance=BOX_HEIGHT + 0.01,
     )
 
     world.reset()
     robot.initialize()
-    # "제자리"는 [0,0,0,0,0]이 아니라 이 USD를 처음 불러왔을 때의 자세로 정의한다
-    # (사용자가 의도한 "시작 위치"가 그 자세였음).
-    home_q = capture_home_pose(robot)
-    for _ in range(30):
-        world.step(render=True)
 
     print("\nSOLVER")
     ik_solver = create_ik_solver(robot)
-    target_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, GRIPPER_YAW_DEG)
+
+    # "제자리"는 흡착판/카메라가 아래(작업 영역)를 보는 자세다 (스캔 자세와
+    # 동일) -- USD에 저장돼 있던 자세는 흡착판이 천장을 보고 있어서 실전(움직이는
+    # 박스를 카메라로 계속 봐야 함)에 안 맞았다.
+    home_q = compute_ready_pose(world, robot, ik_solver)
 
     camera = CameraInterface(prim_path=CAMERA_PRIM_PATH, resolution=(640, 480))
     camera.initialize()
@@ -937,7 +1130,7 @@ def main():
         rclpy.init()
     ros_node = RosBridge()
     print(f"   image topic  {IMAGE_TOPIC}, {DEPTH_TOPIC}")
-    print(f"   box position {BOX_POSITION_CAMERA_TOPIC}  (locate_box_relay.py 가 발행)")
+    print(f"   pixel topic  {BOX_PIXEL_TOPIC}  (box_detector_node.py 가 발행)")
 
     print("\nRUN")
     print(f"   press Play in the viewport -- 사이클(스폰->탐지->픽->플레이스)이 끝나면")
@@ -957,7 +1150,7 @@ def main():
             print()
 
         if is_playing:
-            run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver, target_quat,
+            run_pick_place_cycle(world, stage, robot, ee_frame, ik_solver,
                                   camera, ros_node, gripper, home_q)
             if still_running(world):
                 print(f"\n[CYCLE] 다음 박스까지 {RESPAWN_WAIT_STEPS}스텝 대기...")
