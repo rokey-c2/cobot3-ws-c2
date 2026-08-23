@@ -4,8 +4,9 @@ set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/maps/warehouse_navigation.yaml"
 
-START_X="1.5"
-START_Y="0.0"
+# Must match the verified Isaac spawn transform.
+START_X="10.5"
+START_Y="1.80122"
 
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
@@ -104,7 +105,7 @@ fi
 
 sleep 1
 
-echo "[ROS2] setting initial pose: ($START_X, $START_Y)"
+echo "[ROS2] setting initial pose: ($START_X, $START_Y), yaw=0 deg"
 ros2 topic pub --once \
     /initialpose \
     geometry_msgs/msg/PoseWithCovarianceStamped \
