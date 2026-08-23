@@ -1,7 +1,10 @@
-"""Simple rigid-body physics for the STEP cargo pod."""
+"""Rigid-body physics and simple parcel assets for the cargo pod."""
 
-from pxr import Gf, UsdGeom, UsdPhysics
+from pxr import Gf, UsdGeom, UsdPhysics, UsdShade
 
+
+BLUE = Gf.Vec3f(0.05, 0.25, 0.95)
+PARCEL_BROWN = Gf.Vec3f(0.55, 0.32, 0.12)
 
 # The STEP model is 1.0 x 1.0 x 1.0 m.
 # Local Z = -0.5 is the bottom of the four legs.
@@ -14,7 +17,7 @@ def _create_collision_box(stage, path, center, size):
 
     cube = UsdGeom.Cube.Define(stage, path)
     cube.CreateSizeAttr(1.0)
-    cube.CreateDisplayColorAttr([Gf.Vec3f(0.9, 0.25, 0.1)])
+    cube.CreateDisplayColorAttr([BLUE])
     cube.CreateDisplayOpacityAttr([0.45])
 
     xform = UsdGeom.Xformable(cube.GetPrim())
@@ -24,16 +27,46 @@ def _create_collision_box(stage, path, center, size):
     UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
 
     # Keep the simplified physics boxes visible while we debug docking/lift.
-    # Later this can be switched off without changing the collision geometry.
     UsdGeom.Imageable(cube.GetPrim()).MakeVisible()
+
+
+def _apply_blue_material(stage, prim_path):
+    """Override the referenced STEP visual with a blue material."""
+
+    cargo_prim = stage.GetPrimAtPath(prim_path)
+    if not cargo_prim.IsValid():
+        return
+
+    material_path = f"{prim_path}/Looks/BlueCargoPod"
+    shader_path = f"{material_path}/Shader"
+
+    material = UsdShade.Material.Define(stage, material_path)
+    shader = UsdShade.Shader.Define(stage, shader_path)
+    shader.CreateIdAttr("UsdPreviewSurface")
+    shader.CreateInput("diffuseColor", "color3f").Set(BLUE)
+    shader.CreateInput("roughness", "float").Set(0.55)
+    shader.CreateInput("metallic", "float").Set(0.0)
+    material.CreateSurfaceOutput().ConnectToSource(
+        shader.ConnectableAPI(),
+        "surface",
+    )
+
+    for prim in UsdGeom.Imageable(cargo_prim).GetPrim().GetStage().Traverse():
+        path = prim.GetPath().pathString
+        if not path.startswith(f"{prim_path}/"):
+            continue
+        if path.startswith(f"{prim_path}/Looks/"):
+            continue
+        if prim.IsA(UsdGeom.Gprim):
+            UsdShade.MaterialBindingAPI.Apply(prim).Bind(material)
 
 
 def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
     """Turn the referenced STEP mesh into one compound rigid body.
 
-    The visual STEP mesh is left unchanged. Physics uses several simple
-    box colliders so the open space below the pod stays open for the IW Hub.
-    The colliders are intentionally visible during the current test stage.
+    Physics uses simple box colliders so the open space below the pod stays
+    open for the IW Hub. The visible STEP mesh and debug colliders are both
+    recolored blue for the current warehouse scenario.
     """
 
     cargo_prim = stage.GetPrimAtPath(prim_path)
@@ -78,7 +111,7 @@ def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
         (1.0, 1.0, 0.05),
     )
 
-    # Thin wall colliders keep future parcel objects inside the pod.
+    # Thin wall colliders keep parcel objects inside the pod.
     wall_height = 0.70
     wall_z = 0.15
     wall_thickness = 0.02
@@ -108,7 +141,40 @@ def add_cargo_pod_physics(stage, prim_path, mass_kg=20.0):
         (1.0, wall_thickness, wall_height),
     )
 
+    _apply_blue_material(stage, prim_path)
+
     print(
         f"[CARGO] physics enabled for {prim_path} "
-        f"(mass={float(mass_kg):.1f} kg, compound box collision, visible=True)"
+        f"(mass={float(mass_kg):.1f} kg, color=blue, compound collision)"
+    )
+
+
+def add_parcel_box(stage, prim_path, center, size, mass_kg=15.0):
+    """Create one dynamic parcel box sized to fit inside the cargo pod.
+
+    The parcel is intentionally a separate rigid body, not a child rigid body
+    of the cargo pod, so Isaac/PhysX can simulate it resting inside the pod.
+    """
+
+    cube = UsdGeom.Cube.Define(stage, prim_path)
+    cube.CreateSizeAttr(1.0)
+    cube.CreateDisplayColorAttr([PARCEL_BROWN])
+
+    xform = UsdGeom.Xformable(cube.GetPrim())
+    xform.AddTranslateOp().Set(Gf.Vec3d(*center))
+    xform.AddScaleOp().Set(Gf.Vec3f(*size))
+
+    rigid_body = UsdPhysics.RigidBodyAPI.Apply(cube.GetPrim())
+    rigid_body.CreateRigidBodyEnabledAttr(True)
+    rigid_body.CreateKinematicEnabledAttr(False)
+
+    UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+    mass = UsdPhysics.MassAPI.Apply(cube.GetPrim())
+    mass.CreateMassAttr(float(mass_kg))
+
+    print(
+        f"[PARCEL] spawned {prim_path}: "
+        f"size={tuple(float(v) for v in size)} m, "
+        f"mass={float(mass_kg):.1f} kg"
     )
