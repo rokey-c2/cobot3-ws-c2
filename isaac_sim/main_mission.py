@@ -48,6 +48,7 @@ simulation_app.update()
 
 from cargo.cargo_pod_physics import add_cargo_pod_physics, add_parcel_asset
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
+from robots.p3020.p3020_mission_agent import P3020PickPlaceAgent, P3020RosBridge
 
 
 def _create_clock_graph():
@@ -210,9 +211,17 @@ def main():
     if not agents:
         raise RuntimeError("No IW Hub robot found")
 
+    # P3020: 통합 맵(enva_small_warehouse_p3020_marker/World0.usd)에 이미
+    # /World/World1/p3020 로 존재하는 로봇을 제어 대상으로 삼는다(별도 USD를
+    # 더 로드하지 않음). ROBOT_REGISTRY에는 아직 p3020 항목이 없어서, IW Hub와
+    # 별개로 하나만 직접 만든다.
+    p3020_agent = P3020PickPlaceAgent(world)
+    p3020_agent.setup()
+
     world.reset()
     for agent in agents:
         agent.post_reset()
+    p3020_agent.post_reset()
 
     world.play()
 
@@ -221,6 +230,7 @@ def main():
 
     rclpy.init(args=None)
     bridge = AmrMissionBridge(agents[0])
+    p3020_bridge = P3020RosBridge()
 
     print()
     print("============================================")
@@ -230,9 +240,7 @@ def main():
     print("[LOCAL] rotate to +90 deg")
     print("[LOCAL] drive to: (10.5, -1.25), yaw=90 deg")
     print("[LOCAL] lift target: 0.04 m")
-    print("[CARGO] blue cargo pod: (10.5, -1.5), yaw=0 deg")
-    print("[PARCEL] NVIDIA SM_CardBoxB_01_359, mass=15 kg")
-    print("[PARCEL] runtime fit envelope: 0.50 x 0.40 x 0.30 m")
+    print("[CARGO] original: (10.5, -1.5), yaw=0 deg")
     print("[NAV2] starts only after PICKUP_DONE")
     print("[DELIVERY] (1.30104, -0.06065)")
     print("[RETURN] Nav2 -> cargo area -> local precision dock")
@@ -242,13 +250,36 @@ def main():
     print("[ROS2] /amr_a/pickup_state")
     print("============================================")
 
+    def tick_iw_hub_agents(step_dt):
+        for agent in agents:
+            agent.on_physics_step(step_dt)
+
     try:
         while simulation_app.is_running():
             rclpy.spin_once(bridge, timeout_sec=0.0)
+            rclpy.spin_once(p3020_bridge, timeout_sec=0.0)
 
             dt = float(world.get_physics_dt())
-            for agent in agents:
-                agent.on_physics_step(dt)
+            tick_iw_hub_agents(dt)
+
+            command = p3020_bridge.take_command()
+            if command is not None:
+                place_xy = (float(command["place_x"]), float(command["place_y"]))
+                scan_hint = None
+                if "scan_hint_x" in command and "scan_hint_y" in command:
+                    scan_hint = (float(command["scan_hint_x"]), float(command["scan_hint_y"]))
+                print(f"\n[P3020] pick_place command received: place={place_xy} scan_hint={scan_hint}")
+                # run_pick_place는 블로킹 함수라 그 안에서 매 스텝
+                # tick_iw_hub_agents를 같이 불러줘야 이 사이클 동안 IW Hub
+                # 애니메이션이 멈추지 않는다.
+                success, message = p3020_agent.run_pick_place(
+                    p3020_bridge,
+                    place_xy_world=place_xy,
+                    scan_xy_world=scan_hint,
+                    tick_others=tick_iw_hub_agents,
+                    dt=dt,
+                )
+                print(f"[P3020] result: success={success} message={message}")
 
             world.step(render=True)
 
@@ -257,6 +288,7 @@ def main():
 
     finally:
         bridge.destroy_node()
+        p3020_bridge.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 

@@ -10,14 +10,12 @@ from project_config.simulation_config import HEADLESS
 simulation_app = SimulationApp({"headless": HEADLESS})
 
 
-import numpy as np
 import omni.graph.core as og
 import omni.usd
 
 from pxr import Gf, UsdGeom
 
 from isaacsim.core.api import World
-from isaacsim.core.api.objects import DynamicCuboid
 from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 
@@ -131,24 +129,6 @@ def _spawn_cargo_pods():
         )
 
 
-def _spawn_conveyor_test_cube(world):
-    """Spawn a rigid-body cube with collision for conveyor testing."""
-
-    cube = DynamicCuboid(
-        prim_path="/World/ConveyorTestCube",
-        name="conveyor_test_cube",
-        position=np.array([-0.5, 0.0, 1.2]),
-        scale=np.array([0.4, 0.4, 0.4]),
-    )
-
-    world.scene.add(cube)
-
-    print(
-        "[TEST CUBE] spawned at x=-0.5, y=0.0, z=1.2 "
-        "scale=0.4 with rigid body + collision"
-    )
-
-
 def main():
     if not WORLD_USD.is_file():
         raise FileNotFoundError(
@@ -179,16 +159,9 @@ def main():
 
     _create_clock_graph()
     _spawn_cargo_pods()
-    _spawn_conveyor_test_cube(world)
 
-    conveyor_speed = 1.0
-    sorter_speed = -1.0
-
-    conveyor = ConveyorController(speed=conveyor_speed)
-    sorter = WheelSorterController(
-        toggle_steps=120,
-        speed=sorter_speed,
-    )
+    conveyor = ConveyorController(speed=1.0)
+    sorter = WheelSorterController(toggle_steps=120)
 
     conveyor.setup()
     sorter.setup()
@@ -229,9 +202,8 @@ def main():
 
     world.play()
 
-    # Apply equipment values again after OmniGraph playback becomes active.
+    # Apply the conveyor value again after OmniGraph playback becomes active.
     conveyor.start()
-    sorter.set_speed(sorter_speed)
 
     # Give NVIDIA's built-in front/back RTX LiDAR publishers time to start.
     for _ in range(30):
@@ -243,12 +215,8 @@ def main():
     print("============================================")
     print(f"[START] x={START_XY[0]:.6f}, y={START_XY[1]:.6f}")
     print(f"[GOAL ] x={GOAL_XY[0]:.6f}, y={GOAL_XY[1]:.6f}")
-    print(f"[CONVEYOR] speed={conveyor_speed:.1f}")
-    print(
-        f"[SORTER] speed={sorter_speed:.1f}, "
-        "binary switch toggles every 120 steps"
-    )
-    print("[TEST CUBE] position=(-0.5, 0.0, 1.2), scale=0.4")
+    print("[CONVEYOR] speed=1.0")
+    print("[SORTER] test mode: binary switch toggles every 120 steps")
     print()
     print("[NVIDIA DEFAULT NAVIGATION TOPICS]")
     print("  command : /cmd_vel")

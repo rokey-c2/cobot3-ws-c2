@@ -44,6 +44,17 @@ dist/
 # Keep empty asset directories in Git
 !isaac_sim/usd/.gitkeep
 !isaac_sim/assets/**/.gitkeep
+
+# Synthetic data generation output (Replicator captures, YOLO datasets, zips)
+isaac_sim/data/
+_out_parcel_sdg/
+
+# Trained model weights (large binaries, keep outside Git)
+isaac_sim/robots/p3020/vision/models/
+
+# Offline test ros2 bags (large binaries, keep outside Git)
+tests/ros2/*/
+!tests/ros2/.gitkeep
 /isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Forklift_B1_Normal.1001.png
 /isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Yellow_A_Normal.png
 /isaac_sim/usd/env_temp_p3020_gripper/home/rokey/collaboration/cobot3-ws-c2/isaac_sim/usd/env_temp_p3020_not_gripper_1/SubUSDs/textures/T_Plastic_Orange_A_Normal.png

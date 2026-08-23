@@ -1,5 +1,16 @@
 # AMR–협동로봇 연계 택배 분류 자동화 및 실시간 관제 시스템
 
+## MVP Flow
+Input Zone
+→ IW Hub AMR
+→ Doosan P3020
+→ Main Conveyor
+→ Wheel Sorter
+→ A/B Conveyor
+→ P3020 A/B 적재
+→ Box Full
+→ 출고 IW Hub
+→ 배송지
 ## 현재 검증 시나리오
 
 현재 `feat/iw-hub-single-navigation` 브랜치는 Isaac Sim 5.1 + ROS 2 Jazzy + NVIDIA IW Hub Nav2 구성을 사용합니다.
@@ -34,6 +45,14 @@ Cargo Pod 안의 택배 상자는 NVIDIA Simple Warehouse의 cardboard box asset
 - PhysX
 - Python
 
+## IW Hub 단일 자율주행 테스트
+
+현재 `feat/iw-hub-single-navigation` 브랜치는 프로젝트 Warehouse USD에
+NVIDIA Isaac Sim 5.1의 공식 `iw_hub_warehouse_navigation.usd` 안에 들어 있는
+IW Hub Nav2 로봇 구성을 reference해서 사용합니다.
+
+프로젝트 코드에서 LiDAR를 새로 만들거나 센서 위치, 방향, range를 변경하지 않습니다.
+NVIDIA Navigation 샘플의 front/back 2D LiDAR와 ROS 2 graph를 그대로 사용합니다.
 ## NVIDIA IW Hub 구성
 
 IW Hub는 NVIDIA Isaac Sim 5.1의 공식 Navigation sample 구성을 reference해서 사용합니다.
@@ -50,55 +69,59 @@ NVIDIA Navigation sample의 front/back 2D LiDAR와 ROS 2 graph를 그대로 사�
 /back_2d_lidar/scan
 ```
 
-## 실행
+출발 위치:
 
-### Terminal 1 — Isaac Sim
-
-```bash
-cd ~/collaboration/cobot3-ws-c2
-./scripts/run_isaac_mission.sh
+```text
+x = 8.155903816223145
+y = -5.628969192504883
 ```
 
-### Terminal 2 — Nav2
+목표 위치:
+
+```text
+x = -13.813100814819336
+y = 0.7454315423965454
+```
+
+추가 테스트 장애물과 cargo는 현재 단일 주행 검증에서 생성하지 않습니다.
+
+## Conveyor / Wheel Sorter
+
+메인 컨베이어는 Python에서 속도 `1.0`으로 제어합니다.
+Wheel Sorter는 기존 ActionGraph의 `binary_switch` 값을 Python에서 변경해서 방향을 제어합니다.
+
+현재 테스트 단계에서는 Wheel Sorter가 일정 simulation step마다 자동으로 방향을 바꿉니다.
+나중에는 barcode / vision / mission 조건에 맞춰 `A` 또는 `B` 방향으로 보내도록 조건만 교체할 수 있습니다.
+
+상세 내용은 [docs/conveyor_sorter_control.md](docs/conveyor_sorter_control.md)를 참고합니다.
+
+## 실행
+
+터미널 1:
 
 ```bash
-cd ~/collaboration/cobot3-ws-c2
+cd ~/collaboration/test/cobot3-ws-c2
+./scripts/run_isaac.sh
+```
+
+터미널 2:
+
+```bash
+cd ~/collaboration/test/cobot3-ws-c2
 ./scripts/run_ros2.sh
 ```
 
-### Terminal 3 — 전체 Mission
-
-P3020 simulation mode:
+터미널 3:
 
 ```bash
-cd ~/collaboration/cobot3-ws-c2
-source /opt/ros/jazzy/setup.bash
-source ros2_ws/install/setup.bash
-./scripts/run_amr_p3020_mission.sh --ros-args -p simulate_p3020:=true
+cd ~/collaboration/test/cobot3-ws-c2
+./scripts/test_iw_hub_avoidance.sh
 ```
 
-실제 P3020 Action Server 연동 시:
+IW Hub 상세 내용은 [docs/iw_hub_navigation.md](docs/iw_hub_navigation.md)를 참고합니다.
 
-```bash
-./scripts/run_amr_p3020_mission.sh --ros-args -p simulate_p3020:=false
-```
-
-## 주요 파일
-
-```text
-isaac_sim/main_mission.py
-isaac_sim/project_config/robot_config.py
-isaac_sim/robots/iw_hub/iw_hub_agent.py
-isaac_sim/robots/iw_hub/iw_hub_mission_agent.py
-isaac_sim/cargo/cargo_pod_physics.py
-ros2_ws/src/amr_controller/amr_controller/amr_p3020_mission.py
-ros2_ws/src/logistics_interfaces/action/PickPlace.action
-scripts/run_isaac_mission.sh
-scripts/run_ros2.sh
-scripts/run_amr_p3020_mission.sh
-```
-
-## 중요 원칙
+## 중요
+`isaac_sim/project_config/`를 사용합니다.
 
 - NVIDIA IW Hub 기본 LiDAR/ROS 2 graph를 임의로 변경하지 않습니다.
 - custom LiDAR, scan self filter, odom TF bridge를 사용하지 않습니다.
