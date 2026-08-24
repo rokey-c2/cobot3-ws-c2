@@ -1,0 +1,2 @@
+ros_domain_id: 110
+rmw_implementation: rmw_fastrtps_cpp

@@ -1,0 +1,11 @@
+box_capacity: 10
+
+timeouts:
+  amr_arrival_sec: 20
+  pick_sec: 5
+  place_sec: 5
+  sorter_sec: 5
+
+retries:
+  amr: 2
+  pick_place: 3

@@ -1,0 +1,6 @@
+namespaces:
+  inbound: /arm_in_01
+  loading_a: /arm_a_01
+  loading_b: /arm_b_01
+
+gripper: suction

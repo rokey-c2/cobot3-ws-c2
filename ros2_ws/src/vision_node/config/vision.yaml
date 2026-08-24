@@ -1,0 +1,32 @@
+locate_box_node:
+  ros__parameters:
+    rgb_topic: /rgb
+    depth_topic: /depth
+
+    # 학습된 YOLO 모델(onnx) 경로. 장비마다 위치가 다를 수 있어 기본값 없음 -
+    # launch 인자나 이 파일에서 반드시 지정해야 한다.
+    model_path: ""
+    conf_threshold: 0.5
+
+    # 카메라 intrinsics. 해상도 640x480 (isaac_sim/robots/p3020/vision/camera.py
+    # CameraInterface(resolution=(640,480))와 일치해야 함). horizontal_fov_deg는
+    # 더 이상 60도 placeholder가 아니라, 실제 Isaac Sim 카메라 prim
+    # (/World/vgp20/rsd455/RSD455/Camera_Pseudo_Depth,
+    # isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/World1.usd)에서
+    # focalLength=1.93, horizontalAperture=3.896 을 읽어 계산한 값이다:
+    #   Isaac Sim의 Camera 클래스는 square pixel을 강제하므로(camera.py
+    #   _sync_apertures_with_aspect_ratio), verticalAperture는 자동으로
+    #   horizontalAperture/aspect_ratio 로 재계산된다 -- horizontalAperture/
+    #   focalLength만으로 fx, fy(=fx) 둘 다 구해도 정확하다.
+    #   fx = width*focalLength/horizontalAperture = 640*1.93/3.896 ≈ 317.04
+    #   horizontal_fov_deg = 2*atan((width/2)/fx) ≈ 90.53
+    image_width: 640
+    image_height: 480
+    horizontal_fov_deg: 90.53
+
+    # rgb/depth 싱크 허용 오차 (초)
+    sync_slop_sec: 0.05
+
+    # _latest_detection이 이 시간(초)보다 오래되면 box_detected=false로 취급
+    # (오래된 좌표를 계속 반환하는 버그 수정, locate_box_node.py 주석 참고)
+    detection_timeout_sec: 1.0

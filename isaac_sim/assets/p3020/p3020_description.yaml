@@ -1,0 +1,57 @@
+# Lula robot descriptor for Doosan P3020 (Prime series, 5-axis palletizing robot).
+# Derived from isaac_sim/assets/p3020/p3020.urdf joint origins/limits.
+# joint_4 is a fixed joint in the URDF (not part of cspace) -- P3020 is 5-DOF.
+
+api_version: 1.0
+
+cspace:
+    - joint_1
+    - joint_2
+    - joint_3
+    - joint_5
+    - joint_6
+
+root_link: base_link
+
+default_q: [0.0, -1.0472, 1.5708, 0.0, 0.0]
+
+acceleration_limits: [8.0, 8.0, 10.0, 12.0, 12.0]
+jerk_limits: [4000.0, 4000.0, 5000.0, 6000.0, 6000.0]
+
+# 대략적인 충돌 스피어 (URDF 관절 origin 기준 근사치). 순수 IK(LulaKinematicsSolver +
+# ArticulationKinematicsSolver)만 쓸 때는 실제로 참조되지 않지만, RMPflow 등
+# 모션 정책으로 확장할 경우를 대비해 넣어둔다. 정밀도가 필요해지면 다시 측정할 것.
+collision_spheres:
+    - base_link:
+        - "center": [0.0, 0.0, 0.15]
+          "radius": 0.18
+
+    - link_1:
+        - "center": [0.0, 0.0, 0.0]
+          "radius": 0.15
+
+    - link_2:
+        - "center": [0.25, 0.0, 0.0]
+          "radius": 0.12
+        - "center": [0.55, 0.0, 0.0]
+          "radius": 0.11
+        - "center": [0.85, 0.0, 0.0]
+          "radius": 0.10
+
+    - link_3:
+        - "center": [0.0, -0.3, -0.05]
+          "radius": 0.10
+        - "center": [0.0, -0.6, -0.1]
+          "radius": 0.09
+
+    - link_4:
+        - "center": [0.0, 0.07, 0.0]
+          "radius": 0.09
+
+    - link_5:
+        - "center": [0.0, -0.06, 0.0]
+          "radius": 0.08
+
+    - link_6:
+        - "center": [0.0, 0.0, 0.0]
+          "radius": 0.08
