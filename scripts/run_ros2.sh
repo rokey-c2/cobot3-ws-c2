@@ -9,6 +9,10 @@ START_X="10.5"
 START_Y="1.80122"
 
 source /opt/ros/jazzy/setup.bash
+
+unset GTK_PATH
+unset GIO_MODULE_DIR
+
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
