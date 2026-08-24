@@ -2,7 +2,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/enva_small_warehouse_p3020_marker/navigation/maps/warehouse_navigation.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/warehouse_final_final/navigation/maps/warehouse_navigation.yaml"
 
 # Must match the verified Isaac spawn transform.
 START_X="10.5"
