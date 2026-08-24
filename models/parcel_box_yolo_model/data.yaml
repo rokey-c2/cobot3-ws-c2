@@ -1,0 +1,5 @@
+path: /content/parcel_yolo/parcel_yolo
+train: images/train
+val: images/val
+nc: 1
+names: ['box']
