@@ -74,9 +74,9 @@ ASSETS_DIR = os.path.join(_ISAAC_SIM_DIR, "assets", "p3020")
 URDF_PATH = f"{ASSETS_DIR}/p3020.urdf"
 DESCRIPTION_PATH = f"{ASSETS_DIR}/p3020_description.yaml"
 
-ROBOT_PRIM_PATH = "/World/World1/p3020"
-GRIPPER_BODY_PATH = "/World/World1/vgp20"
-CAMERA_PRIM_PATH = "/World/World1/vgp20/rsd455/RSD455/Camera_Pseudo_Depth"
+ROBOT_PRIM_PATH = "/World/p3020_in/p3020"
+GRIPPER_BODY_PATH = "/World/p3020_in/vgp20"
+CAMERA_PRIM_PATH = "/World/p3020_in/vgp20/rsd455/RSD455/Camera_Pseudo_Depth"
 EE_LINK_NAME = "link_6"
 
 # 팀원이 project_config/robot_config.py의 PARCEL_REGISTRY + main_mission.py의

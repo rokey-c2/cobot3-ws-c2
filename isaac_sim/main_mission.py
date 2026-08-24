@@ -37,8 +37,8 @@ ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
     ISAAC_SIM_DIR
     / "usd"
-    / "enva_small_warehouse_p3020_marker"
-    / "World0.usd"
+    / "warehouse_final_final"
+    / "env_warehouse_only_arms.usd"
 )
 
 enable_extension("isaacsim.ros2.bridge")
