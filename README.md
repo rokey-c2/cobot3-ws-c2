@@ -92,6 +92,14 @@ colcon build --symlink-install
 source install/setup.bash
 export ROS_DOMAIN_ID=110 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ros2 run arm_controller pick_place_action_server
+
+(venv)
+cd ~/collaboration/cobot3-ws-c2
+source /opt/ros/jazzy/setup.bash
+source .venv/bin/activate
+
+export ROS_DOMAIN_ID=110
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ```
 
 터미널 4 — 박스 인식(YOLO):
