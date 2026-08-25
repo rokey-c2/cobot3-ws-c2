@@ -3,7 +3,7 @@
 Flow:
 1) Define /World/Cargo/cargo_box_gaurd_size_201.
 2) AddReference() the standalone guard USD directly on that prim.
-3) Apply the exact requested pose.
+3) Apply the exact requested pose and convert the millimeter-authored asset to meters.
 4) Add simple runtime compound colliders (4 legs + floor + 4 walls).
 5) Apply one rigid body + mass on the cargo root.
 
@@ -19,6 +19,10 @@ from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
 POSE_TOLERANCE_M = 1.0e-6
+# The standalone STEP-derived USD is authored in millimeter-sized coordinates.
+# Without this conversion Isaac Sim interprets it as roughly 1000 x 1000 x 315 m.
+# 0.001 restores the intended physical size: about 1.0 x 1.0 x 0.315 m.
+GUARD_ASSET_SCALE = 0.001
 
 GUARD_USD = (
     Path(__file__).resolve().parents[1]
@@ -232,6 +236,12 @@ def spawn_cargo_guard_clone(
     if abs(float(spawn_yaw)) > 1.0e-9:
         xform.AddRotateZOp().Set(float(spawn_yaw))
 
+    # The source geometry uses millimeter-sized coordinates. Convert it to
+    # meters on the runtime root before measuring bounds or building physics.
+    xform.AddScaleOp().Set(
+        Gf.Vec3f(GUARD_ASSET_SCALE, GUARD_ASSET_SCALE, GUARD_ASSET_SCALE)
+    )
+
     stage.Load(destination_path)
 
     root = stage.GetPrimAtPath(destination_path)
@@ -268,7 +278,7 @@ def spawn_cargo_guard_clone(
         f"[CARGO GUARD] standalone USD referenced: {asset_path} -> "
         f"{destination_path}; pose=({float(spawn_xyz[0]):.3f}, "
         f"{float(spawn_xyz[1]):.3f}, {float(spawn_xyz[2]):.3f}), "
-        f"yaw={float(spawn_yaw):.1f} deg"
+        f"yaw={float(spawn_yaw):.1f} deg, asset_scale={GUARD_ASSET_SCALE:.6f}"
     )
     print(
         "[CARGO GUARD] world bounds: "
