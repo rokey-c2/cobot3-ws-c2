@@ -1,20 +1,12 @@
 """P3020에 마운트된 RSD455 카메라 래퍼.
 
 RGB 프레임(YOLO 입력용)과 depth(픽셀 -> 3D 월드 좌표 역투영용)를 함께 제공한다.
-현재 통합 미션에서는 p3020_in의 RSD455가 메인 카메라다.
-p3020_in 카메라 rig는 통째로 유지하고, 사용하지 않는 p3020_a / p3020_b
-RSD455 rig만 비활성화해서 렌더링 부하를 줄인다.
+카메라 비활성화는 여기서 하지 않는다. RViz/Isaac viewport/ROS 카메라 스트림에
+사용되는 카메라를 실수로 끄지 않도록 월드 USD에 작성된 카메라 상태를 그대로 유지한다.
 """
 
 import numpy as np
-import omni.usd
 from isaacsim.sensors.camera import Camera
-
-
-_UNUSED_P3020_CAMERA_RIGS = (
-    "/World/p3020_a/vgp20/rsd455",
-    "/World/p3020_b/vgp20/rsd455",
-)
 
 
 class CameraInterface:
@@ -22,39 +14,13 @@ class CameraInterface:
         self._prim_path = prim_path
         self._camera = Camera(prim_path=prim_path, resolution=resolution)
 
-    def _disable_unused_cameras(self):
-        """Disable only known-unused camera rigs.
-
-        p3020_in의 RSD455는 YOLO RGB와 depth 역투영에 필요한 메인 카메라이므로
-        그 내부 Camera prim이나 RenderProduct를 개별적으로 끄지 않는다.
-        """
-
-        stage = omni.usd.get_context().get_stage()
-        if stage is None:
-            return
-
-        disabled = []
-
-        for rig_path in _UNUSED_P3020_CAMERA_RIGS:
-            rig_prim = stage.GetPrimAtPath(rig_path)
-            if not rig_prim.IsValid() or not rig_prim.IsActive():
-                continue
-
-            rig_prim.SetActive(False)
-            disabled.append(rig_path)
-
-        print(f"[PERF][CAMERA] main camera kept ON: {self._prim_path}")
-        print(
-            "[PERF][CAMERA] p3020_in RSD455 rig kept ON; "
-            f"disabled_unused_rigs={len(disabled)}"
-        )
-        for path in disabled:
-            print(f"[PERF][CAMERA] disabled unused rig: {path}")
-
     def initialize(self):
-        self._disable_unused_cameras()
+        # Keep every authored camera/rig active. The active P3020 camera is
+        # initialized here, while other camera state remains exactly as the USD
+        # authored it so RViz and Isaac visualization streams are not broken.
         self._camera.initialize()
         self._camera.add_distance_to_image_plane_to_frame()
+        print(f"[PERF][CAMERA] camera shutdown disabled; active P3020 camera={self._prim_path}")
 
     def get_frame(self):
         """RGBA 프레임 (H, W, 4) uint8. 아직 렌더링 준비가 안 됐으면 None."""
