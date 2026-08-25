@@ -8,6 +8,10 @@ MAP_FILE="$ROOT_DIR/isaac_sim/usd/warehouse_final_final/navigation/maps/warehous
 START_X="10.5"
 START_Y="1.80122"
 
+# Nav2 is used only after the cargo guard has been lifted and until the return
+# approach is complete. Use the loaded IW Hub + cargo envelope for both costmaps.
+LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
+
 source /opt/ros/jazzy/setup.bash
 
 unset GTK_PATH
@@ -70,6 +74,28 @@ wait_for_samples() {
     return 1
 }
 
+set_loaded_footprint() {
+    echo "[ROS2] setting loaded cargo footprint: $LOADED_FOOTPRINT"
+
+    for node_name in /local_costmap/local_costmap /global_costmap/global_costmap; do
+        ready=0
+        for _ in $(seq 1 30); do
+            if ros2 param list "$node_name" 2>/dev/null | grep -qx '  footprint'; then
+                ready=1
+                break
+            fi
+            sleep 0.5
+        done
+
+        if [ "$ready" != "1" ]; then
+            echo "[ERROR] footprint parameter not available on $node_name"
+            return 1
+        fi
+
+        ros2 param set "$node_name" footprint "$LOADED_FOOTPRINT"
+    done
+}
+
 wait_for_publisher /clock
 wait_for_publisher /front_2d_lidar/scan
 wait_for_publisher /back_2d_lidar/scan
@@ -80,7 +106,7 @@ wait_for_samples /back_2d_lidar/scan
 
 printf '\n[ROS2] Default IW Hub Sensor topics are alive.\n'
 printf '[ROS2] Starting NVIDIA iw_hub_navigation with the project map.\n'
-printf '[ROS2] No custom LiDAR, scan filter, or odom TF bridge is used.\n\n'
+printf '[ROS2] NVIDIA LiDAR pose/rate/resolution are unchanged.\n\n'
 
 ros2 launch iw_hub_navigation iw_hub_navigation.launch.py \
     map:="$MAP_FILE" \
@@ -106,6 +132,8 @@ if ! printf '%s\n' "${amcl_state:-}" | grep -q 'active'; then
     wait "$NAV2_PID"
     exit 1
 fi
+
+set_loaded_footprint
 
 sleep 1
 
