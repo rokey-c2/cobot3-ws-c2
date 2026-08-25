@@ -41,6 +41,10 @@ WORLD_USD = (
     / "env_warehouse_only_arms.usd"
 )
 
+# Vision optimization: keep simulation/camera behavior unchanged, but publish
+# YOLO RGB input only once every 6 simulation steps (about 10 Hz at 60 Hz).
+VISION_RGB_PUBLISH_INTERVAL_STEPS = 6
+
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
@@ -48,7 +52,11 @@ simulation_app.update()
 
 from cargo.cargo_pod_physics import add_cargo_pod_physics, add_parcel_asset
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
-from robots.p3020.p3020_mission_agent import P3020PickPlaceAgent, P3020RosBridge
+from robots.p3020.p3020_mission_agent import (
+    P3020PickPlaceAgent,
+    P3020RosBridge,
+    pixel_to_world_xy,
+)
 
 
 def _create_clock_graph():
@@ -175,6 +183,66 @@ class AmrMissionBridge(Node):
             self.last_state = state
 
 
+class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
+    """Limit YOLO RGB publishing while keeping depth inside Isaac Sim."""
+
+    def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
+        not_before = ros_node.get_clock().now()
+        depth_map = None
+        last_frame = None
+
+        for step in range(timeout_steps):
+            # Publish RGB only every 6 simulation steps. Depth is sampled on the
+            # same step and kept local for pixel -> 3D world conversion.
+            if step % VISION_RGB_PUBLISH_INTERVAL_STEPS == 0:
+                frame = self.camera.get_frame()
+                if frame is not None:
+                    last_frame = frame
+                    ros_node.publish_image(frame)
+                    depth_map = self.camera.get_depth()
+
+            rclpy.spin_once(ros_node, timeout_sec=0.0)
+            pixel = ros_node.take_pixel_after(not_before)
+
+            if pixel is not None and depth_map is not None:
+                world_xyz = pixel_to_world_xy(
+                    pixel,
+                    depth_map,
+                    self.camera,
+                    last_frame,
+                )
+                if world_xyz is not None:
+                    return world_xyz
+
+            if tick_others:
+                tick_others(dt)
+            self.world.step(render=True)
+
+        return None
+
+
+class OptimizedP3020RosBridge(P3020RosBridge):
+    """Disable ROS2 depth transport; depth remains local to Isaac Sim."""
+
+    def __init__(self):
+        super().__init__()
+
+        # The baseline bridge creates /depth. Remove that publisher completely
+        # so float32 depth frames are not serialized or sent through DDS.
+        if self.depth_pub is not None:
+            self.destroy_publisher(self.depth_pub)
+            self.depth_pub = None
+
+        self.get_logger().info(
+            "vision optimization: /rgb ~=10 Hz, /depth ROS2 publisher disabled"
+        )
+
+    def publish_depth(self, depth_map):
+        # Some existing P3020 motion code still calls this method. Keep the
+        # method as a no-op so the mission logic remains unchanged.
+        del depth_map
+
+
 def main():
     if not WORLD_USD.is_file():
         raise FileNotFoundError(
@@ -215,7 +283,7 @@ def main():
     # /World/World1/p3020 로 존재하는 로봇을 제어 대상으로 삼는다(별도 USD를
     # 더 로드하지 않음). ROBOT_REGISTRY에는 아직 p3020 항목이 없어서, IW Hub와
     # 별개로 하나만 직접 만든다.
-    p3020_agent = P3020PickPlaceAgent(world)
+    p3020_agent = OptimizedP3020PickPlaceAgent(world)
     p3020_agent.setup()
 
     world.reset()
@@ -230,7 +298,7 @@ def main():
 
     rclpy.init(args=None)
     bridge = AmrMissionBridge(agents[0])
-    p3020_bridge = P3020RosBridge()
+    p3020_bridge = OptimizedP3020RosBridge()
 
     print()
     print("============================================")
@@ -248,6 +316,8 @@ def main():
     print("[LOCAL] return spawn: (10.5, 1.80122), yaw=0 deg")
     print("[ROS2] /amr_a/pickup_command")
     print("[ROS2] /amr_a/pickup_state")
+    print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
+    print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
 
     def tick_iw_hub_agents(step_dt):
