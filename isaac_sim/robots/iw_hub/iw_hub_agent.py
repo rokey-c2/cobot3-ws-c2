@@ -446,6 +446,27 @@ class IwHubAgent(BaseRobotAgent):
 
         topic_paths = _topic_node_paths(stage)
 
+        print("\n[IW HUB][DEBUG] ROS2 topic prim paths")
+
+        for topic, paths in topic_paths.items():
+            print(f"[IW HUB][DEBUG] {topic}")
+
+            for path in paths:
+                if path.HasPrefix(robot_prim.GetPath()):
+                    print(f"  {path}")
+
+        print("\n[IW HUB][DEBUG] ROS2 context candidates")
+
+        for prim in Usd.PrimRange(robot_prim):
+            path_text = prim.GetPath().pathString.lower()
+            type_text = str(prim.GetTypeName()).lower()
+
+            if "context" in path_text or "context" in type_text:
+                print(
+                    f"  path={prim.GetPath()} "
+                    f"type={prim.GetTypeName()}"
+                )
+
         for topic in _DISCOVERY_TOPICS:
             paths = [
                 path
