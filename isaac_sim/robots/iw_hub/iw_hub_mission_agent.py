@@ -29,7 +29,8 @@ LIFT_KD = 1_000.0
 LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 
-CARGO_PRIM_PATH = "/World/Cargo/cargo_box_gaurd_size_201_cargo"
+# Must match the actual runtime cargo root created by main_mission.py.
+CARGO_PRIM_PATH = "/World/Cargo/cargo_box_gaurd_size_201"
 CARGO_HOME_X = 10.5
 CARGO_HOME_Y = -1.5
 CARGO_HOME_YAW = 0.0
@@ -43,9 +44,11 @@ TARGET_ROOT_Y = -1.25
 TARGET_YAW = math.radians(90.0)
 RETURN_X_YAW = 0.0
 
-LOCAL_MAX_LINEAR_SPEED = 0.24
+# About 3x faster on long local-drive segments. Keep the minimum creep speed
+# unchanged so the final precision docking does not overshoot.
+LOCAL_MAX_LINEAR_SPEED = 0.72
 LOCAL_MIN_LINEAR_SPEED = 0.03
-RETURN_X_MAX_LINEAR_SPEED = 0.12
+RETURN_X_MAX_LINEAR_SPEED = 0.36
 ROTATE_MAX_SPEED = 0.50
 LOCAL_MAX_ANGULAR_SPEED = 0.35
 
@@ -137,6 +140,11 @@ class MissionIwHubAgent(IwHubAgent):
             f"[MISSION IW HUB] lift DOF={self.lift_index}, "
             f"KP={LIFT_KP:.0f}, KD={LIFT_KD:.0f}"
         )
+        print(
+            "[MISSION IW HUB] local drive speed: "
+            f"max={LOCAL_MAX_LINEAR_SPEED:.2f} m/s "
+            "(precision creep unchanged)"
+        )
 
     def request_pickup(self):
         if self.mission_state == "PICKUP_DONE":
@@ -151,8 +159,6 @@ class MissionIwHubAgent(IwHubAgent):
             return True
         if self.mission_state != "PICKUP_DONE":
             return False
-        # Nav2 can finish with a small lateral X error. Correct X first,
-        # then rotate back to +90 deg and enter the original dock pose.
         self._set_state("RETURN_ALIGN_X_YAW")
         return True
 
@@ -215,20 +221,14 @@ class MissionIwHubAgent(IwHubAgent):
         self.articulation_controller.apply_action(
             ArticulationAction(
                 joint_positions=np.array([float(target)], dtype=float),
-                joint_indices=np.array(
-                    [self.lift_index],
-                    dtype=np.int32,
-                ),
+                joint_indices=np.array([self.lift_index], dtype=np.int32),
             )
         )
 
     def _joint_position(self):
         return float(
             self.robot.get_joint_positions(
-                joint_indices=np.array(
-                    [self.lift_index],
-                    dtype=np.int32,
-                )
+                joint_indices=np.array([self.lift_index], dtype=np.int32)
             )[0]
         )
 
@@ -268,11 +268,7 @@ class MissionIwHubAgent(IwHubAgent):
             return
 
         angular = float(
-            np.clip(
-                1.8 * error,
-                -ROTATE_MAX_SPEED,
-                ROTATE_MAX_SPEED,
-            )
+            np.clip(1.8 * error, -ROTATE_MAX_SPEED, ROTATE_MAX_SPEED)
         )
         self._drive(0.0, angular)
 
@@ -384,13 +380,10 @@ class MissionIwHubAgent(IwHubAgent):
         )
 
         if pos_error > CARGO_RETURN_POS_TOLERANCE:
-            return False, (
-                f"cargo return position error {pos_error:.4f} m"
-            )
+            return False, f"cargo return position error {pos_error:.4f} m"
         if yaw_error > CARGO_RETURN_YAW_TOLERANCE:
             return False, (
-                f"cargo return yaw error "
-                f"{math.degrees(yaw_error):.2f} deg"
+                f"cargo return yaw error {math.degrees(yaw_error):.2f} deg"
             )
         return True, ""
 
@@ -440,9 +433,7 @@ class MissionIwHubAgent(IwHubAgent):
                 return
 
             if self._state_elapsed >= PICKUP_TIMEOUT:
-                self._fail(
-                    "lift timeout before cargo rise was confirmed"
-                )
+                self._fail("lift timeout before cargo rise was confirmed")
             return
 
         if self.mission_state == "RETURN_ALIGN_X_YAW":
