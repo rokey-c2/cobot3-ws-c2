@@ -12,6 +12,14 @@ START_Y="1.80122"
 # approach is complete. Use the loaded IW Hub + cargo envelope for both costmaps.
 LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
 
+# About 3x the previous Nav2 travel speed (0.65 -> 1.95 m/s).
+# Precision local docking is controlled separately in Isaac and still creeps
+# slowly near the final pose.
+NAV2_DESIRED_LINEAR_SPEED="1.95"
+NAV2_MAX_LINEAR_SPEED="2.40"
+NAV2_MAX_LINEAR_ACCEL="2.40"
+NAV2_MAX_LINEAR_DECEL="-3.00"
+
 source /opt/ros/jazzy/setup.bash
 
 unset GTK_PATH
@@ -96,6 +104,49 @@ set_loaded_footprint() {
     done
 }
 
+set_param_if_available() {
+    local node_name="$1"
+    local param_name="$2"
+    local param_value="$3"
+
+    if ros2 param list "$node_name" 2>/dev/null | \
+        sed 's/^ *//' | grep -qx "$param_name"; then
+        if ros2 param set "$node_name" "$param_name" "$param_value" >/dev/null; then
+            echo "[ROS2] $node_name $param_name = $param_value"
+            return 0
+        fi
+        echo "[WARN] failed to set $node_name $param_name"
+        return 0
+    fi
+
+    echo "[WARN] parameter not available: $node_name $param_name"
+    return 0
+}
+
+set_nav2_speed() {
+    echo "[ROS2] applying ~3x Nav2 linear speed"
+
+    set_param_if_available \
+        /controller_server \
+        FollowPath.desired_linear_vel \
+        "$NAV2_DESIRED_LINEAR_SPEED"
+
+    set_param_if_available \
+        /velocity_smoother \
+        max_velocity \
+        "[$NAV2_MAX_LINEAR_SPEED, 0.0, 0.90]"
+
+    set_param_if_available \
+        /velocity_smoother \
+        max_accel \
+        "[$NAV2_MAX_LINEAR_ACCEL, 0.0, 1.50]"
+
+    set_param_if_available \
+        /velocity_smoother \
+        max_decel \
+        "[$NAV2_MAX_LINEAR_DECEL, 0.0, -1.80]"
+}
+
 wait_for_publisher /clock
 wait_for_publisher /front_2d_lidar/scan
 wait_for_publisher /back_2d_lidar/scan
@@ -134,6 +185,7 @@ if ! printf '%s\n' "${amcl_state:-}" | grep -q 'active'; then
 fi
 
 set_loaded_footprint
+set_nav2_speed
 
 sleep 1
 
