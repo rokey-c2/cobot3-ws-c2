@@ -35,11 +35,12 @@ ROBOT_REGISTRY = [
         "role": "inbound_amr",
         "spawn_xyz": (START_XY[0], START_XY[1], 0.0),
         "spawn_yaw": 0.0,
-        # Keep NVIDIA's original dual-LiDAR placement, orientation,
-        # scan rate, and horizontal resolution. Range is limited only to the
-        # useful navigation band. The 0.8 m near range suppresses returns from
-        # the cargo pod/legs while the pod is carried above the IW Hub.
-        "lidar_min_range_m": 0.8,
+        # Preserve NVIDIA's IW Hub LiDAR mounting/orientation, scan rate,
+        # firing rate, tick rate, and horizontal resolution.
+        # rangeOffsetM starts rays outside the carried guard so its nearby
+        # walls/legs do not occlude the real navigation scene.
+        "lidar_range_offset_m": 0.75,
+        "lidar_min_range_m": 0.80,
         "lidar_max_range_m": 5.0,
     }
 ]
@@ -48,28 +49,52 @@ ROBOT_REGISTRY = [
 TEST_OBSTACLES = []
 
 
+# Replace the old generated cargo_pod with an exact runtime clone of the
+# existing warehouse prim named cargo_box_gaurd_size_201.  The requested cargo
+# home transform is kept EXACTLY at the previous cargo_pod transform.
 CARGO_REGISTRY = [
     {
-        "name": "cargo_pod",
-        "usd": "usd/cargo/cargo_box.usd",
+        "name": "cargo_box_gaurd_size_201_cargo",
+        "source_prim_name": "cargo_box_gaurd_size_201",
         "spawn_xyz": (10.5, -1.5, 0.5),
         "spawn_yaw": 0.0,
+        "mass_kg": 20.0,
     }
 ]
 
 
-# NVIDIA Simple Warehouse cardboard-box prop placed inside the cargo pod.
-# The source asset is uniformly scaled at runtime to fit inside this envelope,
-# preserving its original proportions/materials. Physics is enforced locally:
-# dynamic rigid body + gravity + collision + 15 kg mass.
+# Four identical NVIDIA parcels in one 2 x 2 layer.  The group is centered
+# exactly on the cargo guard center (10.5, -1.5); every parcel remains 0.30 m
+# high, matching the previously verified single-parcel height.
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (10.5, -1.5, 0.455),
-        "max_size_xyz": (0.50, 0.40, 0.30),
+        "spawn_xyz": (10.32, -1.68, 0.455),
+        "max_size_xyz": (0.30, 0.30, 0.30),
         "mass_kg": 15.0,
-    }
+    },
+    {
+        "name": "parcel_box_02",
+        "usd": CARD_BOX_USD,
+        "spawn_xyz": (10.32, -1.32, 0.455),
+        "max_size_xyz": (0.30, 0.30, 0.30),
+        "mass_kg": 15.0,
+    },
+    {
+        "name": "parcel_box_03",
+        "usd": CARD_BOX_USD,
+        "spawn_xyz": (10.68, -1.68, 0.455),
+        "max_size_xyz": (0.30, 0.30, 0.30),
+        "mass_kg": 15.0,
+    },
+    {
+        "name": "parcel_box_04",
+        "usd": CARD_BOX_USD,
+        "spawn_xyz": (10.68, -1.32, 0.455),
+        "max_size_xyz": (0.30, 0.30, 0.30),
+        "mass_kg": 15.0,
+    },
 ]
 
 
