@@ -41,8 +41,6 @@ WORLD_USD = (
     / "env_warehouse_only_arms.usd"
 )
 
-# Vision optimization: keep simulation/camera behavior unchanged, but publish
-# YOLO RGB input only once every 6 simulation steps (about 10 Hz at 60 Hz).
 VISION_RGB_PUBLISH_INTERVAL_STEPS = 6
 
 enable_extension("isaacsim.ros2.bridge")
@@ -118,10 +116,12 @@ def _spawn_parcels(parcel_configs):
         return
 
     stage = omni.usd.get_context().get_stage()
-    UsdGeom.Xform.Define(stage, "/World/Parcels")
+    # Keep parcel rigid bodies outside the cargo rigid body hierarchy, but group
+    # them under /World/Cargo so Stage clearly shows they belong to this load.
+    UsdGeom.Xform.Define(stage, "/World/Cargo/Parcels")
 
     for config in parcel_configs:
-        prim_path = f"/World/Parcels/{config['name']}"
+        prim_path = f"/World/Cargo/Parcels/{config['name']}"
         add_parcel_asset(
             stage,
             prim_path,
@@ -189,8 +189,6 @@ class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
         last_frame = None
 
         for step in range(timeout_steps):
-            # Publish RGB only every 6 simulation steps. Depth is sampled on the
-            # same step and kept local for pixel -> 3D world conversion.
             if step % VISION_RGB_PUBLISH_INTERVAL_STEPS == 0:
                 frame = self.camera.get_frame()
                 if frame is not None:
@@ -224,8 +222,6 @@ class OptimizedP3020RosBridge(P3020RosBridge):
     def __init__(self):
         super().__init__()
 
-        # The baseline bridge creates /depth. Remove that publisher completely
-        # so float32 depth frames are not serialized or sent through DDS.
         if self.depth_pub is not None:
             self.destroy_publisher(self.depth_pub)
             self.depth_pub = None
@@ -235,8 +231,6 @@ class OptimizedP3020RosBridge(P3020RosBridge):
         )
 
     def publish_depth(self, depth_map):
-        # Some existing P3020 motion code still calls this method. Keep the
-        # method as a no-op so the mission logic remains unchanged.
         del depth_map
 
 
@@ -261,8 +255,6 @@ def main():
 
     resolved_parcels = []
     if cargo_paths:
-        # Bind the local lift/return mission to the exact runtime cargo prim.
-        # This avoids a second hard-coded cargo name/path drifting out of sync.
         iw_hub_mission_module.CARGO_PRIM_PATH = cargo_paths[0]
 
         cargo_xyz = CARGO_REGISTRY[0]["spawn_xyz"]
@@ -290,10 +282,6 @@ def main():
     if not agents:
         raise RuntimeError("No IW Hub robot found")
 
-    # P3020: 통합 맵(enva_small_warehouse_p3020_marker/World0.usd)에 이미
-    # /World/World1/p3020 로 존재하는 로봇을 제어 대상으로 삼는다(별도 USD를
-    # 더 로드하지 않음). ROBOT_REGISTRY에는 아직 p3020 항목이 없어서, IW Hub와
-    # 별개로 하나만 직접 만든다.
     p3020_agent = OptimizedP3020PickPlaceAgent(world)
     p3020_agent.setup()
 
@@ -351,9 +339,6 @@ def main():
                 if "scan_hint_x" in command and "scan_hint_y" in command:
                     scan_hint = (float(command["scan_hint_x"]), float(command["scan_hint_y"]))
                 print(f"\n[P3020] pick_place command received: place={place_xy} scan_hint={scan_hint}")
-                # run_pick_place는 블로킹 함수라 그 안에서 매 스텝
-                # tick_iw_hub_agents를 같이 불러줘야 이 사이클 동안 IW Hub
-                # 애니메이션이 멈추지 않는다.
                 success, message = p3020_agent.run_pick_place(
                     p3020_bridge,
                     place_xy_world=place_xy,
