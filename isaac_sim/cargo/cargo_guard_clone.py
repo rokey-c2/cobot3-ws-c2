@@ -1,5 +1,6 @@
 """Runtime clone/physics helper for the warehouse cargo guard."""
 
+import omni.usd
 from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 
@@ -117,11 +118,11 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Clone cargo_box_gaurd_size_201 at the exact old cargo_pod pose.
+    """Duplicate cargo_box_gaurd_size_201 at the exact old cargo_pod pose.
 
-    The source prim path is discovered from the loaded warehouse at runtime, so
-    no binary-USD path is guessed.  The referenced source root transform is
-    overridden in the current stage and then verified numerically.
+    The source prim path is discovered from the loaded warehouse at runtime.
+    omni.usd.duplicate_prim() is used instead of an internal reference because
+    the source guard can be composed from referenced/binary warehouse layers.
     """
 
     source_prim = _find_unique_source_prim(
@@ -129,29 +130,40 @@ def spawn_cargo_guard_clone(
         str(source_name),
         str(destination_path),
     )
+    source_path = source_prim.GetPath().pathString
+    destination_path = str(destination_path)
 
-    destination = stage.DefinePrim(str(destination_path), "Xform")
-    destination.GetReferences().ClearReferences()
-    destination.GetReferences().AddInternalReference(source_prim.GetPath())
-    destination.SetActive(True)
+    existing = stage.GetPrimAtPath(destination_path)
+    if existing.IsValid():
+        stage.RemovePrim(destination_path)
 
-    # Strongly override the source object's authored root transform. This is
-    # what guarantees the new guard uses the OLD cargo_pod pose, not the
-    # original guard's (9, -8) warehouse pose.
+    duplicated = omni.usd.duplicate_prim(
+        stage,
+        source_path,
+        destination_path,
+        duplicate_layers=True,
+    )
+    if not duplicated:
+        raise RuntimeError(
+            f"Failed to duplicate cargo guard {source_path} -> {destination_path}"
+        )
+
+    stage.Load(destination_path)
+    destination = stage.GetPrimAtPath(destination_path)
+    if not destination.IsValid():
+        raise RuntimeError(
+            f"Duplicated cargo guard prim is invalid: {destination_path}"
+        )
+
+    # Override the duplicated source transform so the new guard is at the exact
+    # old cargo_pod pose: (10.5, -1.5, 0.5), yaw=0 deg.
     xform = UsdGeom.Xformable(destination)
     xform.ClearXformOpOrder()
     xform.AddTranslateOp().Set(Gf.Vec3d(*[float(v) for v in spawn_xyz]))
     if float(spawn_yaw) != 0.0:
         xform.AddRotateZOp().Set(float(spawn_yaw))
 
-    stage.Load(str(destination_path))
-    destination = stage.GetPrimAtPath(str(destination_path))
-    if not destination.IsValid():
-        raise RuntimeError(
-            f"Failed to create cargo guard clone: {destination_path}"
-        )
-
-    _verify_exact_root_pose(stage, str(destination_path), spawn_xyz)
+    _verify_exact_root_pose(stage, destination_path, spawn_xyz)
 
     _disable_nested_rigid_bodies(destination)
     collision_count, collision_created = _ensure_compound_collision(destination)
@@ -163,13 +175,13 @@ def spawn_cargo_guard_clone(
     mass = UsdPhysics.MassAPI.Apply(destination)
     mass.CreateMassAttr(float(mass_kg))
 
-    bounds = _world_bounds(stage, str(destination_path))
+    bounds = _world_bounds(stage, destination_path)
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
     size = maximum - minimum
 
     print(
-        f"[CARGO GUARD] cloned {source_prim.GetPath()} -> {destination_path}; "
+        f"[CARGO GUARD] duplicated {source_path} -> {destination_path}; "
         f"pose=({float(spawn_xyz[0]):.3f}, {float(spawn_xyz[1]):.3f}, "
         f"{float(spawn_xyz[2]):.3f}), yaw={float(spawn_yaw):.1f} deg"
     )
@@ -185,7 +197,7 @@ def spawn_cargo_guard_clone(
         f"generated_collision={collision_created}"
     )
 
-    return str(destination_path)
+    return destination_path
 
 
 def resolve_parcel_layer(
