@@ -35,6 +35,9 @@ ROBOT_REGISTRY = [
         "role": "inbound_amr",
         "spawn_xyz": (START_XY[0], START_XY[1], 0.0),
         "spawn_yaw": 0.0,
+        # Keep NVIDIA's original dual-LiDAR placement, orientation,
+        # scan rate, and horizontal resolution. Only max range is reduced.
+        "lidar_max_range_m": 5.0,
     }
 ]
 
