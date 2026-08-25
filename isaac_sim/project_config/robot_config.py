@@ -36,7 +36,10 @@ ROBOT_REGISTRY = [
         "spawn_xyz": (START_XY[0], START_XY[1], 0.0),
         "spawn_yaw": 0.0,
         # Keep NVIDIA's original dual-LiDAR placement, orientation,
-        # scan rate, and horizontal resolution. Only max range is reduced.
+        # scan rate, and horizontal resolution. Range is limited only to the
+        # useful navigation band. The 0.8 m near range suppresses returns from
+        # the cargo pod/legs while the pod is carried above the IW Hub.
+        "lidar_min_range_m": 0.8,
         "lidar_max_range_m": 5.0,
     }
 ]
