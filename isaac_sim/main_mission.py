@@ -55,6 +55,7 @@ from cargo.cargo_guard_clone import (
     spawn_cargo_guard_clone,
 )
 from cargo.cargo_pod_physics import add_parcel_asset
+import robots.iw_hub.iw_hub_mission_agent as iw_hub_mission_module
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
     P3020PickPlaceAgent,
@@ -260,6 +261,10 @@ def main():
 
     resolved_parcels = []
     if cargo_paths:
+        # Bind the local lift/return mission to the exact runtime cargo prim.
+        # This avoids a second hard-coded cargo name/path drifting out of sync.
+        iw_hub_mission_module.CARGO_PRIM_PATH = cargo_paths[0]
+
         cargo_xyz = CARGO_REGISTRY[0]["spawn_xyz"]
         resolved_parcels = resolve_parcel_layer(
             omni.usd.get_context().get_stage(),
