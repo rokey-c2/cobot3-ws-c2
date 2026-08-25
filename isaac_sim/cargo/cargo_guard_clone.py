@@ -1,7 +1,6 @@
-"""Runtime clone/physics helper for the warehouse cargo guard."""
+"""Spawn a second cargo_box_gaurd_size_201 using the source object's real USD reference."""
 
-import omni.usd
-from pxr import Gf, Usd, UsdGeom, UsdPhysics
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
 
 
 SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
@@ -9,7 +8,7 @@ POSE_TOLERANCE_M = 1.0e-6
 
 
 def _find_unique_source_prim(stage, source_name, destination_path):
-    """Find the already-authored warehouse guard without guessing its path."""
+    """Find the already-authored warehouse guard without guessing its prim path."""
 
     matches = []
     for prim in stage.TraverseAll():
@@ -31,8 +30,80 @@ def _find_unique_source_prim(stage, source_name, destination_path):
     return matches[0]
 
 
+def _reference_items_from_spec(prim_spec):
+    """Return all authored Sdf.Reference items from one prim spec."""
+
+    reference_list = prim_spec.referenceList
+    items = []
+
+    # Sdf.ReferenceListOp can author references in several list-op buckets.
+    for attr_name in (
+        "explicitItems",
+        "prependedItems",
+        "appendedItems",
+        "addedItems",
+    ):
+        try:
+            values = getattr(reference_list, attr_name)
+        except Exception:
+            values = None
+        if values:
+            items.extend(list(values))
+
+    return items
+
+
+def _discover_source_reference(source_prim):
+    """Resolve the actual external USD reference used by the source guard.
+
+    The warehouse guard is already visible in the loaded stage, so instead of
+    copying the composed prim we reuse the same external USD reference that
+    created that source object. This matches the old cargo_pod spawn pattern:
+    DefinePrim -> AddReference -> set transform.
+    """
+
+    candidates = []
+
+    for prim_spec in source_prim.GetPrimStack():
+        for reference in _reference_items_from_spec(prim_spec):
+            asset_path = str(reference.assetPath or "").strip()
+            if not asset_path:
+                continue
+
+            try:
+                resolved_asset = Sdf.ComputeAssetPathRelativeToLayer(
+                    prim_spec.layer,
+                    asset_path,
+                )
+            except Exception:
+                resolved_asset = asset_path
+
+            prim_path = reference.primPath
+            candidates.append(
+                (
+                    str(resolved_asset),
+                    prim_path,
+                    prim_spec.layer.identifier,
+                )
+            )
+
+    if not candidates:
+        raise RuntimeError(
+            f"No external USD reference found on source guard "
+            f"{source_prim.GetPath()}. Cannot safely spawn a second guard."
+        )
+
+    # Prefer the strongest authored reference in the source prim stack.
+    asset_path, prim_path, layer_identifier = candidates[0]
+    print(
+        "[CARGO GUARD] source reference discovered: "
+        f"asset={asset_path}, prim={prim_path}, layer={layer_identifier}"
+    )
+    return asset_path, prim_path
+
+
 def _ensure_compound_collision(root_prim):
-    """Use the cloned visual meshes as collision only if none already exist."""
+    """Use referenced visual meshes as collision only if none already exist."""
 
     collision_prims = [
         prim
@@ -64,7 +135,7 @@ def _ensure_compound_collision(root_prim):
 
 
 def _disable_nested_rigid_bodies(root_prim):
-    """The cloned cargo root owns the only active rigid body."""
+    """The spawned cargo root owns the only active rigid body."""
 
     for prim in Usd.PrimRange(root_prim):
         if prim == root_prim or prim.IsInstanceProxy():
@@ -118,11 +189,11 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Duplicate cargo_box_gaurd_size_201 at the exact old cargo_pod pose.
+    """Spawn cargo_box_gaurd_size_201 exactly like the old cargo_pod asset.
 
-    The source prim path is discovered from the loaded warehouse at runtime.
-    omni.usd.duplicate_prim() is used instead of an internal reference because
-    the source guard can be composed from referenced/binary warehouse layers.
+    We discover the source object's real external USD reference at runtime,
+    create a fresh Xform, AddReference() to that same asset, and then author the
+    requested transform. No composed-prim duplication is used.
     """
 
     source_prim = _find_unique_source_prim(
@@ -130,38 +201,40 @@ def spawn_cargo_guard_clone(
         str(source_name),
         str(destination_path),
     )
-    source_path = source_prim.GetPath().pathString
+    asset_path, source_asset_prim_path = _discover_source_reference(source_prim)
     destination_path = str(destination_path)
 
     existing = stage.GetPrimAtPath(destination_path)
     if existing.IsValid():
         stage.RemovePrim(destination_path)
 
-    duplicated = omni.usd.duplicate_prim(
-        stage,
-        source_path,
-        destination_path,
-        duplicate_layers=True,
-    )
-    if not duplicated:
-        raise RuntimeError(
-            f"Failed to duplicate cargo guard {source_path} -> {destination_path}"
-        )
+    destination = stage.DefinePrim(destination_path, "Xform")
+    references = destination.GetReferences()
 
-    stage.Load(destination_path)
-    destination = stage.GetPrimAtPath(destination_path)
-    if not destination.IsValid():
-        raise RuntimeError(
-            f"Duplicated cargo guard prim is invalid: {destination_path}"
-        )
+    if source_asset_prim_path and not source_asset_prim_path.IsEmpty:
+        references.AddReference(asset_path, source_asset_prim_path)
+    else:
+        references.AddReference(asset_path)
 
-    # Override the duplicated source transform so the new guard is at the exact
-    # old cargo_pod pose: (10.5, -1.5, 0.5), yaw=0 deg.
+    destination.SetActive(True)
+
     xform = UsdGeom.Xformable(destination)
     xform.ClearXformOpOrder()
     xform.AddTranslateOp().Set(Gf.Vec3d(*[float(v) for v in spawn_xyz]))
     if float(spawn_yaw) != 0.0:
         xform.AddRotateZOp().Set(float(spawn_yaw))
+
+    stage.Load(destination_path)
+    destination = stage.GetPrimAtPath(destination_path)
+    if not destination.IsValid():
+        raise RuntimeError(f"Spawned cargo guard prim is invalid: {destination_path}")
+
+    child_count = sum(1 for _ in destination.GetChildren())
+    if child_count == 0:
+        raise RuntimeError(
+            f"Cargo guard reference loaded but no child geometry appeared: "
+            f"{destination_path} <- {asset_path}"
+        )
 
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
 
@@ -181,9 +254,10 @@ def spawn_cargo_guard_clone(
     size = maximum - minimum
 
     print(
-        f"[CARGO GUARD] duplicated {source_path} -> {destination_path}; "
-        f"pose=({float(spawn_xyz[0]):.3f}, {float(spawn_xyz[1]):.3f}, "
-        f"{float(spawn_xyz[2]):.3f}), yaw={float(spawn_yaw):.1f} deg"
+        f"[CARGO GUARD] referenced {asset_path} -> {destination_path}; "
+        f"children={child_count}; pose=({float(spawn_xyz[0]):.3f}, "
+        f"{float(spawn_xyz[1]):.3f}, {float(spawn_xyz[2]):.3f}), "
+        f"yaw={float(spawn_yaw):.1f} deg"
     )
     print(
         "[CARGO GUARD] world bounds: "
@@ -208,7 +282,7 @@ def resolve_parcel_layer(
     bottom_clearance_m=0.03,
     wall_clearance_m=0.02,
 ):
-    """Resolve one 2x2 parcel layer inside the ACTUAL cloned guard bounds."""
+    """Resolve one 2x2 parcel layer inside the actual spawned guard bounds."""
 
     bounds = _world_bounds(stage, str(guard_path))
     minimum = bounds.GetMin()
