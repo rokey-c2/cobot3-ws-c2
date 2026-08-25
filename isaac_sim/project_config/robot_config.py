@@ -49,12 +49,12 @@ ROBOT_REGISTRY = [
 TEST_OBSTACLES = []
 
 
-# Replace the old generated cargo_pod with an exact runtime clone of the
-# existing warehouse prim named cargo_box_gaurd_size_201.  The requested cargo
-# home transform is kept EXACTLY at the previous cargo_pod transform.
+# The old cargo_pod is gone. Create ONE additional instance of the existing
+# warehouse object cargo_box_gaurd_size_201 at the EXACT old cargo_pod pose.
+# Old cargo_pod pose from the verified baseline: (10.5, -1.5, 0.5), yaw=0 deg.
 CARGO_REGISTRY = [
     {
-        "name": "cargo_box_gaurd_size_201_cargo",
+        "name": "cargo_box_gaurd_size_201",
         "source_prim_name": "cargo_box_gaurd_size_201",
         "spawn_xyz": (10.5, -1.5, 0.5),
         "spawn_yaw": 0.0,
@@ -63,35 +63,36 @@ CARGO_REGISTRY = [
 ]
 
 
-# Four identical NVIDIA parcels in one 2 x 2 layer.  The group is centered
-# exactly on the cargo guard center (10.5, -1.5); every parcel remains 0.30 m
-# high, matching the previously verified single-parcel height.
+# Four parcels are arranged as ONE 2 x 2 floor layer INSIDE the cloned guard.
+# X/Y are offsets from the exact cargo center (10.5, -1.5). Z is resolved at
+# runtime from the cloned guard's actual world bounds so the boxes are placed
+# above the guard bottom instead of reusing the old cargo_pod's Z blindly.
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (10.32, -1.68, 0.455),
+        "offset_xy": (-0.18, -0.18),
         "max_size_xyz": (0.30, 0.30, 0.30),
         "mass_kg": 15.0,
     },
     {
         "name": "parcel_box_02",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (10.32, -1.32, 0.455),
+        "offset_xy": (-0.18, 0.18),
         "max_size_xyz": (0.30, 0.30, 0.30),
         "mass_kg": 15.0,
     },
     {
         "name": "parcel_box_03",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (10.68, -1.68, 0.455),
+        "offset_xy": (0.18, -0.18),
         "max_size_xyz": (0.30, 0.30, 0.30),
         "mass_kg": 15.0,
     },
     {
         "name": "parcel_box_04",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (10.68, -1.32, 0.455),
+        "offset_xy": (0.18, 0.18),
         "max_size_xyz": (0.30, 0.30, 0.30),
         "mass_kg": 15.0,
     },
