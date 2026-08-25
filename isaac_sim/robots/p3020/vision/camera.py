@@ -1,13 +1,13 @@
 """P3020에 마운트된 RSD455 카메라 래퍼.
 
 RGB 프레임(YOLO 입력용)과 depth(픽셀 -> 3D 월드 좌표 역투영용)를 함께 제공한다.
-현재 통합 미션에서는 p3020_in의 Camera_Pseudo_Depth 하나만 사용한다.
-나머지 Camera prim은 초기화 전에 안전하게 비활성화해서 불필요한 렌더링 부하를 줄인다.
+현재 통합 미션에서는 p3020_in의 RSD455가 메인 카메라다.
+p3020_in 카메라 rig는 통째로 유지하고, 사용하지 않는 p3020_a / p3020_b
+RSD455 rig만 비활성화해서 렌더링 부하를 줄인다.
 """
 
 import numpy as np
 import omni.usd
-from pxr import UsdGeom
 from isaacsim.sensors.camera import Camera
 
 
@@ -23,58 +23,33 @@ class CameraInterface:
         self._camera = Camera(prim_path=prim_path, resolution=resolution)
 
     def _disable_unused_cameras(self):
-        """Keep only the camera used by the active P3020 mission.
+        """Disable only known-unused camera rigs.
 
-        중요한 점은 USD stage를 Traverse하는 도중 SetActive(False)를 호출하지
-        않는 것이다. 부모 prim을 비활성화하면 이미 얻어둔 child prim handle이
-        expired 상태가 될 수 있으므로, 먼저 비활성화할 경로만 수집한 뒤
-        traversal이 끝난 후 fresh prim을 다시 얻어서 비활성화한다.
+        p3020_in의 RSD455는 YOLO RGB와 depth 역투영에 필요한 메인 카메라이므로
+        그 내부 Camera prim이나 RenderProduct를 개별적으로 끄지 않는다.
         """
 
         stage = omni.usd.get_context().get_stage()
         if stage is None:
             return
 
-        camera_paths_to_disable = []
-
-        # 1) stage를 변경하지 않고 Camera 경로만 먼저 수집한다.
-        for prim in stage.TraverseAll():
-            if not prim.IsValid():
-                continue
-            if not prim.IsA(UsdGeom.Camera):
-                continue
-
-            path = prim.GetPath().pathString
-            if path == self._prim_path:
-                continue
-
-            camera_paths_to_disable.append(path)
-
         disabled = []
 
-        # 2) traversal이 끝난 뒤 fresh prim handle로 Camera를 비활성화한다.
-        for path in camera_paths_to_disable:
-            prim = stage.GetPrimAtPath(path)
-            if not prim.IsValid() or not prim.IsActive():
-                continue
-            prim.SetActive(False)
-            disabled.append(path)
-
-        # 3) p3020_a / p3020_b는 현재 미션에서 전혀 사용하지 않으므로
-        # RSD455 rig 전체도 마지막에 비활성화한다.
         for rig_path in _UNUSED_P3020_CAMERA_RIGS:
             rig_prim = stage.GetPrimAtPath(rig_path)
             if not rig_prim.IsValid() or not rig_prim.IsActive():
                 continue
+
             rig_prim.SetActive(False)
             disabled.append(rig_path)
 
+        print(f"[PERF][CAMERA] main camera kept ON: {self._prim_path}")
         print(
-            f"[PERF][CAMERA] active={self._prim_path}; "
-            f"disabled_unused={len(disabled)}"
+            "[PERF][CAMERA] p3020_in RSD455 rig kept ON; "
+            f"disabled_unused_rigs={len(disabled)}"
         )
         for path in disabled:
-            print(f"[PERF][CAMERA] disabled: {path}")
+            print(f"[PERF][CAMERA] disabled unused rig: {path}")
 
     def initialize(self):
         self._disable_unused_cameras()
