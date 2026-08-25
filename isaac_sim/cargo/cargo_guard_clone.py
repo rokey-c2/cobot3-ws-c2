@@ -4,6 +4,7 @@ from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 
 SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
+POSE_TOLERANCE_M = 1.0e-6
 
 
 def _find_unique_source_prim(stage, source_name, destination_path):
@@ -85,6 +86,29 @@ def _world_bounds(stage, prim_path):
     return aligned
 
 
+def _verify_exact_root_pose(stage, prim_path, expected_xyz):
+    prim = stage.GetPrimAtPath(prim_path)
+    transform = UsdGeom.XformCache().GetLocalToWorldTransform(prim)
+    position = transform.ExtractTranslation()
+
+    actual = tuple(float(position[i]) for i in range(3))
+    expected = tuple(float(v) for v in expected_xyz)
+
+    for axis_name, actual_value, expected_value in zip(
+        ("x", "y", "z"), actual, expected
+    ):
+        if abs(actual_value - expected_value) > POSE_TOLERANCE_M:
+            raise RuntimeError(
+                f"Cargo guard {axis_name} coordinate mismatch: "
+                f"actual={actual_value:.9f}, expected={expected_value:.9f}"
+            )
+
+    print(
+        "[CARGO GUARD] exact root pose verified: "
+        f"({actual[0]:.6f}, {actual[1]:.6f}, {actual[2]:.6f})"
+    )
+
+
 def spawn_cargo_guard_clone(
     stage,
     destination_path,
@@ -93,12 +117,11 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Clone the existing warehouse guard and place its root at an exact pose.
+    """Clone cargo_box_gaurd_size_201 at the exact old cargo_pod pose.
 
     The source prim path is discovered from the loaded warehouse at runtime, so
-    this does not guess a binary-USD path.  An internal reference preserves the
-    exact source object's geometry/materials while the destination root gets a
-    stronger transform override.
+    no binary-USD path is guessed.  The referenced source root transform is
+    overridden in the current stage and then verified numerically.
     """
 
     source_prim = _find_unique_source_prim(
@@ -112,6 +135,9 @@ def spawn_cargo_guard_clone(
     destination.GetReferences().AddInternalReference(source_prim.GetPath())
     destination.SetActive(True)
 
+    # Strongly override the source object's authored root transform. This is
+    # what guarantees the new guard uses the OLD cargo_pod pose, not the
+    # original guard's (9, -8) warehouse pose.
     xform = UsdGeom.Xformable(destination)
     xform.ClearXformOpOrder()
     xform.AddTranslateOp().Set(Gf.Vec3d(*[float(v) for v in spawn_xyz]))
@@ -124,6 +150,8 @@ def spawn_cargo_guard_clone(
         raise RuntimeError(
             f"Failed to create cargo guard clone: {destination_path}"
         )
+
+    _verify_exact_root_pose(stage, str(destination_path), spawn_xyz)
 
     _disable_nested_rigid_bodies(destination)
     collision_count, collision_created = _ensure_compound_collision(destination)
@@ -160,37 +188,69 @@ def spawn_cargo_guard_clone(
     return str(destination_path)
 
 
-def validate_parcel_layer(stage, guard_path, parcel_configs):
-    """Fail early rather than silently place a parcel outside the guard XY box."""
+def resolve_parcel_layer(
+    stage,
+    guard_path,
+    parcel_configs,
+    cargo_center_xy,
+    bottom_clearance_m=0.03,
+    wall_clearance_m=0.02,
+):
+    """Resolve one 2x2 parcel layer inside the ACTUAL cloned guard bounds."""
 
     bounds = _world_bounds(stage, str(guard_path))
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
+    center_x = float(cargo_center_xy[0])
+    center_y = float(cargo_center_xy[1])
+
+    resolved = []
+    common_z = None
 
     for config in parcel_configs:
-        center = tuple(float(v) for v in config["spawn_xyz"])
         max_size = tuple(float(v) for v in config["max_size_xyz"])
+        offset_xy = tuple(float(v) for v in config["offset_xy"])
+        parcel_x = center_x + offset_xy[0]
+        parcel_y = center_y + offset_xy[1]
+
         half_x = 0.5 * max_size[0]
         half_y = 0.5 * max_size[1]
+        half_z = 0.5 * max_size[2]
+
+        if common_z is None:
+            common_z = float(minimum[2]) + half_z + float(bottom_clearance_m)
 
         inside_x = (
-            center[0] - half_x >= float(minimum[0])
-            and center[0] + half_x <= float(maximum[0])
+            parcel_x - half_x >= float(minimum[0]) + wall_clearance_m
+            and parcel_x + half_x <= float(maximum[0]) - wall_clearance_m
         )
         inside_y = (
-            center[1] - half_y >= float(minimum[1])
-            and center[1] + half_y <= float(maximum[1])
+            parcel_y - half_y >= float(minimum[1]) + wall_clearance_m
+            and parcel_y + half_y <= float(maximum[1]) - wall_clearance_m
         )
 
         if not (inside_x and inside_y):
             raise RuntimeError(
-                f"Parcel {config['name']} would be outside cargo guard XY bounds: "
-                f"center={center}, size={max_size}, "
+                f"Parcel {config['name']} does not fit inside cargo guard: "
+                f"center=({parcel_x:.3f}, {parcel_y:.3f}), size={max_size}, "
                 f"guard_min=({float(minimum[0]):.3f}, {float(minimum[1]):.3f}), "
                 f"guard_max=({float(maximum[0]):.3f}, {float(maximum[1]):.3f})"
             )
 
+        item = dict(config)
+        item["spawn_xyz"] = (parcel_x, parcel_y, common_z)
+        resolved.append(item)
+
     print(
-        f"[CARGO GUARD] validated {len(parcel_configs)} parcels inside "
-        f"{guard_path} in one XY layer"
+        "[CARGO GUARD] parcel layer resolved INSIDE guard: "
+        f"center=({center_x:.3f}, {center_y:.3f}), z={common_z:.3f}, "
+        f"count={len(resolved)}"
     )
+    for item in resolved:
+        p = item["spawn_xyz"]
+        print(
+            f"[CARGO GUARD]   {item['name']}: "
+            f"({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})"
+        )
+
+    return resolved
