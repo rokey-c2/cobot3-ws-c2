@@ -1,186 +1,32 @@
-"""Spawn a second cargo_box_gaurd_size_201 from the live warehouse prim.
+"""Spawn the cargo guard from its standalone USD asset.
 
-The source guard is already composed in the loaded warehouse USD.  Its root
-has no standalone external asset reference, and flattening the whole stage
-creates prototype references that cannot be copied by themselves.  Instead,
-this helper creates a new root and internally references each of the source
-root's direct children.  That keeps the original composed geometry/materials
-inside the same live stage without copying broken Flattened_Prototype paths.
+This module intentionally avoids copying or internally referencing the already
+composed warehouse prim.  The guard is spawned the same way the original
+cargo_pod was: create a new prim, add an external USD reference, set the pose,
+then add runtime physics.
 """
+
+from pathlib import Path
 
 from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 
 SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
 POSE_TOLERANCE_M = 1.0e-6
-
-
-def _find_unique_source_prim(stage, source_name, destination_path):
-    """Find the already-authored warehouse guard without guessing its path."""
-
-    matches = []
-    for prim in stage.TraverseAll():
-        if not prim.IsValid():
-            continue
-        path = prim.GetPath().pathString
-        if path == destination_path:
-            continue
-        if prim.GetName() == source_name:
-            matches.append(prim)
-
-    if len(matches) != 1:
-        paths = [prim.GetPath().pathString for prim in matches]
-        raise RuntimeError(
-            f"Expected exactly one source prim named {source_name!r}, "
-            f"found {len(matches)}: {paths}"
-        )
-
-    return matches[0]
-
-
-def _source_root_scale(source_prim):
-    """Preserve only the source root scale; destination translation/yaw are new."""
-
-    try:
-        xformable = UsdGeom.Xformable(source_prim)
-        for op in xformable.GetOrderedXformOps():
-            if op.GetOpType() == UsdGeom.XformOp.TypeScale:
-                value = op.Get()
-                if value is not None:
-                    return Gf.Vec3d(
-                        float(value[0]),
-                        float(value[1]),
-                        float(value[2]),
-                    )
-    except Exception:
-        pass
-
-    return Gf.Vec3d(1.0, 1.0, 1.0)
-
-
-def _spawn_from_child_references(stage, source_prim, destination_path):
-    """Create a second guard by referencing each source child in-place.
-
-    Referencing the live source children avoids the broken
-    /Flattened_Prototype_* paths produced by stage.Flatten().  The children keep
-    their original local transforms, geometry and material relationships while
-    the new root supplies the requested cargo pose.
-    """
-
-    destination_path = str(destination_path)
-    existing = stage.GetPrimAtPath(destination_path)
-    if existing.IsValid():
-        stage.RemovePrim(destination_path)
-
-    source_children = list(source_prim.GetChildren())
-    if not source_children:
-        raise RuntimeError(
-            f"Source cargo guard has no direct children: {source_prim.GetPath()}"
-        )
-
-    destination = stage.DefinePrim(destination_path, "Xform")
-
-    created_children = []
-    for source_child in source_children:
-        child_name = source_child.GetName()
-        child_path = f"{destination_path}/{child_name}"
-        type_name = str(source_child.GetTypeName() or "Xform")
-
-        destination_child = stage.DefinePrim(child_path, type_name)
-        destination_child.GetReferences().AddInternalReference(
-            source_child.GetPath()
-        )
-
-        # A strong local non-instance opinion lets PhysX/collision APIs inspect
-        # the referenced subtree instead of leaving it as an instance proxy.
-        destination_child.SetInstanceable(False)
-        created_children.append(child_path)
-
-    stage.Load(destination_path)
-    destination = stage.GetPrimAtPath(destination_path)
-    if not destination.IsValid():
-        raise RuntimeError(
-            f"Spawned cargo guard prim is invalid: {destination_path}"
-        )
-
-    print(
-        f"[CARGO GUARD] live child references created: "
-        f"{source_prim.GetPath()} -> {destination_path}; "
-        f"children={len(created_children)}"
-    )
-    for child_path in created_children:
-        print(f"[CARGO GUARD]   child: {child_path}")
-
-    return destination
-
-
-def _set_exact_root_pose(destination, spawn_xyz, spawn_yaw, source_scale):
-    """Set the exact former cargo_pod root pose and preserve source scale."""
-
-    xform = UsdGeom.Xformable(destination)
-    xform.ClearXformOpOrder()
-    xform.AddTranslateOp().Set(
-        Gf.Vec3d(*[float(value) for value in spawn_xyz])
-    )
-
-    if abs(float(spawn_yaw)) > 1.0e-9:
-        xform.AddRotateZOp().Set(float(spawn_yaw))
-
-    if any(abs(float(source_scale[i]) - 1.0) > 1.0e-9 for i in range(3)):
-        xform.AddScaleOp().Set(
-            Gf.Vec3f(
-                float(source_scale[0]),
-                float(source_scale[1]),
-                float(source_scale[2]),
-            )
-        )
-
-
-def _ensure_compound_collision(root_prim):
-    """Use referenced visual geometry as collision only if none already exist."""
-
-    collision_prims = [
-        prim
-        for prim in Usd.PrimRange(root_prim)
-        if prim.HasAPI(UsdPhysics.CollisionAPI)
-    ]
-    if collision_prims:
-        return len(collision_prims), False
-
-    created = 0
-    for prim in Usd.PrimRange(root_prim):
-        if prim == root_prim or prim.IsInstanceProxy():
-            continue
-        if not prim.IsA(UsdGeom.Gprim):
-            continue
-
-        UsdPhysics.CollisionAPI.Apply(prim)
-        if prim.IsA(UsdGeom.Mesh):
-            mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
-            mesh_collision.CreateApproximationAttr().Set("convexHull")
-        created += 1
-
-    if created == 0:
-        raise RuntimeError(
-            f"Cargo guard {root_prim.GetPath()} has no collision-capable geometry"
-        )
-
-    return created, True
-
-
-def _disable_nested_rigid_bodies(root_prim):
-    """The spawned cargo root owns the only active rigid body."""
-
-    for prim in Usd.PrimRange(root_prim):
-        if prim == root_prim or prim.IsInstanceProxy():
-            continue
-        if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
-            continue
-        UsdPhysics.RigidBodyAPI(prim).CreateRigidBodyEnabledAttr(False)
+GUARD_USD = (
+    Path(__file__).resolve().parents[1]
+    / "usd"
+    / "warehouse_final_final"
+    / "cargo"
+    / "cargo box_gaurd_size_200.usd"
+)
 
 
 def _world_bounds(stage, prim_path):
-    prim = stage.GetPrimAtPath(prim_path)
+    prim = stage.GetPrimAtPath(str(prim_path))
+    if not prim.IsValid():
+        raise RuntimeError(f"Cargo guard prim is invalid: {prim_path}")
+
     cache = UsdGeom.BBoxCache(
         Usd.TimeCode.Default(),
         [UsdGeom.Tokens.default_],
@@ -188,26 +34,17 @@ def _world_bounds(stage, prim_path):
     )
     aligned = cache.ComputeWorldBound(prim).ComputeAlignedRange()
     if aligned.IsEmpty():
-        child_info = []
-        for child in prim.GetChildren():
-            child_info.append(
-                f"{child.GetPath()}(type={child.GetTypeName()}, "
-                f"active={child.IsActive()}, loaded={child.IsLoaded()})"
-            )
-        raise RuntimeError(
-            f"Cargo guard has empty bounds: {prim_path}; "
-            f"children={child_info}"
-        )
+        raise RuntimeError(f"Cargo guard has empty bounds: {prim_path}")
     return aligned
 
 
 def _verify_exact_root_pose(stage, prim_path, expected_xyz):
-    prim = stage.GetPrimAtPath(prim_path)
+    prim = stage.GetPrimAtPath(str(prim_path))
     transform = UsdGeom.XformCache().GetLocalToWorldTransform(prim)
     position = transform.ExtractTranslation()
 
     actual = tuple(float(position[i]) for i in range(3))
-    expected = tuple(float(v) for v in expected_xyz)
+    expected = tuple(float(value) for value in expected_xyz)
 
     for axis_name, actual_value, expected_value in zip(
         ("x", "y", "z"), actual, expected
@@ -224,6 +61,50 @@ def _verify_exact_root_pose(stage, prim_path, expected_xyz):
     )
 
 
+def _disable_nested_rigid_bodies(root_prim):
+    """Keep one authoritative rigid body on the spawned cargo root."""
+
+    for prim in Usd.PrimRange(root_prim):
+        if prim == root_prim or prim.IsInstanceProxy():
+            continue
+        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            UsdPhysics.RigidBodyAPI(prim).CreateRigidBodyEnabledAttr(False)
+
+
+def _ensure_collision_shapes(root_prim):
+    """Use authored collision when present, otherwise generate it from meshes."""
+
+    existing = [
+        prim
+        for prim in Usd.PrimRange(root_prim)
+        if prim.HasAPI(UsdPhysics.CollisionAPI)
+    ]
+    if existing:
+        return len(existing), False
+
+    created = 0
+    for prim in Usd.PrimRange(root_prim):
+        if prim == root_prim or prim.IsInstanceProxy():
+            continue
+        if not prim.IsA(UsdGeom.Gprim):
+            continue
+
+        UsdPhysics.CollisionAPI.Apply(prim)
+        if prim.IsA(UsdGeom.Mesh):
+            mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
+            # The guard is concave/open, so convex decomposition preserves the
+            # usable interior better than one solid convex hull.
+            mesh_collision.CreateApproximationAttr().Set("convexDecomposition")
+        created += 1
+
+    if created == 0:
+        raise RuntimeError(
+            f"Cargo guard {root_prim.GetPath()} has no collision-capable geometry"
+        )
+
+    return created, True
+
+
 def spawn_cargo_guard_clone(
     stage,
     destination_path,
@@ -232,43 +113,57 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Spawn cargo_box_gaurd_size_201 at the exact former cargo_pod pose."""
+    """Spawn one cargo guard by directly referencing its standalone USD.
 
-    source_prim = _find_unique_source_prim(
-        stage,
-        str(source_name),
-        str(destination_path),
-    )
-    source_path = source_prim.GetPath().pathString
+    ``source_name`` is kept only for compatibility with the existing mission
+    call/config.  No live warehouse prim is copied anymore.
+    """
+
+    del source_name
     destination_path = str(destination_path)
-    source_scale = _source_root_scale(source_prim)
+    asset_path = str(GUARD_USD)
 
-    destination = _spawn_from_child_references(
-        stage,
-        source_prim,
-        destination_path,
+    if not GUARD_USD.is_file():
+        raise FileNotFoundError(f"Cargo guard USD not found: {GUARD_USD}")
+
+    existing = stage.GetPrimAtPath(destination_path)
+    if existing.IsValid():
+        stage.RemovePrim(destination_path)
+
+    root = stage.DefinePrim(destination_path, "Xform")
+
+    # Keep the asset's own root transform/material structure untouched under a
+    # wrapper.  The wrapper owns the requested world pose and rigid-body state.
+    asset_prim_path = f"{destination_path}/Asset"
+    asset_prim = stage.DefinePrim(asset_prim_path)
+    asset_prim.GetReferences().AddReference(asset_path)
+
+    root_xform = UsdGeom.Xformable(root)
+    root_xform.ClearXformOpOrder()
+    root_xform.AddTranslateOp().Set(
+        Gf.Vec3d(*[float(value) for value in spawn_xyz])
     )
-    _set_exact_root_pose(
-        destination,
-        spawn_xyz,
-        spawn_yaw,
-        source_scale,
-    )
+    if abs(float(spawn_yaw)) > 1.0e-9:
+        root_xform.AddRotateZOp().Set(float(spawn_yaw))
+
+    stage.Load(destination_path)
+    root = stage.GetPrimAtPath(destination_path)
+    if not root.IsValid():
+        raise RuntimeError(
+            f"Spawned cargo guard prim is invalid: {destination_path}"
+        )
+
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
-
-    # Bounds are checked BEFORE physics editing.  If the referenced children did
-    # not compose visually, fail here with useful child diagnostics instead of
-    # continuing with an invisible Xform-only cargo object.
     bounds = _world_bounds(stage, destination_path)
 
-    _disable_nested_rigid_bodies(destination)
-    collision_count, collision_created = _ensure_compound_collision(destination)
+    _disable_nested_rigid_bodies(root)
+    collision_count, collision_created = _ensure_collision_shapes(root)
 
-    rigid_body = UsdPhysics.RigidBodyAPI.Apply(destination)
+    rigid_body = UsdPhysics.RigidBodyAPI.Apply(root)
     rigid_body.CreateRigidBodyEnabledAttr(True)
     rigid_body.CreateKinematicEnabledAttr(False)
 
-    mass = UsdPhysics.MassAPI.Apply(destination)
+    mass = UsdPhysics.MassAPI.Apply(root)
     mass.CreateMassAttr(float(mass_kg))
 
     minimum = bounds.GetMin()
@@ -276,18 +171,19 @@ def spawn_cargo_guard_clone(
     size = maximum - minimum
 
     print(
-        f"[CARGO GUARD] spawned from live children {source_path} -> "
+        f"[CARGO GUARD] standalone USD referenced: {asset_path} -> "
         f"{destination_path}; pose=({float(spawn_xyz[0]):.3f}, "
         f"{float(spawn_xyz[1]):.3f}, {float(spawn_xyz[2]):.3f}), "
-        f"yaw={float(spawn_yaw):.1f} deg, "
-        f"source_scale=({float(source_scale[0]):.3f}, "
-        f"{float(source_scale[1]):.3f}, {float(source_scale[2]):.3f})"
+        f"yaw={float(spawn_yaw):.1f} deg"
     )
     print(
         "[CARGO GUARD] world bounds: "
-        f"min=({float(minimum[0]):.3f}, {float(minimum[1]):.3f}, {float(minimum[2]):.3f}), "
-        f"max=({float(maximum[0]):.3f}, {float(maximum[1]):.3f}, {float(maximum[2]):.3f}), "
-        f"size=({float(size[0]):.3f}, {float(size[1]):.3f}, {float(size[2]):.3f}) m"
+        f"min=({float(minimum[0]):.3f}, {float(minimum[1]):.3f}, "
+        f"{float(minimum[2]):.3f}), "
+        f"max=({float(maximum[0]):.3f}, {float(maximum[1]):.3f}, "
+        f"{float(maximum[2]):.3f}), "
+        f"size=({float(size[0]):.3f}, {float(size[1]):.3f}, "
+        f"{float(size[2]):.3f}) m"
     )
     print(
         f"[CARGO GUARD] mass={float(mass_kg):.1f} kg, "
@@ -306,7 +202,7 @@ def resolve_parcel_layer(
     bottom_clearance_m=0.03,
     wall_clearance_m=0.02,
 ):
-    """Resolve one 2x2 parcel layer inside the actual spawned guard bounds."""
+    """Resolve one 2x2 parcel layer inside the spawned guard bounds."""
 
     bounds = _world_bounds(stage, str(guard_path))
     minimum = bounds.GetMin()
@@ -318,8 +214,8 @@ def resolve_parcel_layer(
     common_z = None
 
     for config in parcel_configs:
-        max_size = tuple(float(v) for v in config["max_size_xyz"])
-        offset_xy = tuple(float(v) for v in config["offset_xy"])
+        max_size = tuple(float(value) for value in config["max_size_xyz"])
+        offset_xy = tuple(float(value) for value in config["offset_xy"])
         parcel_x = center_x + offset_xy[0]
         parcel_y = center_y + offset_xy[1]
 
@@ -343,8 +239,10 @@ def resolve_parcel_layer(
             raise RuntimeError(
                 f"Parcel {config['name']} does not fit inside cargo guard: "
                 f"center=({parcel_x:.3f}, {parcel_y:.3f}), size={max_size}, "
-                f"guard_min=({float(minimum[0]):.3f}, {float(minimum[1]):.3f}), "
-                f"guard_max=({float(maximum[0]):.3f}, {float(maximum[1]):.3f})"
+                f"guard_min=({float(minimum[0]):.3f}, "
+                f"{float(minimum[1]):.3f}), "
+                f"guard_max=({float(maximum[0]):.3f}, "
+                f"{float(maximum[1]):.3f})"
             )
 
         item = dict(config)
@@ -357,10 +255,10 @@ def resolve_parcel_layer(
         f"count={len(resolved)}"
     )
     for item in resolved:
-        p = item["spawn_xyz"]
+        position = item["spawn_xyz"]
         print(
             f"[CARGO GUARD]   {item['name']}: "
-            f"({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})"
+            f"({position[0]:.3f}, {position[1]:.3f}, {position[2]:.3f})"
         )
 
     return resolved
