@@ -17,7 +17,7 @@ import omni.graph.core as og
 import omni.usd
 import rclpy
 
-from pxr import Gf, UsdGeom
+from pxr import UsdGeom
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -50,7 +50,11 @@ enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
 simulation_app.update()
 
-from cargo.cargo_pod_physics import add_cargo_pod_physics, add_parcel_asset
+from cargo.cargo_guard_clone import (
+    spawn_cargo_guard_clone,
+    validate_parcel_layer,
+)
+from cargo.cargo_pod_physics import add_parcel_asset
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
     P3020PickPlaceAgent,
@@ -84,36 +88,28 @@ def _create_clock_graph():
     )
 
 
-def _spawn_cargo_pods():
+def _spawn_cargo_guards():
     if not CARGO_REGISTRY:
-        return
+        return []
 
     stage = omni.usd.get_context().get_stage()
     UsdGeom.Xform.Define(stage, "/World/Cargo")
+    spawned_paths = []
 
     for config in CARGO_REGISTRY:
-        name = config["name"]
-        usd_path = ISAAC_SIM_DIR / config["usd"]
-
-        if not usd_path.is_file():
-            raise FileNotFoundError(f"Cargo USD not found: {usd_path}")
-
-        prim_path = f"/World/Cargo/{name}"
-        prim = stage.DefinePrim(prim_path, "Xform")
-        prim.GetReferences().AddReference(str(usd_path))
-
-        xform = UsdGeom.Xformable(prim)
-        xform.AddTranslateOp().Set(Gf.Vec3d(*config["spawn_xyz"]))
-
-        yaw = float(config.get("spawn_yaw", 0.0))
-        if yaw != 0.0:
-            xform.AddRotateZOp().Set(yaw)
-
-        add_cargo_pod_physics(
-            stage,
-            prim_path,
-            mass_kg=float(config.get("mass_kg", 20.0)),
+        prim_path = f"/World/Cargo/{config['name']}"
+        spawned_paths.append(
+            spawn_cargo_guard_clone(
+                stage,
+                prim_path,
+                spawn_xyz=config["spawn_xyz"],
+                spawn_yaw=float(config.get("spawn_yaw", 0.0)),
+                source_name=config["source_prim_name"],
+                mass_kg=float(config.get("mass_kg", 20.0)),
+            )
         )
+
+    return spawned_paths
 
 
 def _spawn_parcels():
@@ -260,7 +256,16 @@ def main():
     world = World(stage_units_in_meters=1.0)
 
     _create_clock_graph()
-    _spawn_cargo_pods()
+    cargo_paths = _spawn_cargo_guards()
+    if cargo_paths:
+        # The requested 4-parcel layout is checked against the actual cloned
+        # guard bounds before any parcel is created. Fail instead of silently
+        # placing a box outside the guard if the source asset changes.
+        validate_parcel_layer(
+            omni.usd.get_context().get_stage(),
+            cargo_paths[0],
+            PARCEL_REGISTRY,
+        )
     _spawn_parcels()
 
     agents = []
@@ -308,7 +313,8 @@ def main():
     print("[LOCAL] rotate to +90 deg")
     print("[LOCAL] drive to: (10.5, -1.25), yaw=90 deg")
     print("[LOCAL] lift target: 0.04 m")
-    print("[CARGO] original: (10.5, -1.5), yaw=0 deg")
+    print("[CARGO] cargo_box_gaurd_size_201 clone: (10.5, -1.5, 0.5), yaw=0 deg")
+    print("[CARGO] parcels: 4 boxes, one 2x2 layer")
     print("[NAV2] starts only after PICKUP_DONE")
     print("[DELIVERY] (1.30104, -0.06065)")
     print("[RETURN] Nav2 -> cargo area -> local precision dock")
