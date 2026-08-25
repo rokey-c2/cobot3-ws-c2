@@ -51,8 +51,8 @@ enable_extension("isaacsim.robot.wheeled_robots")
 simulation_app.update()
 
 from cargo.cargo_guard_clone import (
+    resolve_parcel_layer,
     spawn_cargo_guard_clone,
-    validate_parcel_layer,
 )
 from cargo.cargo_pod_physics import add_parcel_asset
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
@@ -112,14 +112,14 @@ def _spawn_cargo_guards():
     return spawned_paths
 
 
-def _spawn_parcels():
-    if not PARCEL_REGISTRY:
+def _spawn_parcels(parcel_configs):
+    if not parcel_configs:
         return
 
     stage = omni.usd.get_context().get_stage()
     UsdGeom.Xform.Define(stage, "/World/Parcels")
 
-    for config in PARCEL_REGISTRY:
+    for config in parcel_configs:
         prim_path = f"/World/Parcels/{config['name']}"
         add_parcel_asset(
             stage,
@@ -257,16 +257,17 @@ def main():
 
     _create_clock_graph()
     cargo_paths = _spawn_cargo_guards()
+
+    resolved_parcels = []
     if cargo_paths:
-        # The requested 4-parcel layout is checked against the actual cloned
-        # guard bounds before any parcel is created. Fail instead of silently
-        # placing a box outside the guard if the source asset changes.
-        validate_parcel_layer(
+        cargo_xyz = CARGO_REGISTRY[0]["spawn_xyz"]
+        resolved_parcels = resolve_parcel_layer(
             omni.usd.get_context().get_stage(),
             cargo_paths[0],
             PARCEL_REGISTRY,
+            cargo_center_xy=(float(cargo_xyz[0]), float(cargo_xyz[1])),
         )
-    _spawn_parcels()
+    _spawn_parcels(resolved_parcels)
 
     agents = []
     for config in ROBOT_REGISTRY:
@@ -313,8 +314,8 @@ def main():
     print("[LOCAL] rotate to +90 deg")
     print("[LOCAL] drive to: (10.5, -1.25), yaw=90 deg")
     print("[LOCAL] lift target: 0.04 m")
-    print("[CARGO] cargo_box_gaurd_size_201 clone: (10.5, -1.5, 0.5), yaw=0 deg")
-    print("[CARGO] parcels: 4 boxes, one 2x2 layer")
+    print("[CARGO] cargo_box_gaurd_size_201: (10.5, -1.5, 0.5), yaw=0 deg")
+    print("[CARGO] parcels: 4 boxes INSIDE guard, one 2x2 floor layer")
     print("[NAV2] starts only after PICKUP_DONE")
     print("[DELIVERY] (1.30104, -0.06065)")
     print("[RETURN] Nav2 -> cargo area -> local precision dock")
