@@ -1,9 +1,10 @@
 """Spawn the cargo guard from its standalone USD asset.
 
-This module intentionally avoids copying or internally referencing the already
-composed warehouse prim.  The guard is spawned the same way the original
-cargo_pod was: create a new prim, add an external USD reference, set the pose,
-then add runtime physics.
+The guard is spawned the same way the original cargo_pod was at baseline:
+create a wrapper prim, add an external USD reference for the visual asset, set
+the requested pose, then author simple runtime compound colliders on the
+wrapper.  We do not depend on the referenced visual asset exposing editable
+Mesh/Gprim children, because the collected USD may contain instances.
 """
 
 from pathlib import Path
@@ -61,48 +62,145 @@ def _verify_exact_root_pose(stage, prim_path, expected_xyz):
     )
 
 
-def _disable_nested_rigid_bodies(root_prim):
-    """Keep one authoritative rigid body on the spawned cargo root."""
+def _disable_nested_physics(root_prim):
+    """Keep one authoritative rigid body/collision system on the wrapper."""
 
     for prim in Usd.PrimRange(root_prim):
         if prim == root_prim or prim.IsInstanceProxy():
             continue
+
         if prim.HasAPI(UsdPhysics.RigidBodyAPI):
             UsdPhysics.RigidBodyAPI(prim).CreateRigidBodyEnabledAttr(False)
 
+        if prim.HasAPI(UsdPhysics.CollisionAPI):
+            UsdPhysics.CollisionAPI(prim).CreateCollisionEnabledAttr(False)
 
-def _ensure_collision_shapes(root_prim):
-    """Use authored collision when present, otherwise generate it from meshes."""
 
-    existing = [
-        prim
-        for prim in Usd.PrimRange(root_prim)
-        if prim.HasAPI(UsdPhysics.CollisionAPI)
-    ]
-    if existing:
-        return len(existing), False
+def _create_collision_box(stage, path, center, size):
+    """Create one invisible box collider under the cargo rigid body."""
 
-    created = 0
-    for prim in Usd.PrimRange(root_prim):
-        if prim == root_prim or prim.IsInstanceProxy():
-            continue
-        if not prim.IsA(UsdGeom.Gprim):
-            continue
+    cube = UsdGeom.Cube.Define(stage, path)
+    cube.CreateSizeAttr(1.0)
 
-        UsdPhysics.CollisionAPI.Apply(prim)
-        if prim.IsA(UsdGeom.Mesh):
-            mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
-            # The guard is concave/open, so convex decomposition preserves the
-            # usable interior better than one solid convex hull.
-            mesh_collision.CreateApproximationAttr().Set("convexDecomposition")
-        created += 1
+    xform = UsdGeom.Xformable(cube.GetPrim())
+    xform.AddTranslateOp().Set(Gf.Vec3d(*center))
+    xform.AddScaleOp().Set(Gf.Vec3f(*size))
 
-    if created == 0:
+    UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+    UsdGeom.Imageable(cube.GetPrim()).MakeInvisible()
+
+
+def _add_baseline_style_compound_collision(stage, root_prim, bounds, root_xyz):
+    """Author the same kind of simple compound physics used by cargo_pod.
+
+    The original cargo_pod did not rely on the STEP visual mesh for collision.
+    It used four legs, one floor, and four thin walls.  We keep that successful
+    approach, but scale the collider envelope from the referenced guard's
+    measured bounds instead of assuming that the new visual is exactly 1 m.
+    """
+
+    minimum = bounds.GetMin()
+    maximum = bounds.GetMax()
+    size = maximum - minimum
+
+    sx = float(size[0])
+    sy = float(size[1])
+    sz = float(size[2])
+    if min(sx, sy, sz) <= 1.0e-4:
         raise RuntimeError(
-            f"Cargo guard {root_prim.GetPath()} has no collision-capable geometry"
+            f"Invalid cargo guard bounds for physics: size=({sx}, {sy}, {sz})"
         )
 
-    return created, True
+    root_x = float(root_xyz[0])
+    root_y = float(root_xyz[1])
+    root_z = float(root_xyz[2])
+
+    local_min_x = float(minimum[0]) - root_x
+    local_max_x = float(maximum[0]) - root_x
+    local_min_y = float(minimum[1]) - root_y
+    local_max_y = float(maximum[1]) - root_y
+    local_min_z = float(minimum[2]) - root_z
+    local_max_z = float(maximum[2]) - root_z
+
+    center_x = 0.5 * (local_min_x + local_max_x)
+    center_y = 0.5 * (local_min_y + local_max_y)
+
+    # Match the proven baseline cargo_pod proportions:
+    # bottom -> floor underside = 25% of total height,
+    # floor thickness = 5% of total height.
+    floor_thickness = max(0.02, 0.05 * sz)
+    floor_bottom_z = local_min_z + 0.25 * sz
+    floor_center_z = floor_bottom_z + 0.5 * floor_thickness
+    floor_top_z = floor_bottom_z + floor_thickness
+
+    # Four legs occupy the clearance below the floor.
+    leg_width_x = max(0.05, 0.10 * sx)
+    leg_width_y = max(0.05, 0.10 * sy)
+    leg_height = max(0.02, floor_bottom_z - local_min_z)
+    leg_center_z = local_min_z + 0.5 * leg_height
+    leg_x = 0.5 * sx - 0.5 * leg_width_x
+    leg_y = 0.5 * sy - 0.5 * leg_width_y
+
+    collision_root = f"{root_prim.GetPath()}/PhysicsColliders"
+    UsdGeom.Xform.Define(stage, collision_root)
+
+    leg_centers = {
+        "leg_front_left": (center_x + leg_x, center_y + leg_y, leg_center_z),
+        "leg_front_right": (center_x + leg_x, center_y - leg_y, leg_center_z),
+        "leg_rear_left": (center_x - leg_x, center_y + leg_y, leg_center_z),
+        "leg_rear_right": (center_x - leg_x, center_y - leg_y, leg_center_z),
+    }
+    for name, center in leg_centers.items():
+        _create_collision_box(
+            stage,
+            f"{collision_root}/{name}",
+            center,
+            (leg_width_x, leg_width_y, leg_height),
+        )
+
+    _create_collision_box(
+        stage,
+        f"{collision_root}/floor",
+        (center_x, center_y, floor_center_z),
+        (sx, sy, floor_thickness),
+    )
+
+    wall_thickness = max(0.01, 0.02 * min(sx, sy))
+    wall_height = max(0.05, local_max_z - floor_top_z)
+    wall_center_z = floor_top_z + 0.5 * wall_height
+
+    _create_collision_box(
+        stage,
+        f"{collision_root}/wall_front",
+        (local_max_x - 0.5 * wall_thickness, center_y, wall_center_z),
+        (wall_thickness, sy, wall_height),
+    )
+    _create_collision_box(
+        stage,
+        f"{collision_root}/wall_rear",
+        (local_min_x + 0.5 * wall_thickness, center_y, wall_center_z),
+        (wall_thickness, sy, wall_height),
+    )
+    _create_collision_box(
+        stage,
+        f"{collision_root}/wall_left",
+        (center_x, local_max_y - 0.5 * wall_thickness, wall_center_z),
+        (sx, wall_thickness, wall_height),
+    )
+    _create_collision_box(
+        stage,
+        f"{collision_root}/wall_right",
+        (center_x, local_min_y + 0.5 * wall_thickness, wall_center_z),
+        (sx, wall_thickness, wall_height),
+    )
+
+    print(
+        "[CARGO GUARD] baseline-style compound collision created: "
+        f"size=({sx:.3f}, {sy:.3f}, {sz:.3f}) m, "
+        f"floor_top_local_z={floor_top_z:.3f} m"
+    )
+
+    return 9, floor_top_z
 
 
 def spawn_cargo_guard_clone(
@@ -113,11 +211,7 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Spawn one cargo guard by directly referencing its standalone USD.
-
-    ``source_name`` is kept only for compatibility with the existing mission
-    call/config.  No live warehouse prim is copied anymore.
-    """
+    """Spawn one cargo guard with the baseline cargo_pod method."""
 
     del source_name
     destination_path = str(destination_path)
@@ -132,8 +226,8 @@ def spawn_cargo_guard_clone(
 
     root = stage.DefinePrim(destination_path, "Xform")
 
-    # Keep the asset's own root transform/material structure untouched under a
-    # wrapper.  The wrapper owns the requested world pose and rigid-body state.
+    # Visual: exactly the same pattern as the old cargo_pod -- external USD
+    # reference under a runtime wrapper prim.
     asset_prim_path = f"{destination_path}/Asset"
     asset_prim = stage.DefinePrim(asset_prim_path)
     asset_prim.GetReferences().AddReference(asset_path)
@@ -156,8 +250,16 @@ def spawn_cargo_guard_clone(
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
     bounds = _world_bounds(stage, destination_path)
 
-    _disable_nested_rigid_bodies(root)
-    collision_count, collision_created = _ensure_collision_shapes(root)
+    # Physics: also follow the old cargo_pod pattern. Do not try to apply
+    # collision directly to instance-proxy visual geometry from the collected
+    # USD; create simple compound colliders under the wrapper instead.
+    _disable_nested_physics(root)
+    collision_count, floor_top_local_z = _add_baseline_style_compound_collision(
+        stage,
+        root,
+        bounds,
+        spawn_xyz,
+    )
 
     rigid_body = UsdPhysics.RigidBodyAPI.Apply(root)
     rigid_body.CreateRigidBodyEnabledAttr(True)
@@ -165,6 +267,17 @@ def spawn_cargo_guard_clone(
 
     mass = UsdPhysics.MassAPI.Apply(root)
     mass.CreateMassAttr(float(mass_kg))
+
+    # Save the computed floor top on the wrapper so parcel placement can use
+    # the same value instead of guessing from the bottom of the visual bounds.
+    floor_attr = root.CreateAttribute(
+        "cargo:floorTopLocalZ",
+        UsdGeom.Tokens.double if hasattr(UsdGeom.Tokens, "double") else None,
+    )
+    # Some USD builds do not expose a double token through UsdGeom.Tokens.
+    # Fall back to the generic attribute only when available below.
+    if floor_attr and floor_attr.IsValid():
+        floor_attr.Set(float(floor_top_local_z))
 
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
@@ -187,8 +300,7 @@ def spawn_cargo_guard_clone(
     )
     print(
         f"[CARGO GUARD] mass={float(mass_kg):.1f} kg, "
-        f"collision_shapes={collision_count}, "
-        f"generated_collision={collision_created}"
+        f"collision_shapes={collision_count}, generated_collision=True"
     )
 
     return destination_path
@@ -199,16 +311,21 @@ def resolve_parcel_layer(
     guard_path,
     parcel_configs,
     cargo_center_xy,
-    bottom_clearance_m=0.03,
+    bottom_clearance_m=0.005,
     wall_clearance_m=0.02,
 ):
-    """Resolve one 2x2 parcel layer inside the spawned guard bounds."""
+    """Resolve one 2x2 parcel layer on the cargo floor."""
 
     bounds = _world_bounds(stage, str(guard_path))
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
+    size = maximum - minimum
     center_x = float(cargo_center_xy[0])
     center_y = float(cargo_center_xy[1])
+
+    # Same baseline proportions used by the runtime compound collider:
+    # floor bottom is 25% above visual bottom and floor thickness is 5%.
+    floor_top_world_z = float(minimum[2]) + 0.30 * float(size[2])
 
     resolved = []
     common_z = None
@@ -224,7 +341,7 @@ def resolve_parcel_layer(
         half_z = 0.5 * max_size[2]
 
         if common_z is None:
-            common_z = float(minimum[2]) + half_z + float(bottom_clearance_m)
+            common_z = floor_top_world_z + half_z + float(bottom_clearance_m)
 
         inside_x = (
             parcel_x - half_x >= float(minimum[0]) + wall_clearance_m
@@ -250,7 +367,7 @@ def resolve_parcel_layer(
         resolved.append(item)
 
     print(
-        "[CARGO GUARD] parcel layer resolved INSIDE guard: "
+        "[CARGO GUARD] parcel layer resolved on cargo floor: "
         f"center=({center_x:.3f}, {center_y:.3f}), z={common_z:.3f}, "
         f"count={len(resolved)}"
     )
