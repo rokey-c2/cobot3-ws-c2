@@ -37,8 +37,8 @@ ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
     ISAAC_SIM_DIR
     / "usd"
-    / "warehouse_final_final"
-    / "env_warehouse_only_arms.usd"
+    / "Parcel_Sorting_Map"
+    / "Parcel_Sorting_Map.usd"
 )
 
 VISION_RGB_PUBLISH_INTERVAL_STEPS = 6
@@ -53,6 +53,8 @@ from cargo.cargo_guard_clone import (
     spawn_cargo_guard_clone,
 )
 from cargo.cargo_pod_physics import add_parcel_asset
+from equipment.conveyor.conveyor_controller import ConveyorController
+from equipment.wheel_sorter.wheel_sorter_controller import WheelSorterController
 import robots.iw_hub.iw_hub_mission_agent as iw_hub_mission_module
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
@@ -156,6 +158,8 @@ class AmrMissionBridge(Node):
 
         if command == "PICKUP":
             self.agent.request_pickup()
+        elif command == "CONVEYOR_DOCK":
+            self.agent.request_conveyor_dock()
         elif command == "RETURN_DOCK":
             self.agent.request_return_dock()
         elif command == "LOWER":
@@ -251,6 +255,12 @@ def main():
     world = World(stage_units_in_meters=1.0)
 
     _create_clock_graph()
+
+    conveyor = ConveyorController(speed=1.0)
+    sorter = WheelSorterController(regions=("A", "B", "C"), sorter_speed=1.0)
+    conveyor.setup()
+    sorter.setup()
+
     cargo_paths = _spawn_cargo_guards()
 
     resolved_parcels = []
@@ -290,7 +300,13 @@ def main():
         agent.post_reset()
     p3020_agent.post_reset()
 
+    # Re-apply equipment state after reset so the run starts deterministically.
+    conveyor.setup()
+    sorter.setup()
+
     world.play()
+
+    conveyor.start()
 
     for _ in range(30):
         world.step(render=True)
@@ -338,15 +354,20 @@ def main():
                 scan_hint = None
                 if "scan_hint_x" in command and "scan_hint_y" in command:
                     scan_hint = (float(command["scan_hint_x"]), float(command["scan_hint_y"]))
-                print(f"\n[P3020] pick_place command received: place={place_xy} scan_hint={scan_hint}")
-                success, message = p3020_agent.run_pick_place(
+                print(
+                    "\n[P3020] pick_place command received: "
+                    f"place={place_xy} scan_hint={scan_hint} "
+                    "-- emptying cargo pod"
+                )
+                p3020_agent.run_until_cargo_empty(
                     p3020_bridge,
                     place_xy_world=place_xy,
+                    amr_agent=agents[0],
                     scan_xy_world=scan_hint,
                     tick_others=tick_iw_hub_agents,
                     dt=dt,
+                    sorter=sorter,
                 )
-                print(f"[P3020] result: success={success} message={message}")
 
             world.step(render=True)
 

@@ -24,7 +24,7 @@ import omni.usd
 from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 
-SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
+SOURCE_GUARD_NAME = "cargo_box_gaurd_size_200_fix"
 POSE_TOLERANCE_M = 1.0e-6
 SIZE_TOLERANCE_M = 1.0e-3
 

@@ -14,11 +14,16 @@ CARD_BOX_USD = (
 )
 
 
-# User-verified initial IW Hub transform.
-# Spawn: x=10.5, y=1.80122, yaw=0 deg.
+# TEMP TEST VALUE -- Parcel_Sorting_Map final AMR/cargo layout is not baked
+# in yet (map still WIP). Placeholder spawn in open floor away from the
+# conveyor (x=-6..0, y~0) and from p3020_in (0.2,-1.5)/p3020_out (-14.2,-2.6).
+# Kept ~3 m from the cargo dock (TARGET_ROOT_Y in iw_hub_mission_agent.py)
+# so the AMR's body (~1.5 m long) doesn't spawn overlapping the cargo pod --
+# too close made ROTATE_TO_DOCK physically jam against the pod in testing.
+# Replace once the user gives the real rviz2-measured spawn pose.
 START_XY = (
-    10.5,
-    1.80122,
+    3.0,
+    1.5,
 )
 
 GOAL_XY = (
@@ -49,14 +54,19 @@ ROBOT_REGISTRY = [
 TEST_OBSTACLES = []
 
 
-# The old cargo_pod is gone. Create ONE additional instance of the existing
-# warehouse object cargo_box_gaurd_size_201 at the EXACT old cargo_pod pose.
-# Old cargo_pod pose from the verified baseline: (10.5, -1.5, 0.5), yaw=0 deg.
+# TEMP TEST VALUE -- source_prim_name updated to match the guard prim that
+# actually exists in Parcel_Sorting_Map ("cargo_box_gaurd_size_200_fix"; the
+# old "..._201" name from the previous map no longer exists). z=0.5 keeps
+# cargo_guard_clone.py's fixed BASELINE_* collision geometry's leg bottom at
+# world Z=0 (floor) -- this is independent of the cloned visual mesh's own
+# size, so it stays 0.5 regardless of which guard asset is cloned. spawn_xyz
+# x/y is a placeholder just past the AMR's test spawn (START_XY), not a real
+# measured dock position.
 CARGO_REGISTRY = [
     {
-        "name": "cargo_box_gaurd_size_201",
-        "source_prim_name": "cargo_box_gaurd_size_201",
-        "spawn_xyz": (10.5, -1.5, 0.5),
+        "name": "cargo_box_gaurd_size_200_fix",
+        "source_prim_name": "cargo_box_gaurd_size_200_fix",
+        "spawn_xyz": (3.0, -1.8, 0.5),
         "spawn_yaw": 0.0,
         "mass_kg": 20.0,
     }

@@ -80,9 +80,11 @@ CAMERA_PRIM_PATH = "/World/p3020_in/vgp20/rsd455/RSD455/Camera_Pseudo_Depth"
 EE_LINK_NAME = "link_6"
 
 # 팀원이 project_config/robot_config.py의 PARCEL_REGISTRY + main_mission.py의
-# _spawn_parcels()로 런타임에 스폰하는 실제 파라셀(NVIDIA CardBox) 프림.
-# ContactGripper.try_attach()와 흡착 후 거리 로깅에 쓰인다.
-BOX_PRIM_PATH = "/World/Parcels/parcel_box_01"
+# _spawn_parcels()로 런타임에 스폰하는 실제 파라셀(NVIDIA CardBox) 프림들의
+# 부모 경로 (PARCEL_REGISTRY 항목마다 하나씩, "/World/Cargo/Parcels/<name>").
+# 개수를 가정하지 않는다 -- 매 사이클, 이 밑의 자식 프림들 중 방금 카메라로
+# 찾은 위치에 가장 가까운 것을 그 사이클의 픽업 대상으로 고른다.
+PARCEL_PARENT_PATH = "/World/Cargo/Parcels"
 
 ARM_JOINTS = ["joint_1", "joint_2", "joint_3", "joint_5", "joint_6"]
 
@@ -98,8 +100,9 @@ DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
 
-# 통합 맵에서 직접 확인한 P3020 베이스 월드 좌표 (회전 없음).
-ROBOT_BASE_POS = np.array([0.5, -1.0, 0.4])
+# Parcel_Sorting_Map에서 직접 확인한 P3020(arm #1, /World/p3020_in) 베이스
+# 월드 좌표 (회전 없음). 헤드리스로 직접 측정함.
+ROBOT_BASE_POS = np.array([0.2, -1.5, 0.4])
 ROBOT_BASE_QUAT = np.array([1.0, 0.0, 0.0, 0.0])
 
 SPEC_REACH = 2.0
@@ -153,12 +156,14 @@ APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여�
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
-# amr_p3020_mission.py의 delivery_x/y 기본값과 동일 (AMR이 화물을 내려놓고
-# 서는 월드 좌표) -- 준비 자세가 엉뚱한 방향(컨베이어 반대쪽)을 보고 있던
-# 버그의 원인이 바로 이 값이 AMR 도착 지점과 안 맞았던 것이었다. 액션 goal에
-# pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR 도착 지점 방향)을
-# 쓴다.
-AMR_DELIVERY_POSE_WORLD = np.array([1.30104, -0.06065])
+# TEMP TEST VALUE -- 테스트 스크립트(test_new_logic.py, test_full_pipeline.py)의
+# AMR 텔레포트 목표 좌표와 동일해야 한다 (AMR이 적재함을 대고 서는 월드
+# 좌표). 준비 자세가 엉뚱한 방향을 보고 있던 버그의 원인이 이 값이 AMR
+# 도착 지점과 안 맞았던 것이었다. base(0.2,-1.5)에서 0.9m -- 기존 1.2m보다
+# 가까워서 준비 자세가 덜 어색해 보임(2.0m 사거리 안에서 여유 충분). 액션
+# goal에 pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR 도착
+# 지점 방향)을 쓴다.
+AMR_DELIVERY_POSE_WORLD = np.array([1.1, -1.5])
 DEFAULT_SCAN_XY = AMR_DELIVERY_POSE_WORLD - ROBOT_BASE_POS[:2]
 
 MIN_VALID_SCAN_DEPTH = 0.4
@@ -177,6 +182,11 @@ GRIPPER_WAIT = 90
 TCP_SPEED = 0.006
 MIN_STEPS = 60
 MAX_STEPS = 600
+
+# 적재함이 완전히 비었다고 확정하기 전, 기본(스캔) 자세에서 박스 미인식
+# 상태를 얼마나 기다릴지. 박스 개수를 고정하지 않고(지금 4개, 나중에
+# 늘어나도 됨) "더 이상 안 보인다"로만 판단한다.
+NO_BOX_CONFIRM_TIMEOUT_S = 5.0
 
 APPROACH_ROLL_DEG = 180.0
 APPROACH_PITCH_DEG = 0.0
@@ -267,6 +277,46 @@ def base_relative(xy_world: np.ndarray) -> np.ndarray:
 def is_within_reach(xy_world: np.ndarray) -> bool:
     dist = float(np.linalg.norm(base_relative(xy_world)))
     return dist <= SPEC_REACH
+
+
+def find_nearest_parcel(stage, pick_xy: np.ndarray, parent_path: str = PARCEL_PARENT_PATH):
+    """PARCEL_REGISTRY 항목 개수만큼 스폰된 파라셀 프림들(parent_path의 자식)
+    중, 방금 카메라/depth로 찾은 pick_xy에 가장 가까운 것의 prim path를
+    돌려준다. 개수를 가정하지 않아서 나중에 박스가 늘어나도 그대로 동작한다."""
+    parent = stage.GetPrimAtPath(parent_path)
+    if not parent.IsValid():
+        return None
+
+    best_path = None
+    best_dist = None
+    for child in parent.GetChildren():
+        xf = UsdGeom.Xformable(child).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        pos = xf.Transform(Gf.Vec3d(0, 0, 0))
+        dist = float(np.hypot(pos[0] - pick_xy[0], pos[1] - pick_xy[1]))
+        if best_dist is None or dist < best_dist:
+            best_dist = dist
+            best_path = str(child.GetPath())
+
+    return best_path
+
+
+# TODO: 목적지(A/B/C/D)를 박스에 어떻게 표시할지 아직 정해지지 않았다 --
+# 사용자가 "박스에 목적지에 따른 속성을 달리할 것"이라고만 밝혔다. 일단은
+# 파라셀 프림의 커스텀 USD 속성 하나(이름은 PARCEL_DESTINATION_ATTR)를
+# 읽는 것으로 가정해뒀다. 실제 표기 방식(속성 이름/타입, 또는 비전 인식
+# 결과로 대체 등)이 정해지면 이 함수만 바꾸면 된다.
+PARCEL_DESTINATION_ATTR = "destination"
+
+
+def read_parcel_destination(stage, box_prim_path):
+    prim = stage.GetPrimAtPath(box_prim_path)
+    if not prim.IsValid():
+        return None
+    attr = prim.GetAttribute(PARCEL_DESTINATION_ATTR)
+    if not attr or not attr.IsValid():
+        return None
+    value = attr.Get()
+    return None if value is None else str(value)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -714,7 +764,7 @@ class P3020PickPlaceAgent:
         return box_xy
 
     def run_pick_place(self, ros_node, place_xy_world, scan_xy_world=None,
-                        tick_others=None, dt=1 / 60.0):
+                        tick_others=None, dt=1 / 60.0, sorter=None):
         """스캔(인식) -> 흡착 -> 컨베이어 위로 이동 -> 놓기, 한 사이클 전체.
         (success: bool, message: str) 을 반환한다. 블로킹 함수라서, 실행되는
         동안 매 스텝 tick_others(dt)를 호출해 다른 에이전트(IW Hub)도 계속
@@ -752,6 +802,14 @@ class P3020PickPlaceAgent:
             ros_node.publish_status(f"DONE_FAIL:{message}")
             return False, message
 
+        target_box_path = find_nearest_parcel(self.stage, pick_xy)
+        if target_box_path is None:
+            self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+            message = f"{PARCEL_PARENT_PATH} 밑에서 파라셀 프림을 찾지 못했습니다."
+            ros_node.publish_status(f"DONE_FAIL:{message}")
+            return False, message
+        print(f"   scanning     target parcel prim: {target_box_path}")
+
         pick_xy_rel = base_relative(pick_xy)
         place_xy_rel = base_relative(place_xy_world)
         pick_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(pick_xy_rel))
@@ -783,7 +841,7 @@ class P3020PickPlaceAgent:
                 self.robot.apply_action(action)
 
             if fsm.gripper == "close":
-                just_attached = self.gripper.try_attach(BOX_PRIM_PATH) and not gripper_was_attached
+                just_attached = self.gripper.try_attach(target_box_path) and not gripper_was_attached
                 if just_attached:
                     print(f"      [gripper] 접촉 감지 -> 부착 (step={step})")
             if self.gripper.is_attached():
@@ -810,6 +868,17 @@ class P3020PickPlaceAgent:
             self.world.step(render=True)
             step += 1
 
+        if ever_attached and sorter is not None:
+            destination = read_parcel_destination(self.stage, target_box_path)
+            if destination is None:
+                print(
+                    f"[P3020][WARN] {target_box_path} has no "
+                    f"'{PARCEL_DESTINATION_ATTR}' attribute -- sorter not "
+                    "routed for this box"
+                )
+            else:
+                sorter.route_box(destination)
+
         self._return_to_ready_pose(tick_others=tick_others, dt=dt)
 
         if ever_attached:
@@ -820,3 +889,41 @@ class P3020PickPlaceAgent:
         message = f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다."
         ros_node.publish_status(f"DONE_FAIL:{message}")
         return False, message
+
+    def run_until_cargo_empty(self, ros_node, place_xy_world, amr_agent,
+                               scan_xy_world=None, tick_others=None, dt=1 / 60.0,
+                               sorter=None):
+        """적재함의 박스를 하나씩 찾아서 컨베이어 위로 옮기고, 기본(스캔)
+        자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 박스가 안 보이면 적재함이
+        빈 것으로 확정하고 amr_agent에 복귀 신호를 보낸다. 박스 개수는
+        가정하지 않는다 -- run_pick_place가 실패할 때마다(=기본 자세에서
+        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다."""
+        while True:
+            success, message = self.run_pick_place(
+                ros_node, place_xy_world, scan_xy_world=scan_xy_world,
+                tick_others=tick_others, dt=dt, sorter=sorter,
+            )
+            if success:
+                print(f"[P3020] {message} -- 다음 박스 확인")
+                continue
+
+            print(
+                f"[P3020] 기본 자세에서 박스 미인식 ({message}) -- "
+                f"{NO_BOX_CONFIRM_TIMEOUT_S:.0f}초 재확인 중"
+            )
+            ros_node.publish_status("CHECKING_EMPTY")
+            confirm_steps = max(1, int(NO_BOX_CONFIRM_TIMEOUT_S / dt))
+            still_there = self._wait_for_detection(
+                ros_node, confirm_steps, tick_others, dt
+            )
+            if still_there is not None:
+                print("[P3020] 재확인 중 박스 발견 -- 픽업 재시도")
+                continue
+
+            print(
+                f"[P3020] {NO_BOX_CONFIRM_TIMEOUT_S:.0f}초간 박스 미인식 -- "
+                "적재함 비움 확정, AMR 복귀 요청"
+            )
+            ros_node.publish_status("CARGO_EMPTY")
+            amr_agent.request_return_dock()
+            return
