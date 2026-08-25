@@ -1,36 +1,22 @@
-"""Spawn cargo_box_gaurd_size_201 with the proven baseline cargo_pod flow.
+"""Clone the already-visible warehouse cargo guard for the AMR mission.
 
-Flow:
-1) Define /World/Cargo/cargo_box_gaurd_size_201.
-2) AddReference() the standalone guard USD directly on that prim.
-3) Apply the exact requested pose and convert the millimeter-authored asset to meters.
-4) Add simple runtime compound colliders (4 legs + floor + 4 walls).
-5) Apply one rigid body + mass on the cargo root.
+The warehouse already contains the correctly sized object:
+    /World/cargo_box_gaurd_size_201
 
-The visual USD is not required to expose editable Mesh/Gprim descendants. This
-matches the old cargo_pod approach, where the visual and runtime physics were
-kept separate.
+Do NOT load a guessed standalone USD or apply a manual scale.  Instead, make
+one real duplicate of that prim, move only the duplicate root to the old
+cargo_pod pose, then add the same simple runtime compound physics used by the
+baseline cargo_pod.
 """
 
-from pathlib import Path
+import omni.usd
 
 from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 
 SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
 POSE_TOLERANCE_M = 1.0e-6
-# The standalone STEP-derived USD is authored in millimeter-sized coordinates.
-# Without this conversion Isaac Sim interprets it as roughly 1000 x 1000 x 315 m.
-# 0.001 restores the intended physical size: about 1.0 x 1.0 x 0.315 m.
-GUARD_ASSET_SCALE = 0.001
-
-GUARD_USD = (
-    Path(__file__).resolve().parents[1]
-    / "usd"
-    / "warehouse_final_final"
-    / "cargo"
-    / "cargo box_gaurd_size_200.usd"
-)
+SIZE_TOLERANCE_M = 1.0e-4
 
 
 def _world_bounds(stage, prim_path):
@@ -47,6 +33,11 @@ def _world_bounds(stage, prim_path):
     if bounds.IsEmpty():
         raise RuntimeError(f"Cargo guard has empty bounds: {prim_path}")
     return bounds
+
+
+def _size_tuple(bounds):
+    size = bounds.GetMax() - bounds.GetMin()
+    return tuple(float(size[i]) for i in range(3))
 
 
 def _verify_exact_root_pose(stage, prim_path, expected_xyz):
@@ -67,13 +58,35 @@ def _verify_exact_root_pose(stage, prim_path, expected_xyz):
             )
 
     print(
-        "[CARGO GUARD] exact root pose verified: "
+        "[CARGO GUARD] exact clone root pose verified: "
         f"({actual[0]:.6f}, {actual[1]:.6f}, {actual[2]:.6f})"
     )
 
 
-def _disable_referenced_physics(root_prim):
-    """Disable physics inside the visual asset; root physics is authoritative."""
+def _verify_same_visual_size(source_bounds, clone_bounds):
+    source_size = _size_tuple(source_bounds)
+    clone_size = _size_tuple(clone_bounds)
+
+    for axis_name, source_value, clone_value in zip(
+        ("x", "y", "z"), source_size, clone_size
+    ):
+        if abs(source_value - clone_value) > SIZE_TOLERANCE_M:
+            raise RuntimeError(
+                f"Cargo guard clone size mismatch on {axis_name}: "
+                f"source={source_value:.6f} m, clone={clone_value:.6f} m"
+            )
+
+    print(
+        "[CARGO GUARD] clone size matches original exactly: "
+        f"source=({source_size[0]:.3f}, {source_size[1]:.3f}, "
+        f"{source_size[2]:.3f}) m, "
+        f"clone=({clone_size[0]:.3f}, {clone_size[1]:.3f}, "
+        f"{clone_size[2]:.3f}) m"
+    )
+
+
+def _disable_nested_physics(root_prim):
+    """The duplicate root owns the one authoritative runtime rigid body."""
 
     for prim in Usd.PrimRange(root_prim):
         if prim == root_prim or prim.IsInstanceProxy():
@@ -99,7 +112,7 @@ def _create_collision_box(stage, path, center, size):
 
 
 def _add_baseline_style_physics(stage, root_prim, bounds, root_xyz):
-    """Create baseline-style 4-leg + floor + 4-wall compound colliders."""
+    """Create 4 legs + floor + 4 walls, scaled to the real cloned guard."""
 
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
@@ -124,8 +137,6 @@ def _add_baseline_style_physics(stage, root_prim, bounds, root_xyz):
     center_x = 0.5 * (local_min_x + local_max_x)
     center_y = 0.5 * (local_min_y + local_max_y)
 
-    # Same proportions as the successful baseline cargo_pod physics:
-    # leg clearance 25% of height, floor thickness 5% of height.
     floor_thickness = max(0.02, 0.05 * sz)
     floor_bottom_z = local_min_z + 0.25 * sz
     floor_center_z = floor_bottom_z + 0.5 * floor_thickness
@@ -147,7 +158,6 @@ def _add_baseline_style_physics(stage, root_prim, bounds, root_xyz):
         "leg_rear_left": (center_x - leg_x, center_y + leg_y, leg_center_z),
         "leg_rear_right": (center_x - leg_x, center_y - leg_y, leg_center_z),
     }
-
     for name, center in leg_centers.items():
         _create_collision_box(
             stage,
@@ -200,6 +210,26 @@ def _add_baseline_style_physics(stage, root_prim, bounds, root_xyz):
     return 9
 
 
+def _find_source_prim(stage, source_name):
+    expected_path = f"/World/{source_name}"
+    source = stage.GetPrimAtPath(expected_path)
+    if source.IsValid():
+        return source
+
+    matches = [
+        prim
+        for prim in stage.TraverseAll()
+        if prim.IsValid() and prim.GetName() == source_name
+    ]
+    if len(matches) != 1:
+        paths = [prim.GetPath().pathString for prim in matches]
+        raise RuntimeError(
+            f"Expected one source cargo guard named {source_name!r}; "
+            f"found {len(matches)}: {paths}"
+        )
+    return matches[0]
+
+
 def spawn_cargo_guard_clone(
     stage,
     destination_path,
@@ -208,86 +238,82 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Spawn the guard using the exact baseline cargo_pod creation pattern."""
+    """Duplicate the existing correctly sized guard and move the copy only."""
 
-    del source_name
     destination_path = str(destination_path)
-    asset_path = str(GUARD_USD)
-
-    if not GUARD_USD.is_file():
-        raise FileNotFoundError(f"Cargo guard USD not found: {GUARD_USD}")
+    source = _find_source_prim(stage, str(source_name))
+    source_path = source.GetPath().pathString
+    source_bounds = _world_bounds(stage, source_path)
 
     existing = stage.GetPrimAtPath(destination_path)
     if existing.IsValid():
         stage.RemovePrim(destination_path)
 
-    # Baseline cargo_pod method:
-    #   prim = stage.DefinePrim(..., "Xform")
-    #   prim.GetReferences().AddReference(str(usd_path))
-    root = stage.DefinePrim(destination_path, "Xform")
-    root.GetReferences().AddReference(asset_path)
+    # This is a real duplicate of the already-visible warehouse object.  No
+    # guessed USD path and no 0.001/1000 scale conversion is used.
+    duplicate_ok = omni.usd.duplicate_prim(
+        stage,
+        source_path,
+        destination_path,
+        duplicate_layers=True,
+    )
+    if duplicate_ok is False:
+        raise RuntimeError(
+            f"Failed to duplicate cargo guard {source_path} -> {destination_path}"
+        )
 
-    xform = UsdGeom.Xformable(root)
+    stage.Load(destination_path)
+    clone = stage.GetPrimAtPath(destination_path)
+    if not clone.IsValid():
+        raise RuntimeError(f"Cargo guard clone is invalid: {destination_path}")
+
+    # Preserve all child geometry/materials from the original.  Replace only
+    # the root transform with the old cargo_pod pose. Original screenshot:
+    # rotation=0 deg, scale=(1,1,1), so no manual scale is authored here.
+    xform = UsdGeom.Xformable(clone)
     xform.ClearXformOpOrder()
     xform.AddTranslateOp().Set(
         Gf.Vec3d(*[float(value) for value in spawn_xyz])
     )
-
     if abs(float(spawn_yaw)) > 1.0e-9:
         xform.AddRotateZOp().Set(float(spawn_yaw))
 
-    # The source geometry uses millimeter-sized coordinates. Convert it to
-    # meters on the runtime root before measuring bounds or building physics.
-    xform.AddScaleOp().Set(
-        Gf.Vec3f(GUARD_ASSET_SCALE, GUARD_ASSET_SCALE, GUARD_ASSET_SCALE)
-    )
-
-    stage.Load(destination_path)
-
-    root = stage.GetPrimAtPath(destination_path)
-    if not root.IsValid():
-        raise RuntimeError(
-            f"Spawned cargo guard prim is invalid: {destination_path}"
-        )
-
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
-    bounds = _world_bounds(stage, destination_path)
+    clone_bounds = _world_bounds(stage, destination_path)
+    _verify_same_visual_size(source_bounds, clone_bounds)
 
-    # Just like baseline cargo_pod_physics.py, the visual asset does not need
-    # collision-capable geometry. Runtime physics is authored separately.
-    _disable_referenced_physics(root)
+    _disable_nested_physics(clone)
     collision_count = _add_baseline_style_physics(
         stage,
-        root,
-        bounds,
+        clone,
+        clone_bounds,
         spawn_xyz,
     )
 
-    rigid_body = UsdPhysics.RigidBodyAPI.Apply(root)
+    rigid_body = UsdPhysics.RigidBodyAPI.Apply(clone)
     rigid_body.CreateRigidBodyEnabledAttr(True)
     rigid_body.CreateKinematicEnabledAttr(False)
 
-    mass = UsdPhysics.MassAPI.Apply(root)
+    mass = UsdPhysics.MassAPI.Apply(clone)
     mass.CreateMassAttr(float(mass_kg))
 
-    minimum = bounds.GetMin()
-    maximum = bounds.GetMax()
-    size = maximum - minimum
+    minimum = clone_bounds.GetMin()
+    maximum = clone_bounds.GetMax()
+    size = _size_tuple(clone_bounds)
 
     print(
-        f"[CARGO GUARD] standalone USD referenced: {asset_path} -> "
+        f"[CARGO GUARD] duplicated existing prim: {source_path} -> "
         f"{destination_path}; pose=({float(spawn_xyz[0]):.3f}, "
         f"{float(spawn_xyz[1]):.3f}, {float(spawn_xyz[2]):.3f}), "
-        f"yaw={float(spawn_yaw):.1f} deg, asset_scale={GUARD_ASSET_SCALE:.6f}"
+        f"yaw={float(spawn_yaw):.1f} deg"
     )
     print(
-        "[CARGO GUARD] world bounds: "
+        "[CARGO GUARD] clone world bounds: "
         f"min=({float(minimum[0]):.3f}, {float(minimum[1]):.3f}, "
         f"{float(minimum[2]):.3f}), "
         f"max=({float(maximum[0]):.3f}, {float(maximum[1]):.3f}, "
         f"{float(maximum[2]):.3f}), "
-        f"size=({float(size[0]):.3f}, {float(size[1]):.3f}, "
-        f"{float(size[2]):.3f}) m"
+        f"size=({size[0]:.3f}, {size[1]:.3f}, {size[2]:.3f}) m"
     )
     print(
         f"[CARGO GUARD] mass={float(mass_kg):.1f} kg, "
@@ -305,18 +331,19 @@ def resolve_parcel_layer(
     floor_clearance_m=0.005,
     wall_clearance_m=0.02,
 ):
-    """Place four parcels as one 2x2 layer on top of the runtime floor."""
+    """Place the four existing parcels as one 2x2 layer on the cloned guard."""
 
+    del cargo_center_xy
     bounds = _world_bounds(stage, str(guard_path))
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
     size = maximum - minimum
 
-    center_x = float(cargo_center_xy[0])
-    center_y = float(cargo_center_xy[1])
+    # Use the actual cloned guard visual center, not a guessed asset center.
+    center_x = 0.5 * (float(minimum[0]) + float(maximum[0]))
+    center_y = 0.5 * (float(minimum[1]) + float(maximum[1]))
 
-    # Runtime floor top matches _add_baseline_style_physics():
-    # 25% clearance + 5% floor thickness = 30% above visual bottom.
+    # Same floor proportion used by the runtime compound collision above.
     floor_top_world_z = float(minimum[2]) + 0.30 * float(size[2])
 
     resolved = []
@@ -347,7 +374,7 @@ def resolve_parcel_layer(
 
         if not (inside_x and inside_y):
             raise RuntimeError(
-                f"Parcel {config['name']} does not fit inside cargo guard: "
+                f"Parcel {config['name']} does not fit on cargo guard: "
                 f"center=({parcel_x:.3f}, {parcel_y:.3f}), "
                 f"size={max_size}, "
                 f"guard_min=({float(minimum[0]):.3f}, "
@@ -361,7 +388,7 @@ def resolve_parcel_layer(
         resolved.append(item)
 
     print(
-        "[CARGO GUARD] parcel layer resolved: "
+        "[CARGO GUARD] four-parcel 2x2 layer resolved on clone: "
         f"center=({center_x:.3f}, {center_y:.3f}), "
         f"z={common_z:.3f}, count={len(resolved)}"
     )
