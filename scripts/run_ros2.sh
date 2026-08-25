@@ -4,17 +4,11 @@ set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP_FILE="$ROOT_DIR/isaac_sim/usd/warehouse_final_final/navigation/maps/warehouse_navigation.yaml"
 
-# Must match the verified Isaac spawn transform.
 START_X="10.5"
 START_Y="1.80122"
-
-# Nav2 is used only after the cargo guard has been lifted and until the return
-# approach is complete. Use the loaded IW Hub + cargo envelope for both costmaps.
 LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
 
 # About 3x the previous Nav2 travel speed (0.65 -> 1.95 m/s).
-# Precision local docking is controlled separately in Isaac and still creeps
-# slowly near the final pose.
 NAV2_DESIRED_LINEAR_SPEED="1.95"
 NAV2_MAX_LINEAR_SPEED="2.40"
 NAV2_MAX_LINEAR_ACCEL="2.40"
@@ -52,7 +46,6 @@ fi
 
 wait_for_publisher() {
     local topic_name="$1"
-
     echo "[ROS2] waiting for $topic_name"
     for _ in $(seq 1 60); do
         if ros2 topic info "$topic_name" 2>/dev/null | \
@@ -61,7 +54,6 @@ wait_for_publisher() {
         fi
         sleep 0.5
     done
-
     echo "[ERROR] no publisher found for $topic_name"
     echo "[ERROR] Start Isaac Sim first with ./scripts/run_isaac_mission.sh"
     return 1
@@ -70,80 +62,69 @@ wait_for_publisher() {
 wait_for_samples() {
     local topic_name="$1"
     local output
-
     echo "[ROS2] checking live samples on $topic_name"
     output="$(timeout 8 ros2 topic hz "$topic_name" --window 5 2>&1 || true)"
     if printf '%s\n' "$output" | grep -q 'average rate:'; then
         printf '%s\n' "$output" | grep -m1 'average rate:'
         return 0
     fi
-
     echo "[ERROR] publisher exists but no live samples arrived on $topic_name"
     return 1
 }
 
 set_loaded_footprint() {
     echo "[ROS2] setting loaded cargo footprint: $LOADED_FOOTPRINT"
-
     for node_name in /local_costmap/local_costmap /global_costmap/global_costmap; do
         ready=0
         for _ in $(seq 1 30); do
-            if ros2 param list "$node_name" 2>/dev/null | grep -qx '  footprint'; then
+            if ros2 param list "$node_name" 2>/dev/null | \
+                sed 's/^ *//' | grep -qx 'footprint'; then
                 ready=1
                 break
             fi
             sleep 0.5
         done
-
         if [ "$ready" != "1" ]; then
             echo "[ERROR] footprint parameter not available on $node_name"
             return 1
         fi
-
         ros2 param set "$node_name" footprint "$LOADED_FOOTPRINT"
     done
 }
 
-set_param_if_available() {
+set_param_when_ready() {
     local node_name="$1"
     local param_name="$2"
     local param_value="$3"
 
-    if ros2 param list "$node_name" 2>/dev/null | \
-        sed 's/^ *//' | grep -qx "$param_name"; then
-        if ros2 param set "$node_name" "$param_name" "$param_value" >/dev/null; then
-            echo "[ROS2] $node_name $param_name = $param_value"
-            return 0
+    for _ in $(seq 1 40); do
+        if ros2 param list "$node_name" 2>/dev/null | \
+            sed 's/^ *//' | grep -qx "$param_name"; then
+            if ros2 param set "$node_name" "$param_name" "$param_value" >/dev/null; then
+                echo "[ROS2] $node_name $param_name = $param_value"
+                return 0
+            fi
         fi
-        echo "[WARN] failed to set $node_name $param_name"
-        return 0
-    fi
+        sleep 0.5
+    done
 
-    echo "[WARN] parameter not available: $node_name $param_name"
+    echo "[WARN] could not apply parameter: $node_name $param_name"
     return 0
 }
 
 set_nav2_speed() {
     echo "[ROS2] applying ~3x Nav2 linear speed"
-
-    set_param_if_available \
-        /controller_server \
-        FollowPath.desired_linear_vel \
+    set_param_when_ready \
+        /controller_server FollowPath.desired_linear_vel \
         "$NAV2_DESIRED_LINEAR_SPEED"
-
-    set_param_if_available \
-        /velocity_smoother \
-        max_velocity \
+    set_param_when_ready \
+        /velocity_smoother max_velocity \
         "[$NAV2_MAX_LINEAR_SPEED, 0.0, 0.90]"
-
-    set_param_if_available \
-        /velocity_smoother \
-        max_accel \
+    set_param_when_ready \
+        /velocity_smoother max_accel \
         "[$NAV2_MAX_LINEAR_ACCEL, 0.0, 1.50]"
-
-    set_param_if_available \
-        /velocity_smoother \
-        max_decel \
+    set_param_when_ready \
+        /velocity_smoother max_decel \
         "[$NAV2_MAX_LINEAR_DECEL, 0.0, -1.80]"
 }
 
