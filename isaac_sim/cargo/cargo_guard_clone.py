@@ -1,4 +1,4 @@
-"""Spawn a second cargo_box_gaurd_size_201 using the source object's real USD reference."""
+"""Spawn a second cargo_box_gaurd_size_201 from the composed warehouse prim."""
 
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
 
@@ -30,75 +30,83 @@ def _find_unique_source_prim(stage, source_name, destination_path):
     return matches[0]
 
 
-def _reference_items_from_spec(prim_spec):
-    """Return all authored Sdf.Reference items from one prim spec."""
+def _copy_composed_prim(stage, source_prim, destination_path):
+    """Copy the fully composed source prim, including referenced child geometry.
 
-    reference_list = prim_spec.referenceList
-    items = []
-
-    for attr_name in (
-        "explicitItems",
-        "prependedItems",
-        "appendedItems",
-        "addedItems",
-    ):
-        try:
-            values = getattr(reference_list, attr_name)
-        except Exception:
-            values = None
-        if values:
-            items.extend(list(values))
-
-    return items
-
-
-def _discover_source_reference(source_prim):
-    """Resolve the actual external USD reference used by the source guard.
-
-    This intentionally follows the same pattern that worked for cargo_pod:
-    find the asset reference -> DefinePrim -> AddReference -> set transform.
+    cargo_box_gaurd_size_201 is authored directly in the warehouse stage and
+    does not have an external reference on its root prim.  stage.Flatten()
+    resolves the complete composed object first; Sdf.CopySpec then writes that
+    exact subtree into the current edit layer at the new path.
     """
 
-    candidates = []
+    source_path = source_prim.GetPath()
+    destination_path = Sdf.Path(str(destination_path))
 
-    for prim_spec in source_prim.GetPrimStack():
-        for reference in _reference_items_from_spec(prim_spec):
-            asset_path = str(reference.assetPath or "").strip()
-            if not asset_path:
-                continue
+    existing = stage.GetPrimAtPath(destination_path)
+    if existing.IsValid():
+        stage.RemovePrim(destination_path)
 
-            try:
-                resolved_asset = Sdf.ComputeAssetPathRelativeToLayer(
-                    prim_spec.layer,
-                    asset_path,
-                )
-            except Exception:
-                resolved_asset = asset_path
+    flattened_layer = stage.Flatten()
+    if flattened_layer is None:
+        raise RuntimeError("Failed to flatten warehouse stage for cargo copy")
 
-            candidates.append(
-                (
-                    str(resolved_asset),
-                    reference.primPath,
-                    prim_spec.layer.identifier,
-                )
-            )
-
-    if not candidates:
+    source_spec = flattened_layer.GetPrimAtPath(source_path)
+    if source_spec is None:
         raise RuntimeError(
-            f"No external USD reference found on source guard "
-            f"{source_prim.GetPath()}. Cannot safely spawn a second guard."
+            f"Flattened warehouse does not contain source guard: {source_path}"
         )
 
-    asset_path, prim_path, layer_identifier = candidates[0]
-    print(
-        "[CARGO GUARD] source reference discovered: "
-        f"asset={asset_path}, prim={prim_path}, layer={layer_identifier}"
+    target_layer = stage.GetEditTarget().GetLayer()
+    copied = Sdf.CopySpec(
+        flattened_layer,
+        source_path,
+        target_layer,
+        destination_path,
     )
-    return asset_path, prim_path
+    if not copied:
+        raise RuntimeError(
+            f"Failed to copy composed cargo guard {source_path} -> {destination_path}"
+        )
+
+    stage.Load(destination_path)
+    destination = stage.GetPrimAtPath(destination_path)
+    if not destination.IsValid():
+        raise RuntimeError(
+            f"Copied cargo guard prim is invalid: {destination_path}"
+        )
+
+    descendant_count = sum(1 for _ in Usd.PrimRange(destination)) - 1
+    if descendant_count <= 0:
+        raise RuntimeError(
+            f"Cargo guard copy has no child geometry: {destination_path}"
+        )
+
+    print(
+        f"[CARGO GUARD] composed prim copied: {source_path} -> "
+        f"{destination_path}; descendants={descendant_count}"
+    )
+    return destination
+
+
+def _set_exact_root_pose(destination, spawn_xyz, spawn_yaw):
+    """Override only the copied root transform; child geometry stays unchanged."""
+
+    xform = UsdGeom.Xformable(destination)
+
+    # The guard root is used only as a container transform.  Resetting the root
+    # xform prevents the original warehouse translation from being inherited by
+    # the copied object.  Child geometry, materials and dimensions are copied
+    # unchanged from the original guard.
+    xform.ClearXformOpOrder()
+    xform.AddTranslateOp().Set(
+        Gf.Vec3d(*[float(value) for value in spawn_xyz])
+    )
+    if abs(float(spawn_yaw)) > 1.0e-9:
+        xform.AddRotateZOp().Set(float(spawn_yaw))
 
 
 def _ensure_compound_collision(root_prim):
-    """Use referenced visual meshes as collision only if none already exist."""
+    """Use copied visual meshes as collision only if none already exist."""
 
     collision_prims = [
         prim
@@ -184,48 +192,22 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Spawn cargo_box_gaurd_size_201 exactly like the old cargo_pod asset."""
+    """Copy cargo_box_gaurd_size_201 to the exact former cargo_pod pose."""
 
     source_prim = _find_unique_source_prim(
         stage,
         str(source_name),
         str(destination_path),
     )
-    asset_path, source_asset_prim_path = _discover_source_reference(source_prim)
+    source_path = source_prim.GetPath().pathString
     destination_path = str(destination_path)
 
-    existing = stage.GetPrimAtPath(destination_path)
-    if existing.IsValid():
-        stage.RemovePrim(destination_path)
-
-    destination = stage.DefinePrim(destination_path, "Xform")
-    references = destination.GetReferences()
-
-    if str(source_asset_prim_path):
-        references.AddReference(asset_path, source_asset_prim_path)
-    else:
-        references.AddReference(asset_path)
-
-    destination.SetActive(True)
-
-    xform = UsdGeom.Xformable(destination)
-    xform.ClearXformOpOrder()
-    xform.AddTranslateOp().Set(Gf.Vec3d(*[float(v) for v in spawn_xyz]))
-    if float(spawn_yaw) != 0.0:
-        xform.AddRotateZOp().Set(float(spawn_yaw))
-
-    stage.Load(destination_path)
-    destination = stage.GetPrimAtPath(destination_path)
-    if not destination.IsValid():
-        raise RuntimeError(f"Spawned cargo guard prim is invalid: {destination_path}")
-
-    child_count = sum(1 for _ in destination.GetChildren())
-    if child_count == 0:
-        raise RuntimeError(
-            f"Cargo guard reference loaded but no child geometry appeared: "
-            f"{destination_path} <- {asset_path}"
-        )
-
+    destination = _copy_composed_prim(
+        stage,
+        source_prim,
+        destination_path,
+    )
+    _set_exact_root_pose(destination, spawn_xyz, spawn_yaw)
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
 
     _disable_nested_rigid_bodies(destination)
@@ -244,10 +226,9 @@ def spawn_cargo_guard_clone(
     size = maximum - minimum
 
     print(
-        f"[CARGO GUARD] referenced {asset_path} -> {destination_path}; "
-        f"children={child_count}; pose=({float(spawn_xyz[0]):.3f}, "
-        f"{float(spawn_xyz[1]):.3f}, {float(spawn_xyz[2]):.3f}), "
-        f"yaw={float(spawn_yaw):.1f} deg"
+        f"[CARGO GUARD] spawned copy of {source_path} -> {destination_path}; "
+        f"pose=({float(spawn_xyz[0]):.3f}, {float(spawn_xyz[1]):.3f}, "
+        f"{float(spawn_xyz[2]):.3f}), yaw={float(spawn_yaw):.1f} deg"
     )
     print(
         "[CARGO GUARD] world bounds: "
