@@ -29,7 +29,7 @@ LIFT_KD = 1_000.0
 LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 
-CARGO_PRIM_PATH = "/World/Cargo/cargo_pod"
+CARGO_PRIM_PATH = "/World/Cargo/cargo_box_gaurd_size_201_cargo"
 CARGO_HOME_X = 10.5
 CARGO_HOME_Y = -1.5
 CARGO_HOME_YAW = 0.0
