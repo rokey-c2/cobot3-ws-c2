@@ -36,7 +36,7 @@ COMMAND_TOPIC = "/arm_a/pick_place_command"
 STATUS_TOPIC = "/arm_a/pick_place_status"
 
 # Isaac Sim 쪽 스캔/흡착/이동에 걸리는 시간을 감안한 넉넉한 타임아웃.
-RESULT_TIMEOUT_SEC = 90.0
+RESULT_TIMEOUT_SEC = 180.0
 
 _PROGRESS_BY_STATE = {
     "SCANNING": 10.0,
