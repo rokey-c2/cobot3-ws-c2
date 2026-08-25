@@ -1,6 +1,14 @@
-"""Spawn a second cargo_box_gaurd_size_201 from the composed warehouse prim."""
+"""Spawn a second cargo_box_gaurd_size_201 from the live warehouse prim.
 
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
+The source guard is already composed in the loaded warehouse USD.  Its root
+has no standalone external asset reference, and flattening the whole stage
+creates prototype references that cannot be copied by themselves.  Instead,
+this helper creates a new root and internally references each of the source
+root's direct children.  That keeps the original composed geometry/materials
+inside the same live stage without copying broken Flattened_Prototype paths.
+"""
+
+from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 
 SOURCE_GUARD_NAME = "cargo_box_gaurd_size_201"
@@ -8,7 +16,7 @@ POSE_TOLERANCE_M = 1.0e-6
 
 
 def _find_unique_source_prim(stage, source_name, destination_path):
-    """Find the already-authored warehouse guard without guessing its prim path."""
+    """Find the already-authored warehouse guard without guessing its path."""
 
     matches = []
     for prim in stage.TraverseAll():
@@ -30,83 +38,106 @@ def _find_unique_source_prim(stage, source_name, destination_path):
     return matches[0]
 
 
-def _copy_composed_prim(stage, source_prim, destination_path):
-    """Copy the fully composed source prim, including referenced child geometry.
+def _source_root_scale(source_prim):
+    """Preserve only the source root scale; destination translation/yaw are new."""
 
-    cargo_box_gaurd_size_201 is authored directly in the warehouse stage and
-    does not have an external reference on its root prim.  stage.Flatten()
-    resolves the complete composed object first; Sdf.CopySpec then writes that
-    exact subtree into the current edit layer at the new path.
+    try:
+        xformable = UsdGeom.Xformable(source_prim)
+        for op in xformable.GetOrderedXformOps():
+            if op.GetOpType() == UsdGeom.XformOp.TypeScale:
+                value = op.Get()
+                if value is not None:
+                    return Gf.Vec3d(
+                        float(value[0]),
+                        float(value[1]),
+                        float(value[2]),
+                    )
+    except Exception:
+        pass
+
+    return Gf.Vec3d(1.0, 1.0, 1.0)
+
+
+def _spawn_from_child_references(stage, source_prim, destination_path):
+    """Create a second guard by referencing each source child in-place.
+
+    Referencing the live source children avoids the broken
+    /Flattened_Prototype_* paths produced by stage.Flatten().  The children keep
+    their original local transforms, geometry and material relationships while
+    the new root supplies the requested cargo pose.
     """
 
-    source_path = source_prim.GetPath()
-    destination_path = Sdf.Path(str(destination_path))
-
+    destination_path = str(destination_path)
     existing = stage.GetPrimAtPath(destination_path)
     if existing.IsValid():
         stage.RemovePrim(destination_path)
 
-    flattened_layer = stage.Flatten()
-    if flattened_layer is None:
-        raise RuntimeError("Failed to flatten warehouse stage for cargo copy")
-
-    source_spec = flattened_layer.GetPrimAtPath(source_path)
-    if source_spec is None:
+    source_children = list(source_prim.GetChildren())
+    if not source_children:
         raise RuntimeError(
-            f"Flattened warehouse does not contain source guard: {source_path}"
+            f"Source cargo guard has no direct children: {source_prim.GetPath()}"
         )
 
-    target_layer = stage.GetEditTarget().GetLayer()
-    copied = Sdf.CopySpec(
-        flattened_layer,
-        source_path,
-        target_layer,
-        destination_path,
-    )
-    if not copied:
-        raise RuntimeError(
-            f"Failed to copy composed cargo guard {source_path} -> {destination_path}"
+    destination = stage.DefinePrim(destination_path, "Xform")
+
+    created_children = []
+    for source_child in source_children:
+        child_name = source_child.GetName()
+        child_path = f"{destination_path}/{child_name}"
+        type_name = str(source_child.GetTypeName() or "Xform")
+
+        destination_child = stage.DefinePrim(child_path, type_name)
+        destination_child.GetReferences().AddInternalReference(
+            source_child.GetPath()
         )
+
+        # A strong local non-instance opinion lets PhysX/collision APIs inspect
+        # the referenced subtree instead of leaving it as an instance proxy.
+        destination_child.SetInstanceable(False)
+        created_children.append(child_path)
 
     stage.Load(destination_path)
     destination = stage.GetPrimAtPath(destination_path)
     if not destination.IsValid():
         raise RuntimeError(
-            f"Copied cargo guard prim is invalid: {destination_path}"
-        )
-
-    descendant_count = sum(1 for _ in Usd.PrimRange(destination)) - 1
-    if descendant_count <= 0:
-        raise RuntimeError(
-            f"Cargo guard copy has no child geometry: {destination_path}"
+            f"Spawned cargo guard prim is invalid: {destination_path}"
         )
 
     print(
-        f"[CARGO GUARD] composed prim copied: {source_path} -> "
-        f"{destination_path}; descendants={descendant_count}"
+        f"[CARGO GUARD] live child references created: "
+        f"{source_prim.GetPath()} -> {destination_path}; "
+        f"children={len(created_children)}"
     )
+    for child_path in created_children:
+        print(f"[CARGO GUARD]   child: {child_path}")
+
     return destination
 
 
-def _set_exact_root_pose(destination, spawn_xyz, spawn_yaw):
-    """Override only the copied root transform; child geometry stays unchanged."""
+def _set_exact_root_pose(destination, spawn_xyz, spawn_yaw, source_scale):
+    """Set the exact former cargo_pod root pose and preserve source scale."""
 
     xform = UsdGeom.Xformable(destination)
-
-    # The guard root is used only as a container transform.  Resetting the root
-    # xform prevents the original warehouse translation from being inherited by
-    # the copied object.  Child geometry, materials and dimensions are copied
-    # unchanged from the original guard.
     xform.ClearXformOpOrder()
     xform.AddTranslateOp().Set(
         Gf.Vec3d(*[float(value) for value in spawn_xyz])
     )
+
     if abs(float(spawn_yaw)) > 1.0e-9:
         xform.AddRotateZOp().Set(float(spawn_yaw))
 
+    if any(abs(float(source_scale[i]) - 1.0) > 1.0e-9 for i in range(3)):
+        xform.AddScaleOp().Set(
+            Gf.Vec3f(
+                float(source_scale[0]),
+                float(source_scale[1]),
+                float(source_scale[2]),
+            )
+        )
+
 
 def _ensure_compound_collision(root_prim):
-    """Use copied visual meshes as collision only if none already exist."""
+    """Use referenced visual geometry as collision only if none already exist."""
 
     collision_prims = [
         prim
@@ -157,7 +188,16 @@ def _world_bounds(stage, prim_path):
     )
     aligned = cache.ComputeWorldBound(prim).ComputeAlignedRange()
     if aligned.IsEmpty():
-        raise RuntimeError(f"Cargo guard has empty bounds: {prim_path}")
+        child_info = []
+        for child in prim.GetChildren():
+            child_info.append(
+                f"{child.GetPath()}(type={child.GetTypeName()}, "
+                f"active={child.IsActive()}, loaded={child.IsLoaded()})"
+            )
+        raise RuntimeError(
+            f"Cargo guard has empty bounds: {prim_path}; "
+            f"children={child_info}"
+        )
     return aligned
 
 
@@ -192,7 +232,7 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Copy cargo_box_gaurd_size_201 to the exact former cargo_pod pose."""
+    """Spawn cargo_box_gaurd_size_201 at the exact former cargo_pod pose."""
 
     source_prim = _find_unique_source_prim(
         stage,
@@ -201,14 +241,25 @@ def spawn_cargo_guard_clone(
     )
     source_path = source_prim.GetPath().pathString
     destination_path = str(destination_path)
+    source_scale = _source_root_scale(source_prim)
 
-    destination = _copy_composed_prim(
+    destination = _spawn_from_child_references(
         stage,
         source_prim,
         destination_path,
     )
-    _set_exact_root_pose(destination, spawn_xyz, spawn_yaw)
+    _set_exact_root_pose(
+        destination,
+        spawn_xyz,
+        spawn_yaw,
+        source_scale,
+    )
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
+
+    # Bounds are checked BEFORE physics editing.  If the referenced children did
+    # not compose visually, fail here with useful child diagnostics instead of
+    # continuing with an invisible Xform-only cargo object.
+    bounds = _world_bounds(stage, destination_path)
 
     _disable_nested_rigid_bodies(destination)
     collision_count, collision_created = _ensure_compound_collision(destination)
@@ -220,15 +271,17 @@ def spawn_cargo_guard_clone(
     mass = UsdPhysics.MassAPI.Apply(destination)
     mass.CreateMassAttr(float(mass_kg))
 
-    bounds = _world_bounds(stage, destination_path)
     minimum = bounds.GetMin()
     maximum = bounds.GetMax()
     size = maximum - minimum
 
     print(
-        f"[CARGO GUARD] spawned copy of {source_path} -> {destination_path}; "
-        f"pose=({float(spawn_xyz[0]):.3f}, {float(spawn_xyz[1]):.3f}, "
-        f"{float(spawn_xyz[2]):.3f}), yaw={float(spawn_yaw):.1f} deg"
+        f"[CARGO GUARD] spawned from live children {source_path} -> "
+        f"{destination_path}; pose=({float(spawn_xyz[0]):.3f}, "
+        f"{float(spawn_xyz[1]):.3f}, {float(spawn_xyz[2]):.3f}), "
+        f"yaw={float(spawn_yaw):.1f} deg, "
+        f"source_scale=({float(source_scale[0]):.3f}, "
+        f"{float(source_scale[1]):.3f}, {float(source_scale[2]):.3f})"
     )
     print(
         "[CARGO GUARD] world bounds: "
