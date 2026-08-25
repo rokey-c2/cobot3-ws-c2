@@ -36,7 +36,6 @@ def _reference_items_from_spec(prim_spec):
     reference_list = prim_spec.referenceList
     items = []
 
-    # Sdf.ReferenceListOp can author references in several list-op buckets.
     for attr_name in (
         "explicitItems",
         "prependedItems",
@@ -56,10 +55,8 @@ def _reference_items_from_spec(prim_spec):
 def _discover_source_reference(source_prim):
     """Resolve the actual external USD reference used by the source guard.
 
-    The warehouse guard is already visible in the loaded stage, so instead of
-    copying the composed prim we reuse the same external USD reference that
-    created that source object. This matches the old cargo_pod spawn pattern:
-    DefinePrim -> AddReference -> set transform.
+    This intentionally follows the same pattern that worked for cargo_pod:
+    find the asset reference -> DefinePrim -> AddReference -> set transform.
     """
 
     candidates = []
@@ -78,11 +75,10 @@ def _discover_source_reference(source_prim):
             except Exception:
                 resolved_asset = asset_path
 
-            prim_path = reference.primPath
             candidates.append(
                 (
                     str(resolved_asset),
-                    prim_path,
+                    reference.primPath,
                     prim_spec.layer.identifier,
                 )
             )
@@ -93,7 +89,6 @@ def _discover_source_reference(source_prim):
             f"{source_prim.GetPath()}. Cannot safely spawn a second guard."
         )
 
-    # Prefer the strongest authored reference in the source prim stack.
     asset_path, prim_path, layer_identifier = candidates[0]
     print(
         "[CARGO GUARD] source reference discovered: "
@@ -189,12 +184,7 @@ def spawn_cargo_guard_clone(
     source_name=SOURCE_GUARD_NAME,
     mass_kg=20.0,
 ):
-    """Spawn cargo_box_gaurd_size_201 exactly like the old cargo_pod asset.
-
-    We discover the source object's real external USD reference at runtime,
-    create a fresh Xform, AddReference() to that same asset, and then author the
-    requested transform. No composed-prim duplication is used.
-    """
+    """Spawn cargo_box_gaurd_size_201 exactly like the old cargo_pod asset."""
 
     source_prim = _find_unique_source_prim(
         stage,
@@ -211,7 +201,7 @@ def spawn_cargo_guard_clone(
     destination = stage.DefinePrim(destination_path, "Xform")
     references = destination.GetReferences()
 
-    if source_asset_prim_path and not source_asset_prim_path.IsEmpty:
+    if str(source_asset_prim_path):
         references.AddReference(asset_path, source_asset_prim_path)
     else:
         references.AddReference(asset_path)
