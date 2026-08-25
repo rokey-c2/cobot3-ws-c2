@@ -13,6 +13,7 @@ _DISCOVERY_TOPICS = (
     "/back_2d_lidar/scan",
 )
 
+_LIDAR_NEAR_RANGE_ATTR = "omni:sensor:Core:nearRangeM"
 _LIDAR_FAR_RANGE_ATTR = "omni:sensor:Core:farRangeM"
 _LIDAR_SCAN_RATE_ATTR = "omni:sensor:Core:scanRateBaseHz"
 _LIDAR_FIRING_RATE_ATTR = "omni:sensor:Core:patternFiringRateHz"
@@ -173,25 +174,33 @@ def _safe_numeric_set(attribute, value):
         return False
 
 
-def _configure_lidar_range(robot_prim, max_range_m):
+def _configure_lidar_range(robot_prim, min_range_m, max_range_m):
     """
-    Limit only the LiDAR maximum range.
+    Limit the LiDAR valid range without moving the NVIDIA sensors.
 
-    Scan rate, firing rate, tick rate, and horizontal resolution are intentionally
-    left exactly as authored in NVIDIA's original IW Hub navigation asset.
+    The far range is capped for performance. The near range is raised just
+    enough to suppress self-returns from the cargo pod/legs while it is carried
+    above the IW Hub. Scan rate, firing rate, tick rate, horizontal resolution,
+    position, and orientation remain exactly as authored by NVIDIA.
     """
 
+    if min_range_m < 0.0:
+        raise ValueError("lidar_min_range_m must be >= 0")
     if max_range_m <= 0.0:
         raise ValueError("lidar_max_range_m must be > 0")
+    if min_range_m >= max_range_m:
+        raise ValueError("lidar_min_range_m must be smaller than lidar_max_range_m")
 
     configured = []
     lidar_like_paths = []
 
     for lidar_prim in Usd.PrimRange(robot_prim):
+        near_range_attr = lidar_prim.GetAttribute(_LIDAR_NEAR_RANGE_ATTR)
         far_range_attr = lidar_prim.GetAttribute(_LIDAR_FAR_RANGE_ATTR)
         scan_rate_attr = lidar_prim.GetAttribute(_LIDAR_SCAN_RATE_ATTR)
         firing_rate_attr = lidar_prim.GetAttribute(_LIDAR_FIRING_RATE_ATTR)
 
+        has_near_range = bool(near_range_attr and near_range_attr.IsValid())
         has_far_range = bool(far_range_attr and far_range_attr.IsValid())
         has_scan_rate = bool(scan_rate_attr and scan_rate_attr.IsValid())
         has_firing_rate = bool(
@@ -210,9 +219,14 @@ def _configure_lidar_range(robot_prim, max_range_m):
             continue
 
         try:
-            old_range = far_range_attr.Get()
+            old_near_range = near_range_attr.Get() if has_near_range else None
         except Exception:
-            old_range = None
+            old_near_range = None
+
+        try:
+            old_far_range = far_range_attr.Get()
+        except Exception:
+            old_far_range = None
 
         try:
             original_scan_rate = (
@@ -228,7 +242,18 @@ def _configure_lidar_range(robot_prim, max_range_m):
         except Exception:
             original_firing_rate = None
 
-        if not _safe_numeric_set(far_range_attr, max_range_m):
+        near_ok = True
+        if has_near_range:
+            near_ok = _safe_numeric_set(near_range_attr, min_range_m)
+        else:
+            carb.log_warn(
+                "[IW HUB][LiDAR] near-range attribute not found on "
+                f"{lidar_prim.GetPath()}; self-return suppression skipped "
+                "for this sensor."
+            )
+
+        far_ok = _safe_numeric_set(far_range_attr, max_range_m)
+        if not far_ok:
             carb.log_warn(
                 "[IW HUB][LiDAR] sensor candidate found but "
                 "far range could not be changed: "
@@ -242,7 +267,9 @@ def _configure_lidar_range(robot_prim, max_range_m):
             "[IW HUB][LiDAR] "
             f"{lidar_prim.GetPath()} "
             f"(type={lidar_prim.GetTypeName()}): "
-            f"range {old_range} -> {max_range_m} m; "
+            f"near {old_near_range} -> "
+            f"{min_range_m if has_near_range and near_ok else old_near_range} m; "
+            f"far {old_far_range} -> {max_range_m} m; "
             f"scan rate kept at NVIDIA original={original_scan_rate}; "
             f"firing rate kept at NVIDIA original={original_firing_rate}"
         )
@@ -285,13 +312,14 @@ def _configure_lidar_range(robot_prim, max_range_m):
 
 
 class IwHubAgent(BaseRobotAgent):
-    """Spawn NVIDIA's IW Hub while limiting only LiDAR maximum range."""
+    """Spawn NVIDIA's IW Hub while limiting only its useful LiDAR range."""
 
     def __init__(self, cfg, world, usd_path):
         super().__init__(cfg, world)
         self.usd_path = str(usd_path)
         self.spawn_xyz = tuple(cfg["spawn_xyz"])
         self.spawn_yaw = float(cfg.get("spawn_yaw", 0.0))
+        self.lidar_min_range_m = float(cfg.get("lidar_min_range_m", 0.8))
         self.lidar_max_range_m = float(cfg.get("lidar_max_range_m", 5.0))
         self.prim_path = f"/World/Robots/{self.name}"
         self._source_prim_path = None
@@ -334,8 +362,8 @@ class IwHubAgent(BaseRobotAgent):
         )
 
         # Preserve NVIDIA's sensor mounting, ROS graph, scan rate, firing rate,
-        # tick rate, and horizontal resolution. Only spawn pose and max range
-        # are overridden locally in this stage.
+        # tick rate, and horizontal resolution. Only spawn pose and the valid
+        # near/far range are overridden locally in this stage.
         transform = UsdGeom.Xformable(prim)
         transform.ClearXformOpOrder()
         transform.AddTranslateOp().Set(Gf.Vec3d(*self.spawn_xyz))
@@ -353,14 +381,16 @@ class IwHubAgent(BaseRobotAgent):
 
         configured_lidars = _configure_lidar_range(
             robot_prim,
+            self.lidar_min_range_m,
             self.lidar_max_range_m,
         )
 
         if configured_lidars:
             carb.log_info(
                 f"[IW HUB] spawned {self.name} at {self.spawn_xyz}; "
-                f"LiDAR max range={self.lidar_max_range_m} m; "
-                "scan rate/resolution=NVIDIA original"
+                f"LiDAR valid range={self.lidar_min_range_m}-"
+                f"{self.lidar_max_range_m} m; "
+                "scan rate/resolution/pose=NVIDIA original"
             )
         else:
             carb.log_warn(
