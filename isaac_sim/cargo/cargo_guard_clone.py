@@ -1,7 +1,7 @@
 """Cargo guard clone for the IW Hub mission.
 
 The visual shape is cloned from the already-visible warehouse
-``/World/cargo_box_gaurd_size_201``.  Its mission physics height is matched to
+``/World/cargo_box_gaurd_size_201``. Its mission physics height is matched to
 the cargo_pod geometry that was proven to lift correctly at commit
 8f084b640c7d50dfd98d51d7df0d968a373874bd:
 
@@ -11,9 +11,10 @@ the cargo_pod geometry that was proven to lift correctly at commit
 - floor underside: local Z=-0.25 m -> world Z=0.25 m
 - floor top: local Z=-0.20 m -> world Z=0.30 m
 
-The source guard visual is raised so its lowest point starts at the proven
-floor-underside height.  Four visible/collision legs and all compound
-colliders use the exact baseline cargo_pod dimensions.
+The collected guard visual expands by 1000x when duplicated on this stage, so
+it is first normalized to the source size. Height alignment then compensates
+for that root scale explicitly; a requested 0.25 m world translation must not
+accidentally become 0.00025 m.
 """
 
 import math
@@ -89,7 +90,12 @@ def _verify_exact_root_pose(stage, prim_path, expected_xyz):
 
 
 def _normalize_visual_size(stage, visual, source_bounds, visual_path):
-    """Normalize duplicate_prim unit expansion back to the source dimensions."""
+    """Normalize duplicate_prim unit expansion back to the source dimensions.
+
+    Returns both the normalized world bounds and the scale authored on the
+    visual root. The latter is required because later local translations are
+    affected by this scale in the composed xform stack.
+    """
 
     source_size = _size_tuple(source_bounds)
     visual_bounds = _world_bounds(stage, visual_path)
@@ -99,7 +105,7 @@ def _normalize_visual_size(stage, visual, source_bounds, visual_path):
         abs(source_value - visual_value) <= SIZE_TOLERANCE_M
         for source_value, visual_value in zip(source_size, visual_size)
     ):
-        return visual_bounds
+        return visual_bounds, (1.0, 1.0, 1.0)
 
     factors = []
     for axis_name, source_value, visual_value in zip(
@@ -137,29 +143,60 @@ def _normalize_visual_size(stage, visual, source_bounds, visual_path):
         "[CARGO GUARD] duplicate visual auto-normalized: "
         f"scale=({factors[0]:.6f}, {factors[1]:.6f}, {factors[2]:.6f})"
     )
-    return visual_bounds
+    return visual_bounds, tuple(factors)
 
 
-def _align_visual_to_baseline_floor(stage, visual, visual_path, root_xyz):
-    """Put the cloned guard body at the proven cargo_pod floor height."""
+def _align_visual_to_baseline_floor(
+    stage,
+    visual,
+    visual_path,
+    root_xyz,
+    visual_scale,
+):
+    """Put the cloned guard body at the proven cargo_pod floor height.
 
-    bounds = _world_bounds(stage, visual_path)
-    current_min_z = float(bounds.GetMin()[2])
+    The duplicated asset needs an approximately 0.001 scale. A translation
+    authored on that same prim is therefore scaled as well. Convert the desired
+    world-space correction into local units using the measured Z scale and
+    refine it from the actual resulting world bounds.
+    """
+
+    scale_z = float(visual_scale[2])
+    if not math.isfinite(scale_z) or abs(scale_z) <= 1.0e-12:
+        raise RuntimeError(f"Invalid cargo visual Z scale: {scale_z}")
+
     target_min_z = float(root_xyz[2]) + BASELINE_FLOOR_BOTTOM_Z
-    delta_z = target_min_z - current_min_z
-
     xform = UsdGeom.Xformable(visual)
-    xform.AddTranslateOp(
+    translate_op = xform.AddTranslateOp(
         UsdGeom.XformOp.PrecisionDouble,
         "matchBaselineFloorHeight",
-    ).Set(Gf.Vec3d(0.0, 0.0, delta_z))
+    )
+
+    local_z = 0.0
+    translate_op.Set(Gf.Vec3d(0.0, 0.0, local_z))
+
+    # Two passes are normally enough; allow three so tiny USD composition
+    # rounding cannot abort mission startup.
+    aligned = None
+    actual_min_z = None
+    for _ in range(3):
+        aligned = _world_bounds(stage, visual_path)
+        actual_min_z = float(aligned.GetMin()[2])
+        world_error = target_min_z - actual_min_z
+        if abs(world_error) <= SIZE_TOLERANCE_M:
+            break
+
+        local_z += world_error / scale_z
+        translate_op.Set(Gf.Vec3d(0.0, 0.0, local_z))
 
     aligned = _world_bounds(stage, visual_path)
     actual_min_z = float(aligned.GetMin()[2])
     if abs(actual_min_z - target_min_z) > SIZE_TOLERANCE_M:
         raise RuntimeError(
-            "Cargo guard visual floor-height alignment failed: "
-            f"actual_min_z={actual_min_z:.6f}, target={target_min_z:.6f}"
+            "Cargo guard visual floor-height alignment failed after scale "
+            "compensation: "
+            f"actual_min_z={actual_min_z:.6f}, target={target_min_z:.6f}, "
+            f"scale_z={scale_z:.9f}, local_z={local_z:.6f}"
         )
 
     print(
@@ -360,12 +397,18 @@ def spawn_cargo_guard_clone(
     visual_xform.ClearXformOpOrder()
     visual_xform.AddTranslateOp().Set(Gf.Vec3d(0.0, 0.0, 0.0))
 
-    _normalize_visual_size(stage, visual, source_bounds, visual_path)
+    _, visual_scale = _normalize_visual_size(
+        stage,
+        visual,
+        source_bounds,
+        visual_path,
+    )
     visual_bounds = _align_visual_to_baseline_floor(
         stage,
         visual,
         visual_path,
         spawn_xyz,
+        visual_scale,
     )
 
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
