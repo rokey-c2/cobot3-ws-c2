@@ -1,17 +1,67 @@
 """P3020에 마운트된 RSD455 카메라 래퍼.
 
 RGB 프레임(YOLO 입력용)과 depth(픽셀 -> 3D 월드 좌표 역투영용)를 함께 제공한다.
+현재 통합 미션에서는 p3020_in 카메라만 사용하므로, 초기화 시 그 외 Camera prim은
+비활성화해서 불필요한 렌더링/ROS 카메라 부하를 줄인다.
 """
 
 import numpy as np
+import omni.usd
+from pxr import UsdGeom
 from isaacsim.sensors.camera import Camera
+
+
+_UNUSED_P3020_CAMERA_RIGS = (
+    "/World/p3020_a/vgp20/rsd455",
+    "/World/p3020_b/vgp20/rsd455",
+)
 
 
 class CameraInterface:
     def __init__(self, prim_path: str, resolution=(640, 480)):
+        self._prim_path = prim_path
         self._camera = Camera(prim_path=prim_path, resolution=resolution)
 
+    def _disable_unused_cameras(self):
+        """Keep only the camera used by the active P3020 mission."""
+
+        stage = omni.usd.get_context().get_stage()
+        if stage is None:
+            return
+
+        disabled = []
+
+        # p3020_a / p3020_b의 RSD455는 현재 미션에서 전혀 사용하지 않는다.
+        # 센서 rig 전체를 비활성화해 child Camera/RenderProduct까지 같이 멈춘다.
+        for rig_path in _UNUSED_P3020_CAMERA_RIGS:
+            rig_prim = stage.GetPrimAtPath(rig_path)
+            if rig_prim.IsValid() and rig_prim.IsActive():
+                rig_prim.SetActive(False)
+                disabled.append(rig_path)
+
+        # IW Hub나 월드에 포함된 다른 Camera prim도 현재 Nav2 미션에서는
+        # 사용하지 않는다. p3020_in의 실제 YOLO/depth 카메라만 남긴다.
+        for prim in list(stage.TraverseAll()):
+            if not prim.IsA(UsdGeom.Camera):
+                continue
+
+            path = prim.GetPath().pathString
+            if path == self._prim_path:
+                continue
+
+            if prim.IsActive():
+                prim.SetActive(False)
+                disabled.append(path)
+
+        print(
+            f"[PERF][CAMERA] active={self._prim_path}; "
+            f"disabled_unused={len(disabled)}"
+        )
+        for path in disabled:
+            print(f"[PERF][CAMERA] disabled: {path}")
+
     def initialize(self):
+        self._disable_unused_cameras()
         self._camera.initialize()
         self._camera.add_distance_to_image_plane_to_frame()
 
