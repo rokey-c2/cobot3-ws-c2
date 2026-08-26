@@ -16,6 +16,7 @@
 - `SorterSpeed`는 `-1.0`으로 유지한다.
 - 박스가 소터를 통과한 뒤에는 sorter direction을 기본값 `(1.0, 0.0, 0.0)`으로 자동 복귀시킨다.
 - `ConveyorTrack_05`는 이번 Conveyor / Sorter 제어 대상에서 제외한다.
+- 기존 AMR / P3020 / Nav2 성공 코드는 시연 2에서 호출하지 않는다.
 
 ## 2. hwi_conveyor_test에서 가져온 참고자료
 
@@ -27,7 +28,7 @@ isaac_sim/equipment/wheel_sorter/wheel_sorter_controller_hwi_conveyor_test_refer
 docs/conveyor_sorter_control_hwi_conveyor_test_reference.md
 ```
 
-현재 브랜치에 없었던 박스 스폰 코드는 재사용 가능한 시작점으로 원래 이름으로 가져왔다.
+현재 브랜치에 없었던 박스 스폰 코드는 원래 이름으로 가져온 뒤, 현재 프로젝트의 CardBox 물리 생성 함수를 재사용하도록 최신화했다.
 
 ```text
 isaac_sim/cargo/box_spawner.py
@@ -47,9 +48,10 @@ simulation step마다 자동 toggle
 현재 번호형 ConveyorTrack은 번호가 연속적이지 않다.
 존재하지 않는 번호를 코드에서 임의로 가정하지 않는다.
 
-현재 확인한 번호형 트랙:
+현재 확인한 트랙:
 
 ```text
+ConveyorTrack
 ConveyorTrack_01
 ConveyorTrack_02
 ConveyorTrack_03
@@ -79,8 +81,6 @@ ConveyorBeltGraph_01
     Velocity = -1.0
 ```
 
-정확한 규칙:
-
 | Track | Graph | Velocity |
 |---|---|---:|
 | 01 | ConveyorBeltGraph | `1.0` |
@@ -92,11 +92,24 @@ ConveyorBeltGraph_01
 
 ### 나머지 제어 대상 트랙
 
-`04`, `06`, `07`, `10`, `11`, `16`, `17`은 Conveyor Belt Graph가 하나만 존재하며 모두 다음 값을 사용한다.
+번호 없는 `/World/ConveyorTrack`과 `04`, `06`, `07`, `10`, `11`, `16`, `17`은 Conveyor Belt Graph가 하나만 존재하며 모두 다음 값을 사용한다.
 
 ```text
 ConveyorBeltGraph
     Velocity = 1.0
+```
+
+즉 다음 경로들도 모두 `1.0`이다.
+
+```text
+/World/ConveyorTrack/ConveyorBeltGraph
+/World/ConveyorTrack_04/ConveyorBeltGraph
+/World/ConveyorTrack_06/ConveyorBeltGraph
+/World/ConveyorTrack_07/ConveyorBeltGraph
+/World/ConveyorTrack_10/ConveyorBeltGraph
+/World/ConveyorTrack_11/ConveyorBeltGraph
+/World/ConveyorTrack_16/ConveyorBeltGraph
+/World/ConveyorTrack_17/ConveyorBeltGraph
 ```
 
 ### 제외
@@ -140,7 +153,7 @@ SorterSpeed = -1.0
 ```
 
 `SorterSpeed`는 실행 중 분류 조건에 따라 바꾸지 않는다.
-초기 setup / reset 이후 재적용 / play 이후 확인 시 같은 `-1.0`을 적용한다.
+초기화 시 `-1.0`을 적용하고, 정상 실행 중에는 계속 유지한다.
 
 ## 7. 실제 Wheel Sorter 방향 제어
 
@@ -156,7 +169,7 @@ SorterSpeed = -1.0
 inputs:direction
 ```
 
-현재 검증한 두 상태:
+검증한 두 상태:
 
 ```text
 sorter_state = 0 / False
@@ -166,72 +179,166 @@ sorter_state = 1 / True
     direction = (1.0, -2.0, 0.0)
 ```
 
-즉 Python에서는 벡터를 여러 곳에서 직접 작성하지 않고 한 곳에서 다음처럼 매핑한다.
+Python에서는 논리 상태를 다음처럼 사용한다.
 
 ```text
 0 / False -> STRAIGHT -> (1.0, 0.0, 0.0)
 1 / True  -> DIVERT   -> (1.0, -2.0, 0.0)
 ```
 
-과거 ActionGraph 안의 `Direction` Constant Bool이나 `binary_switch`를 다시 연결하거나 새 노드를 만들지 않는다.
-Python의 논리 상태만 0/1 또는 False/True로 사용하고, 그 상태를 기존 `conveyor_belt.inputs:direction` 값으로 변환한다.
+기존 ActionGraph 안의 `Direction` Constant Bool, `binary_switch`, `reroute`를 다시 연결하거나 새 노드를 만들지 않는다.
 
-## 8. box_id 기준 제어
+## 8. 시연 2 Box 사양
 
-테스트 Box에는 USD custom int attribute를 추가한다.
+시연 2에서 사용하는 Box는 Isaac Sim 기본 Simple Warehouse CardBox 에셋이다.
 
 ```text
-box_id
+Asset:
+Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxB_01_359.usd
+
+Scale:
+(0.75, 0.75, 0.5)
+
+Spawn world position:
+(-0.5, 0.0, 1.2)
+
+Mass:
+15.0 kg
 ```
 
-박스 생성 함수:
+현재 프로젝트의 `add_parcel_asset_scaled()`를 재사용하여 다음을 처리한다.
+
+```text
+NVIDIA CardBox visual reference
+non-uniform scale
+RigidBody
+Mass
+Collision
+custom int attribute: box_id
+```
+
+박스 생성 래퍼:
 
 ```text
 isaac_sim/cargo/box_spawner.py
 ```
 
-시연 2에서는 일정 주기마다 Box를 생성하고 각 Box에 랜덤 `box_id`를 부여한다.
-Wheel Sorter Controller는 박스 위치를 확인하다가 해당 소터의 진입 영역에 도달하면 `box_id`를 읽어 그 소터의 0/1 상태를 결정한다.
+## 9. box_id 분류 규칙
 
-기본 동작 흐름:
+시연 2에서는 `box_id`를 `1`, `2`, `3`, `4` 중 랜덤으로 생성한다.
+
+확정 매핑:
 
 ```text
-Box spawn
-    -> random box_id
+box_id = 1
+    -> ConveyorTrack_01에서 DIVERT
+
+box_id = 2
+    -> ConveyorTrack_01은 STRAIGHT
+    -> ConveyorTrack_02에서 DIVERT
+
+box_id = 3
+    -> ConveyorTrack_01, 02는 STRAIGHT
+    -> ConveyorTrack_03에서 DIVERT
+
+box_id = 4
+    -> ConveyorTrack_01, 02, 03 모두 STRAIGHT
+    -> 세 소터를 모두 통과
+```
+
+각 소터에서 Box가 접근하면 해당 Box의 목적 Track인지 확인한다.
+목적 Track이면 `state=1`, 아니면 `state=0`을 사용한다.
+
+```text
+state=0 -> direction=(1,0,0)
+state=1 -> direction=(1,-2,0)
+```
+
+Box가 소터를 통과한 뒤 해당 소터는 항상 다음 기본 상태로 복귀한다.
+
+```text
+state=0
+Direction=(1,0,0)
+```
+
+## 10. 소터 접근/통과 판정
+
+현재 구현은 각 Box와 각 Sorter의 world XY 거리를 사용한다.
+
+초기 조정값:
+
+```text
+approach_threshold = 0.45 m
+reset_threshold    = 0.70 m
+```
+
+이 값은 새 맵에서 첫 실제 실행으로 미세 조정해야 할 수 있다.
+코드는 실제 접근 거리를 로그로 출력하므로 반응이 너무 빠르거나 늦으면 상수만 수정한다.
+
+관련 파일:
+
+```text
+isaac_sim/equipment/wheel_sorter/wheel_sorter_controller.py
+```
+
+## 11. 시연 2 — Wheel Sorter 단독 시연
+
+전용 진입 파일:
+
+```text
+isaac_sim/sorter_demo.py
+```
+
+실행 스크립트:
+
+```text
+scripts/run_sorter_demo.sh
+```
+
+실행:
+
+```bash
+bash scripts/run_sorter_demo.sh
+```
+
+동작 흐름:
+
+```text
+Parcel_Sorting_Map 로드
+    -> 맵에 있는 AMR / P3020 모델은 그대로 유지
+    -> AMR controller 시작 안 함
+    -> P3020 controller 시작 안 함
+    -> Conveyor 초기 속도 적용
+    -> Sorter 01 / 02 / 03 SorterSpeed=-1 적용
+    -> Sorter direction 기본값 (1,0,0)
+    -> 10초마다 CardBox 생성
+    -> random box_id 1~4
     -> Conveyor 이동
-    -> Track 01 / 02 / 03 중 현재 접근한 sorter 판정
-    -> box_id에 따른 해당 sorter 상태 결정
-    -> direction = (1,0,0) 또는 (1,-2,0)
-    -> Box가 sorter 통과
-    -> 해당 sorter direction을 (1,0,0)으로 자동 복귀
+    -> Box와 Sorter XY 거리 확인
+    -> 해당 box_id 목적 Track이면 DIVERT
+    -> 아니면 STRAIGHT
+    -> Box 통과 후 STRAIGHT 자동 복귀
 ```
 
-중요: `box_id`가 어느 Track에서 `DIVERT`되어야 하는지에 대한 최종 숫자 매핑은 구현 직전에 별도로 확정한다. 임의로 `box_id=1 -> Track01` 같은 규칙을 만들지 않는다.
-
-## 9. 시연 방식
-
-### 시연 2 — 먼저 구현
-
-목적: Wheel Sorter의 `box_id` 기반 분류 동작을 여러 박스로 명확하게 보여준다.
+기본 박스 생성 간격:
 
 ```text
-현재 완성 맵 사용
-AMR 스폰 상태 유지, 동작시키지 않음
-P3020 스폰 상태 유지, 동작시키지 않음
-Conveyor만 동작
-Wheel Sorter 01 / 02 / 03 동작
-일정 주기마다 random box_id Box 생성
-box_id에 따라 sorter 방향 전환
-통과 후 기본 방향 자동 복귀
+10.0 seconds
 ```
 
-AMR / P3020 다중 박스 작업을 시연 2에 넣지 않는다.
+## 12. 시연 1 — 이후 결합
 
-### 시연 1 — 이후 결합
+시연 1은 이미 성공한 단일 Box 기준으로 AMR + P3020 + Conveyor + Wheel Sorter 전체 흐름을 보여준다.
 
-목적: 이미 성공한 단일 Box 기준으로 AMR + P3020 + Conveyor + Wheel Sorter 전체 흐름을 보여준다.
+시연 2에서 만든 다음 코드는 그대로 재사용한다.
 
-시연 2에서 만든 Conveyor / Sorter 로직을 그대로 재사용하고, `주기적인 랜덤 Box 생성`만 제거한 뒤 기존 단일 Box 미션과 결합한다.
+```text
+ConveyorController
+WheelSorterController
+box_id 분류 규칙
+```
+
+시연 1로 갈 때 제거하는 것은 주기적인 랜덤 Box 생성 부분이다.
 
 ```text
 AMR
@@ -242,23 +349,33 @@ AMR
  -> Wheel Sorter
 ```
 
-## 10. 초기값 유지와 reset 검증
+## 13. 초기값 유지와 reset 검증
 
 Python에서 Graph 값을 한 번 설정한 뒤 다른 코드나 Graph가 덮어쓰지 않으면 실행 중 해당 값은 유지되는 것을 전제로 한다.
 매 simulation step마다 Conveyor Velocity나 SorterSpeed를 반복해서 쓰지 않는다.
 
-다만 OmniGraph 초기화 구간은 별도로 확인한다.
+시연 2에서는 다음 순서로 초기값을 적용한다.
 
 ```text
-1. setup 직후
-2. world.reset() 직후 재적용
-3. world.play() 직후 확인 / 재적용
-4. 장시간 실행 후 값 유지 확인
+맵 로드
+ -> world.reset()
+ -> world.play()
+ -> 기존 OmniGraph가 live 될 때까지 몇 step 진행
+ -> Conveyor setup/start
+ -> Sorter setup/start
+ -> verify 로그 출력
 ```
 
-따라서 구현은 초기화 구간에서만 값을 재적용하고 정상 실행 중에는 `conveyor_belt.direction`처럼 실제로 조건에 따라 바뀌어야 하는 값만 변경한다.
+검증 항목:
 
-## 11. 구현 시 건드리지 않는 것
+```text
+1. 시작 직후 값
+2. reset/play 이후 값
+3. 장시간 실행 후에도 값 유지 여부
+4. direction 전환 후 기본값 자동 복귀 여부
+```
+
+## 14. 구현 시 건드리지 않는 것
 
 - `ConveyorTrack_05`
 - 기존 Sorter ActionGraph 구조
@@ -267,10 +384,14 @@ Python에서 Graph 값을 한 번 설정한 뒤 다른 코드나 Graph가 덮어
 - 새 ROS2 Node 추가
 - AMR Nav2 / LiDAR 설정
 - P3020 기존 성공 로직
+- 기존 `main_mission.py`의 AMR/P3020 미션 흐름
 
-## 12. 핵심 기준 요약
+## 15. 핵심 기준 요약
 
 ```text
+ConveyorTrack
+    ConveyorBeltGraph = 1.0
+
 Track 01 / 02 / 03
     ConveyorBeltGraph     =  1.0
     ConveyorBeltGraph_01  = -1.0
@@ -278,7 +399,7 @@ Track 01 / 02 / 03
     Sorter direction      = (1,0,0) <-> (1,-2,0)
 
 Track 04 / 06 / 07 / 10 / 11 / 16 / 17
-    ConveyorBeltGraph     = 1.0
+    ConveyorBeltGraph = 1.0
 
 Track 05
     제어 대상 제외
@@ -288,7 +409,16 @@ Wheel Sorter 상태
     1 / True  -> (1,-2,0)
 
 Box
-    custom attribute: box_id
+    CardBoxB_01
+    scale=(0.75,0.75,0.5)
+    spawn=(-0.5,0.0,1.2)
+    random box_id=1~4
+
+box_id routing
+    1 -> Track 01
+    2 -> Track 02
+    3 -> Track 03
+    4 -> PASS ALL
 
 과거 binary_switch
     현재 구현에서 사용하지 않음
