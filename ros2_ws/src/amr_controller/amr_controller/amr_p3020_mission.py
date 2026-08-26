@@ -52,11 +52,19 @@ class AmrP3020Mission(Node):
         self.declare_parameter("simulated_p3020_duration", 3.0)
         self.declare_parameter("object_id", "box")
 
+        # place_x/y default to the real conveyor drop point -- was (0,0)
+        # (unset), which put the box at the world origin instead of on the
+        # conveyor.
+        _pose_defaults = {
+            "pickup": (0.0, 0.0, 0.0),
+            "place": (-0.5, 0.0, 0.0),
+        }
         for prefix in ("pickup", "place"):
+            default_x, default_y, default_z = _pose_defaults[prefix]
             for field, default in (
-                ("x", 0.0),
-                ("y", 0.0),
-                ("z", 0.0),
+                ("x", default_x),
+                ("y", default_y),
+                ("z", default_z),
                 ("qx", 0.0),
                 ("qy", 0.0),
                 ("qz", 0.0),
