@@ -1,7 +1,21 @@
 """IW Hub local cargo handling around a Nav2 mission.
 
-Nav2 is NOT used before pickup. The local controller:
-start -> rotate +90 -> drive to cargo dock -> lift.
+Movement is split into three phases:
+1. AMR (local) precision control while docking at the cargo pod and lifting
+   it -- start -> rotate +90 -> drive to cargo dock -> lift -> PICKUP_DONE.
+   Precision matters here because the lift is a fixed vertical actuator
+   that must be centered under the cargo pod to engage it.
+2. AGV (Nav2) autonomous navigation from the cargo dock to near the conveyor
+   front. This class does not drive the wheels during this phase -- it only
+   holds the lift up while Nav2 owns /cmd_vel.
+3. Arrival confirmation only (request_conveyor_dock() -> CONVEYOR_DOCK_DONE),
+   no local rotate/align maneuver. Unlike phase 1, nothing here needs a
+   fixed pose: Arm #1 picks boxes vision-first and only needs the pod
+   within its 2 m reach, so Nav2's own arrival pose is good enough. (An
+   earlier version added a local rotate+align step here; it kept drifting
+   because the creep helpers assume the robot faces the Y axis, and the
+   chosen dock yaw didn't -- removed rather than special-cased.)
+
 After delivery/P3020, Nav2 returns near the cargo area. The local controller
 first corrects X, restores the dock pose, lowers the lift, then returns the
 IW Hub to its original spawn pose.
@@ -29,20 +43,35 @@ LIFT_KD = 1_000.0
 LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 
-# Must match the actual runtime cargo root created by main_mission.py.
-CARGO_PRIM_PATH = "/World/Cargo/cargo_box_gaurd_size_201"
-CARGO_HOME_X = 10.5
-CARGO_HOME_Y = -1.5
+# Real values measured headlessly off Parcel_Sorting_Map_real_real_final_final
+# (both AMR and cargo pod are baked into the map, not code-spawned):
+#   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=-90 deg
+#   /World/cargo_box_gaurd_size_200_fix_02        -> (9, -3), yaw=0 deg
+# AMR spawn and cargo pod share X=9, so the local dock drive is a straight
+# +Y move -- matching this file's existing "rotate then drive Y" logic.
+# TARGET_ROOT (the AMR's own dock-drive target) is set equal to the cargo
+# pod's position, same convention as the old placeholder values.
+CARGO_PRIM_PATH = "/World/cargo_box_gaurd_size_200_fix_02"
+CARGO_HOME_X = 9.0
+CARGO_HOME_Y = -3.0
 CARGO_HOME_YAW = 0.0
 
-SPAWN_X = 10.5
-SPAWN_Y = 1.80122
-SPAWN_YAW = 0.0
+SPAWN_X = 9.0
+SPAWN_Y = -6.0
+# Real measured spawn yaw is -90 deg (matches the AMR's actual authored
+# orientation in the map), not 0 -- see CARGO_PRIM_PATH comment above.
+SPAWN_YAW = math.radians(-90.0)
 
-TARGET_ROOT_X = 10.5
-TARGET_ROOT_Y = -1.25
+TARGET_ROOT_X = 9.0
+TARGET_ROOT_Y = -3.0
 TARGET_YAW = math.radians(90.0)
 RETURN_X_YAW = 0.0
+
+# Nav2's goal pose for the conveyor-front approach should land within
+# P3020 arm #1's 2.0 m reach of its real measured base (/World/p3020_in at
+# 0.2,-1.5,0.4) -- this class no longer needs the exact value itself (see
+# request_conveyor_dock), but p3020_mission_agent.py's AMR_DELIVERY_POSE_WORLD
+# should be kept consistent with whatever that goal pose ends up being.
 
 # About 3x faster on long local-drive segments. Keep the minimum creep speed
 # unchanged so the final precision docking does not overshoot.
@@ -77,8 +106,8 @@ def _yaw_from_quaternion(q):
 
 
 class MissionIwHubAgent(IwHubAgent):
-    def __init__(self, cfg, world, usd_path):
-        super().__init__(cfg, world, usd_path)
+    def __init__(self, cfg, world):
+        super().__init__(cfg, world)
         self.robot = None
         self.drive_controller = None
         self.articulation_controller = None
@@ -185,10 +214,25 @@ class MissionIwHubAgent(IwHubAgent):
         self._set_state("ROTATE_TO_DOCK")
         return True
 
+    def request_conveyor_dock(self):
+        """Confirm arrival after the Nav2/AGV leg to the conveyor front. No
+        local rotate/align maneuver here on purpose: unlike the cargo dock
+        (phase 1), nothing here needs a fixed physical pose -- the arm picks
+        boxes vision-first and only needs the pod within its 2 m reach, so
+        Nav2's own arrival pose is good enough. Call once Nav2 reports it
+        has reached the approach goal near the conveyor."""
+        if self.mission_state == "CONVEYOR_DOCK_DONE":
+            return True
+        if self.mission_state != "PICKUP_DONE":
+            return False
+        self._stop()
+        self._set_state("CONVEYOR_DOCK_DONE")
+        return True
+
     def request_return_dock(self):
         if self.mission_state == "RETURN_DOCK_DONE":
             return True
-        if self.mission_state != "PICKUP_DONE":
+        if self.mission_state != "CONVEYOR_DOCK_DONE":
             return False
         self._set_state("RETURN_ALIGN_X_YAW")
         return True
@@ -332,24 +376,30 @@ class MissionIwHubAgent(IwHubAgent):
         angular = float(np.clip(1.3 * yaw_error, -0.10, 0.10))
         self._drive(linear, angular)
 
-    def _drive_y_to_target(self, target_y, next_state, hold_lift=False):
+    def _drive_xy_to_target(
+        self,
+        target_x,
+        target_y,
+        target_yaw,
+        next_state,
+        x_tolerance=DOCK_X_TOLERANCE,
+        y_tolerance=DOCK_Y_TOLERANCE,
+        hold_lift=False,
+    ):
         if hold_lift:
             self._hold_lift(LIFT_TARGET)
 
         p, q = self.robot.get_world_pose()
-        error_x = TARGET_ROOT_X - float(p[0])
+        error_x = target_x - float(p[0])
         error_y = target_y - float(p[1])
-        yaw_error = _wrap_angle(TARGET_YAW - _yaw_from_quaternion(q))
+        yaw_error = _wrap_angle(target_yaw - _yaw_from_quaternion(q))
 
-        if (
-            abs(error_x) <= DOCK_X_TOLERANCE
-            and abs(error_y) <= DOCK_Y_TOLERANCE
-        ):
+        if abs(error_x) <= x_tolerance and abs(error_y) <= y_tolerance:
             self._stop()
             self._set_state(next_state)
             return
 
-        if abs(error_x) > DOCK_X_TOLERANCE:
+        if abs(error_x) > x_tolerance:
             self._fail(
                 f"x alignment lost after correction: error={error_x:.4f} m"
             )
@@ -364,6 +414,11 @@ class MissionIwHubAgent(IwHubAgent):
         )
         angular = float(np.clip(1.3 * yaw_error, -0.10, 0.10))
         self._drive(linear, angular)
+
+    def _drive_y_to_target(self, target_y, next_state, hold_lift=False):
+        self._drive_xy_to_target(
+            TARGET_ROOT_X, target_y, TARGET_YAW, next_state, hold_lift=hold_lift
+        )
 
     def _drive_to_spawn(self):
         p, q = self.robot.get_world_pose()
@@ -423,7 +478,7 @@ class MissionIwHubAgent(IwHubAgent):
     def on_physics_step(self, dt):
         self._state_elapsed += float(dt)
 
-        if self.mission_state == "PICKUP_DONE":
+        if self.mission_state in {"PICKUP_DONE", "CONVEYOR_DOCK_DONE"}:
             self._hold_lift(LIFT_TARGET)
             return
 

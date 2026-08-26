@@ -177,11 +177,7 @@ def main():
             f"at {config['spawn_xyz']}"
         )
 
-        agent = IwHubAgent(
-            config,
-            world,
-            IW_HUB_USD,
-        )
+        agent = IwHubAgent(config, world)
         agent.setup()
         agents.append(agent)
 
