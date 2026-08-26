@@ -15,6 +15,7 @@ from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from std_msgs.msg import String
 
 
 MQTT_HOST = os.getenv("MQTT_HOST", "127.0.0.1")
@@ -22,12 +23,17 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 
 ROS_ODOM_TOPIC = "/chassis/odom"
 ROS_NAV_ACTION = "/navigate_to_pose"
+ROS_LIFT_COMMAND_TOPIC = "/amr_a/lift_command"
+ROS_LIFT_STATE_TOPIC = "/amr_a/lift_state"
 
 MQTT_ODOM_TOPIC = "controltower/amr/AMR_IN/odom"
 MQTT_NAV_COMMAND_TOPIC = "controltower/command/amr/AMR_IN/navigate"
+MQTT_LIFT_COMMAND_TOPIC = "controltower/command/amr/AMR_IN/lift"
+MQTT_LIFT_STATE_TOPIC = "controltower/amr/AMR_IN/lift"
 MQTT_COMMAND_RESULT_TOPIC = "controltower/result/command"
 
 PUBLISH_INTERVAL = 0.5
+LIFT_COMMAND_TIMEOUT = 10.0
 
 
 class Ros2MqttAdapter(Node):
@@ -35,10 +41,6 @@ class Ros2MqttAdapter(Node):
     def __init__(self):
         super().__init__("control_tower_ros2_mqtt_adapter")
 
-        # -------------------------------------------------
-        # MQTT
-        # Host Ubuntu의 paho-mqtt 1.x와 호환되는 방식
-        # -------------------------------------------------
         self.mqtt_client = mqtt.Client(
             client_id="control-tower-ros2-adapter",
         )
@@ -58,9 +60,6 @@ class Ros2MqttAdapter(Node):
 
         self.mqtt_client.loop_start()
 
-        # -------------------------------------------------
-        # ROS2 Odom
-        # -------------------------------------------------
         self.odom_subscription = self.create_subscription(
             Odometry,
             ROS_ODOM_TOPIC,
@@ -70,21 +69,35 @@ class Ros2MqttAdapter(Node):
 
         self.last_publish_time = 0.0
 
-        # -------------------------------------------------
-        # Nav2 Action Client
-        # -------------------------------------------------
         self.navigate_client = ActionClient(
             self,
             NavigateToPose,
             ROS_NAV_ACTION,
         )
 
-        # MQTT callback은 별도 thread에서 실행되므로,
-        # ROS Action 실행은 queue를 통해 ROS thread에서 처리한다.
-        self.command_queue = queue.Queue()
-
         self.navigation_in_progress = False
         self.current_command_id = None
+
+        self.lift_command_publisher = self.create_publisher(
+            String,
+            ROS_LIFT_COMMAND_TOPIC,
+            10,
+        )
+
+        self.lift_state_subscription = self.create_subscription(
+            String,
+            ROS_LIFT_STATE_TOPIC,
+            self.lift_state_callback,
+            10,
+        )
+
+        self.current_lift_state = None
+        self.lift_in_progress = False
+        self.current_lift_command_id = None
+        self.current_lift_action = None
+        self.lift_command_deadline = None
+
+        self.command_queue = queue.Queue()
 
         self.command_timer = self.create_timer(
             0.1,
@@ -94,22 +107,27 @@ class Ros2MqttAdapter(Node):
         self.get_logger().info(
             f"ROS2 subscribe: {ROS_ODOM_TOPIC}"
         )
-
         self.get_logger().info(
             f"MQTT publish: {MQTT_ODOM_TOPIC}"
         )
-
         self.get_logger().info(
             f"MQTT subscribe: {MQTT_NAV_COMMAND_TOPIC}"
         )
-
         self.get_logger().info(
             f"Nav2 action: {ROS_NAV_ACTION}"
         )
-
-    # =====================================================
-    # MQTT
-    # =====================================================
+        self.get_logger().info(
+            f"ROS2 publish: {ROS_LIFT_COMMAND_TOPIC}"
+        )
+        self.get_logger().info(
+            f"ROS2 subscribe: {ROS_LIFT_STATE_TOPIC}"
+        )
+        self.get_logger().info(
+            f"MQTT subscribe: {MQTT_LIFT_COMMAND_TOPIC}"
+        )
+        self.get_logger().info(
+            f"MQTT publish: {MQTT_LIFT_STATE_TOPIC}"
+        )
 
     def on_mqtt_connect(
         self,
@@ -126,9 +144,16 @@ class Ros2MqttAdapter(Node):
         client.subscribe(
             MQTT_NAV_COMMAND_TOPIC
         )
+        client.subscribe(
+            MQTT_LIFT_COMMAND_TOPIC
+        )
 
         print(
             f"[MQTT] Subscribed: {MQTT_NAV_COMMAND_TOPIC}",
+            flush=True,
+        )
+        print(
+            f"[MQTT] Subscribed: {MQTT_LIFT_COMMAND_TOPIC}",
             flush=True,
         )
 
@@ -146,24 +171,32 @@ class Ros2MqttAdapter(Node):
             flush=True,
         )
 
-        if message.topic != MQTT_NAV_COMMAND_TOPIC:
+        if message.topic not in {
+            MQTT_NAV_COMMAND_TOPIC,
+            MQTT_LIFT_COMMAND_TOPIC,
+        }:
             return
 
         try:
             payload = json.loads(raw_payload)
-
         except json.JSONDecodeError:
             print(
-                "[MQTT] Invalid NAVIGATE JSON",
+                f"[MQTT] Invalid JSON topic={message.topic}",
                 flush=True,
             )
             return
 
-        self.command_queue.put(payload)
+        if message.topic == MQTT_NAV_COMMAND_TOPIC:
+            self.command_queue.put(
+                ("NAVIGATE", payload)
+            )
+            return
 
-    # =====================================================
-    # ODOM
-    # =====================================================
+        if message.topic == MQTT_LIFT_COMMAND_TOPIC:
+            self.command_queue.put(
+                ("LIFT", payload)
+            )
+            return
 
     def quaternion_to_yaw(
         self,
@@ -229,17 +262,26 @@ class Ros2MqttAdapter(Node):
             f"yaw={payload['yaw']:.3f}"
         )
 
-    # =====================================================
-    # NAVIGATION COMMAND
-    # =====================================================
-
     def process_command_queue(self):
+        self.check_lift_timeout()
 
         if self.command_queue.empty():
             return
 
-        payload = self.command_queue.get()
+        command_type, payload = self.command_queue.get()
 
+        if command_type == "NAVIGATE":
+            self.process_navigation_command(payload)
+            return
+
+        if command_type == "LIFT":
+            self.process_lift_command(payload)
+            return
+
+    def process_navigation_command(
+        self,
+        payload,
+    ):
         command_id = payload.get("command_id")
         x = payload.get("x")
         y = payload.get("y")
@@ -305,7 +347,6 @@ class Ros2MqttAdapter(Node):
         goal.pose.pose.position.y = y
         goal.pose.pose.position.z = 0.0
 
-        # yaw → quaternion
         goal.pose.pose.orientation.x = 0.0
         goal.pose.pose.orientation.y = 0.0
         goal.pose.pose.orientation.z = math.sin(
@@ -401,20 +442,161 @@ class Ros2MqttAdapter(Node):
             error_message=error_message,
         )
 
-    # =====================================================
-    # COMMAND RESULT
-    # =====================================================
+    def process_lift_command(
+        self,
+        payload,
+    ):
+        command_id = payload.get("command_id")
+        action = str(
+            payload.get("action", "")
+        ).strip().upper()
+
+        if (
+            command_id is None
+            or action not in {"UP", "DOWN"}
+        ):
+            self.publish_command_result(
+                command_id=command_id,
+                status="FAILED",
+                command_type="LIFT",
+                error_message="Invalid LIFT payload",
+            )
+            return
+
+        if self.lift_in_progress:
+            self.publish_command_result(
+                command_id=command_id,
+                status="BUSY",
+                command_type=f"LIFT_{action}",
+                error_message="Lift command already in progress",
+            )
+            return
+
+        self.lift_in_progress = True
+        self.current_lift_command_id = command_id
+        self.current_lift_action = action
+        self.lift_command_deadline = (
+            time.monotonic()
+            + LIFT_COMMAND_TIMEOUT
+        )
+
+        message = String()
+        message.data = action
+
+        self.lift_command_publisher.publish(
+            message
+        )
+
+        self.get_logger().info(
+            f"LIFT command_id={command_id} "
+            f"action={action} -> {ROS_LIFT_COMMAND_TOPIC}"
+        )
+
+        self.publish_command_result(
+            command_id=command_id,
+            status="RUNNING",
+            command_type=f"LIFT_{action}",
+        )
+
+    def lift_state_callback(
+        self,
+        message: String,
+    ):
+        state = message.data.strip().upper()
+
+        if not state:
+            return
+
+        state_changed = (
+            state != self.current_lift_state
+        )
+
+        self.current_lift_state = state
+
+        if state_changed:
+            payload = {
+                "lift_state": state,
+            }
+
+            self.mqtt_client.publish(
+                MQTT_LIFT_STATE_TOPIC,
+                json.dumps(payload),
+            )
+
+            self.get_logger().info(
+                f"Lift state: {state}"
+            )
+
+        if not self.lift_in_progress:
+            return
+
+        if state != self.current_lift_action:
+            return
+
+        command_id = self.current_lift_command_id
+        action = self.current_lift_action
+
+        self.get_logger().info(
+            f"LIFT SUCCEEDED: command_id={command_id} "
+            f"state={state}"
+        )
+
+        self.clear_lift_command()
+
+        self.publish_command_result(
+            command_id=command_id,
+            status="SUCCESS",
+            command_type=f"LIFT_{action}",
+        )
+
+    def check_lift_timeout(self):
+        if not self.lift_in_progress:
+            return
+
+        if self.lift_command_deadline is None:
+            return
+
+        if time.monotonic() < self.lift_command_deadline:
+            return
+
+        command_id = self.current_lift_command_id
+        action = self.current_lift_action
+
+        self.get_logger().error(
+            f"LIFT timeout: command_id={command_id} "
+            f"action={action} "
+            f"last_state={self.current_lift_state}"
+        )
+
+        self.clear_lift_command()
+
+        self.publish_command_result(
+            command_id=command_id,
+            status="FAILED",
+            command_type=f"LIFT_{action}",
+            error_message=(
+                "Lift did not reach target state "
+                f"within {LIFT_COMMAND_TIMEOUT:.1f}s"
+            ),
+        )
+
+    def clear_lift_command(self):
+        self.lift_in_progress = False
+        self.current_lift_command_id = None
+        self.current_lift_action = None
+        self.lift_command_deadline = None
 
     def publish_command_result(
         self,
         command_id,
         status,
         error_message=None,
+        command_type="NAVIGATE",
     ):
         payload = {
             "command_id": command_id,
             "equipment_code": "AMR_IN",
-            "command_type": "NAVIGATE",
+            "command_type": command_type,
             "status": status,
         }
 
@@ -430,10 +612,6 @@ class Ros2MqttAdapter(Node):
             f"[MQTT] result={payload}",
             flush=True,
         )
-
-    # =====================================================
-    # SHUTDOWN
-    # =====================================================
 
     def destroy_node(self):
         self.mqtt_client.loop_stop()

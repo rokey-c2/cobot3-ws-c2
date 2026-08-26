@@ -6,7 +6,10 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from app.database import get_db_connection
-from app.mqtt_client import publish_navigation_command
+from app.mqtt_client import (
+    publish_lift_command,
+    publish_navigation_command,
+)
 
 
 router = APIRouter(
@@ -25,36 +28,19 @@ class LiftRequest(BaseModel):
     action: Literal["UP", "DOWN"]
 
 
-# =========================================================
-# NAVIGATE
-# =========================================================
-
 @router.post("/{equipment_code}/navigate")
 def navigate_amr(
     equipment_code: str,
     request: NavigateRequest,
 ):
-    """
-    AMR Navigation 명령을 DB에 등록하고
-    MQTT를 통해 ROS2 MQTT Adapter에 전달한다.
-    """
-
     command = None
     equipment = None
 
     try:
-        # -------------------------------------------------
-        # 1. DB에 NAVIGATE 명령 등록
-        # -------------------------------------------------
-
         with get_db_connection() as conn:
             with conn.cursor(
                 row_factory=dict_row
             ) as cursor:
-
-                # -----------------------------------------
-                # AMR 조회
-                # -----------------------------------------
 
                 cursor.execute(
                     """
@@ -66,15 +52,11 @@ def navigate_amr(
                         e.enabled,
                         es.status
                     FROM equipment e
-
                     LEFT JOIN equipment_state es
                         ON es.equipment_id = e.id
-
                     WHERE e.code = %s;
                     """,
-                    (
-                        equipment_code,
-                    ),
+                    (equipment_code,),
                 )
 
                 equipment = cursor.fetchone()
@@ -85,29 +67,17 @@ def navigate_amr(
                         detail="Equipment not found",
                     )
 
-                # -----------------------------------------
-                # AMR 여부 확인
-                # -----------------------------------------
-
                 if equipment["type"] != "AMR":
                     raise HTTPException(
                         status_code=400,
                         detail="Equipment is not an AMR",
                     )
 
-                # -----------------------------------------
-                # Enabled 확인
-                # -----------------------------------------
-
                 if not equipment["enabled"]:
                     raise HTTPException(
                         status_code=409,
                         detail="AMR is disabled",
                     )
-
-                # -----------------------------------------
-                # RUNNING 상태 확인
-                # -----------------------------------------
 
                 if equipment["status"] != "RUNNING":
                     raise HTTPException(
@@ -118,19 +88,11 @@ def navigate_amr(
                         ),
                     )
 
-                # -----------------------------------------
-                # Navigation Payload
-                # -----------------------------------------
-
                 payload = {
                     "x": request.x,
                     "y": request.y,
                     "yaw": request.yaw,
                 }
-
-                # -----------------------------------------
-                # equipment_command 저장
-                # -----------------------------------------
 
                 cursor.execute(
                     """
@@ -160,12 +122,7 @@ def navigate_amr(
                 )
 
                 command = cursor.fetchone()
-
                 conn.commit()
-
-        # -------------------------------------------------
-        # 2. MQTT NAVIGATE 명령 Publish
-        # -------------------------------------------------
 
         try:
             publish_navigation_command(
@@ -177,8 +134,6 @@ def navigate_amr(
             )
 
         except Exception as mqtt_error:
-            # MQTT 발행에 실패하면
-            # 이미 생성된 DB command를 FAILED 처리한다.
             try:
                 with get_db_connection() as conn:
                     with conn.cursor() as cursor:
@@ -188,11 +143,8 @@ def navigate_amr(
                             SET status = 'FAILED'
                             WHERE id = %s;
                             """,
-                            (
-                                command["id"],
-                            ),
+                            (command["id"],),
                         )
-
                         conn.commit()
 
             except Exception as db_error:
@@ -210,10 +162,6 @@ def navigate_amr(
                     f"{mqtt_error}"
                 ),
             )
-
-        # -------------------------------------------------
-        # 3. API Response
-        # -------------------------------------------------
 
         return {
             "equipment": {
@@ -236,31 +184,19 @@ def navigate_amr(
         )
 
 
-# =========================================================
-# LIFT
-# =========================================================
-
 @router.post("/{equipment_code}/lift")
 def control_lift(
     equipment_code: str,
     request: LiftRequest,
 ):
-    """
-    AMR Lift Up / Down 명령을 등록한다.
-
-    현재 단계에서는 ROS2에 직접 명령하지 않고
-    equipment_command에 PENDING 상태로 저장한다.
-    """
+    command = None
+    equipment = None
 
     try:
         with get_db_connection() as conn:
             with conn.cursor(
                 row_factory=dict_row
             ) as cursor:
-
-                # -----------------------------------------
-                # 1. AMR 조회
-                # -----------------------------------------
 
                 cursor.execute(
                     """
@@ -272,17 +208,12 @@ def control_lift(
                         e.enabled,
                         es.status,
                         es.lift_state
-
                     FROM equipment e
-
                     LEFT JOIN equipment_state es
                         ON es.equipment_id = e.id
-
                     WHERE e.code = %s;
                     """,
-                    (
-                        equipment_code,
-                    ),
+                    (equipment_code,),
                 )
 
                 equipment = cursor.fetchone()
@@ -314,10 +245,6 @@ def control_lift(
                         ),
                     )
 
-                # -----------------------------------------
-                # 이미 같은 상태라면 명령 방지
-                # -----------------------------------------
-
                 if request.action == equipment["lift_state"]:
                     raise HTTPException(
                         status_code=409,
@@ -327,19 +254,15 @@ def control_lift(
                         ),
                     )
 
-                # -----------------------------------------
-                # Command Type
-                # -----------------------------------------
+                command_type = (
+                    "LIFT_UP"
+                    if request.action == "UP"
+                    else "LIFT_DOWN"
+                )
 
-                if request.action == "UP":
-                    command_type = "LIFT_UP"
-
-                else:
-                    command_type = "LIFT_DOWN"
-
-                # -----------------------------------------
-                # 2. Command 기록
-                # -----------------------------------------
+                payload = {
+                    "action": request.action,
+                }
 
                 cursor.execute(
                     """
@@ -365,17 +288,49 @@ def control_lift(
                     (
                         equipment["id"],
                         command_type,
-                        Jsonb(
-                            {
-                                "action": request.action,
-                            }
-                        ),
+                        Jsonb(payload),
                     ),
                 )
 
                 command = cursor.fetchone()
-
                 conn.commit()
+
+        try:
+            publish_lift_command(
+                equipment_code=equipment["code"],
+                command_id=command["id"],
+                action=request.action,
+            )
+
+        except Exception as mqtt_error:
+            try:
+                with get_db_connection() as conn:
+                    with conn.cursor() as cursor:
+                        cursor.execute(
+                            """
+                            UPDATE equipment_command
+                            SET status = 'FAILED'
+                            WHERE id = %s;
+                            """,
+                            (command["id"],),
+                        )
+                        conn.commit()
+
+            except Exception as db_error:
+                print(
+                    f"[LIFT] Failed to mark command "
+                    f"as FAILED: {db_error}",
+                    flush=True,
+                )
+
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Lift command was saved, "
+                    "but MQTT publish failed: "
+                    f"{mqtt_error}"
+                ),
+            )
 
         return {
             "equipment": {
