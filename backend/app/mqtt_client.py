@@ -125,7 +125,7 @@ def update_command_result(payload: dict):
     status = str(payload.get("status", "")).strip().upper()
     error_message = payload.get("error_message")
 
-    if command_id is None or not status:
+    if command_id is None or not equipment_code or not status:
         print(
             f"[MQTT][DB] Invalid command result: {payload}",
             flush=True,
@@ -152,7 +152,7 @@ def update_command_result(payload: dict):
                     WHERE
                         ec.id = %s
                         AND ec.equipment_id = e.id
-                        AND (%s IS NULL OR e.code = %s)
+                        AND e.code = %s
                     RETURNING
                         ec.equipment_id,
                         ec.command_type;
@@ -162,7 +162,6 @@ def update_command_result(payload: dict):
                         db_status,
                         error_message,
                         command_id,
-                        equipment_code,
                         equipment_code,
                     ),
                 )
