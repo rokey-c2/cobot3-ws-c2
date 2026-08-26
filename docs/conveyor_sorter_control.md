@@ -1,200 +1,295 @@
-# Conveyor / Wheel Sorter 제어
+# Conveyor / Wheel Sorter 제어 기준
 
-이 문서는 `isaac_sim/main.py` (IW Hub 단일 자율주행 테스트 경로)에서 Isaac Sim 컨베이어 벨트와 Wheel Sorter를 Python으로 제어하는 방법을 정리한다. 전체 통합 미션(`main_mission.py`)에는 아직 이 컨베이어/소터 제어가 포함되어 있지 않다.
+작성 기준: 2026-08-26  
+작업 브랜치: `hwi_new_sorter`
 
-## 목적
+이 문서는 현재 Parcel Sorting Map에서 사용하는 Conveyor / Wheel Sorter 제어의 최신 기준이다.
+`hwi_conveyor_test`의 과거 코드는 참고자료로만 사용하고, 현재 구현은 이 문서를 기준으로 작성한다.
 
-- 컨베이어 벨트 속도를 Python에서 `1.0`으로 설정한다.
-- Wheel Sorter의 기존 ActionGraph를 삭제하거나 다시 만들지 않는다.
-- Wheel Sorter는 기존 `binary_switch` 값을 Python에서 변경해서 방향을 전환한다.
-- 현재는 테스트 목적으로 일정 simulation step마다 방향을 바꾼다.
-- 나중에는 barcode / vision / mission 조건에 따라 A 또는 B 방향으로 보내도록 조건 부분만 교체한다.
+## 1. 구현 원칙
 
-## 변경 파일
+- 현재 USD의 Conveyor / Sorter ActionGraph를 삭제하거나 새로 만들지 않는다.
+- 새 ROS2 Node나 새 OmniGraph Node를 추가하지 않는다.
+- Python에서는 기존 Graph의 값만 읽고 변경한다.
+- 과거의 `binary_switch` / `reroute` 기반 제어는 현재 맵에서 사용하지 않는다.
+- Wheel Sorter 방향은 기존 `Sorter/ActionGraph/conveyor_belt.inputs:direction`을 직접 변경한다.
+- `SorterSpeed`는 `-1.0`으로 유지한다.
+- 박스가 소터를 통과한 뒤에는 sorter direction을 기본값 `(1.0, 0.0, 0.0)`으로 자동 복귀시킨다.
+- `ConveyorTrack_05`는 이번 Conveyor / Sorter 제어 대상에서 제외한다.
+
+## 2. hwi_conveyor_test에서 가져온 참고자료
+
+현재 브랜치에 같은 이름의 파일이 이미 있는 경우 충돌을 피하기 위해 별도 이름으로 보존했다.
 
 ```text
-isaac_sim/main.py
-isaac_sim/equipment/conveyor/conveyor_controller.py
-isaac_sim/equipment/wheel_sorter/wheel_sorter_controller.py
-docs/conveyor_sorter_control.md
-README.md
+isaac_sim/equipment/conveyor/conveyor_controller_hwi_conveyor_test_reference.py
+isaac_sim/equipment/wheel_sorter/wheel_sorter_controller_hwi_conveyor_test_reference.py
+docs/conveyor_sorter_control_hwi_conveyor_test_reference.md
 ```
 
-## 사용 Stage 경로
+현재 브랜치에 없었던 박스 스폰 코드는 재사용 가능한 시작점으로 원래 이름으로 가져왔다.
 
-Wheel Sorter binary switch:
+```text
+isaac_sim/cargo/box_spawner.py
+```
+
+참고본의 다음 내용은 현재 구현에서 사용하지 않는다.
 
 ```text
 /World/ConveyorTrack/Sorter/ActionGraph/binary_switch.inputs:value
+단일 ConveyorTrack 구조
+simulation step마다 자동 toggle
+예전 맵 전용 REVERSED_GRAPH_PATHS
 ```
 
-컨베이어는 Stage 안에서 이름이 `ConveyorBeltGraph`로 시작하고 `Velocity` 또는 `velocity` 속성을 가진 Graph를 찾아서 제어한다.
+## 3. 현재 ConveyorTrack 구성
 
-현재 월드에서 예시는 다음과 같다.
+현재 번호형 ConveyorTrack은 번호가 연속적이지 않다.
+존재하지 않는 번호를 코드에서 임의로 가정하지 않는다.
+
+현재 확인한 번호형 트랙:
 
 ```text
-/World/ConveyorTrack/ConveyorBeltGraph
-/World/ConveyorTrack/ConveyorBeltGraph_01
-/World/ConveyorTrack_01/ConveyorBeltGraph
+ConveyorTrack_01
+ConveyorTrack_02
+ConveyorTrack_03
+ConveyorTrack_04
+ConveyorTrack_05
+ConveyorTrack_06
+ConveyorTrack_07
+ConveyorTrack_10
+ConveyorTrack_11
+ConveyorTrack_16
+ConveyorTrack_17
 ```
 
-## ConveyorController
+`ConveyorTrack_05`는 제어 대상에서 제외한다.
 
-파일:
+## 4. Conveyor 속도 기준
+
+### ConveyorTrack_01 / 02 / 03
+
+이 세 트랙은 Wheel Sorter가 있고 Conveyor Belt Graph가 2개씩 존재한다.
 
 ```text
-isaac_sim/equipment/conveyor/conveyor_controller.py
+ConveyorBeltGraph
+    Velocity = 1.0
+
+ConveyorBeltGraph_01
+    Velocity = -1.0
 ```
 
-주요 기능:
+정확한 규칙:
+
+| Track | Graph | Velocity |
+|---|---|---:|
+| 01 | ConveyorBeltGraph | `1.0` |
+| 01 | ConveyorBeltGraph_01 | `-1.0` |
+| 02 | ConveyorBeltGraph | `1.0` |
+| 02 | ConveyorBeltGraph_01 | `-1.0` |
+| 03 | ConveyorBeltGraph | `1.0` |
+| 03 | ConveyorBeltGraph_01 | `-1.0` |
+
+### 나머지 제어 대상 트랙
+
+`04`, `06`, `07`, `10`, `11`, `16`, `17`은 Conveyor Belt Graph가 하나만 존재하며 모두 다음 값을 사용한다.
 
 ```text
-setup()            Stage에서 ConveyorBeltGraph 검색 후 초기 속도 적용
-set_speed(speed)   모든 검색된 컨베이어 속도 변경
-start()            설정된 속도로 시작
-stop()             속도 0.0으로 정지
+ConveyorBeltGraph
+    Velocity = 1.0
 ```
 
-현재 `main.py`에서는 다음 값으로 생성한다.
-
-```python
-conveyor = ConveyorController(speed=1.0)
-```
-
-따라서 Isaac Sim 실행 시 컨베이어 Graph의 속도가 `1.0`으로 설정된다.
-
-## WheelSorterController
-
-파일:
+### 제외
 
 ```text
-isaac_sim/equipment/wheel_sorter/wheel_sorter_controller.py
+ConveyorTrack_05
 ```
 
-Wheel Sorter 방향은 기존 ActionGraph의 `binary_switch`를 사용한다.
+Python이 `ConveyorTrack_05`의 Graph 값을 변경하지 않는다.
+
+## 5. Wheel Sorter 대상
+
+Wheel Sorter는 정확히 다음 세 트랙을 제어 대상으로 사용한다.
 
 ```text
-False = A 방향 테스트 상태
-True  = B 방향 테스트 상태
+ConveyorTrack_01
+ConveyorTrack_02
+ConveyorTrack_03
 ```
 
-현재 테스트 단계에서는 실제 좌/우 물리 방향과 A/B 라벨이 반대일 수 있다. 화면에서 한 번 확인한 뒤 필요하면 `route()`의 bool 매핑만 바꾸면 된다.
-
-주요 기능:
+ActionGraph 기준 경로:
 
 ```text
-setup()              초기 상태 False
-set_state(state)     binary_switch를 직접 True/False로 변경
-update()             일정 simulation step마다 상태 전환
-route("A" or "B")   나중에 실제 분류 조건에서 사용할 인터페이스
+/World/ConveyorTrack_01/Sorter/ActionGraph
+/World/ConveyorTrack_02/Sorter/ActionGraph
+/World/ConveyorTrack_03/Sorter/ActionGraph
 ```
 
-현재 `main.py`에서는 다음 값으로 생성한다.
+## 6. SorterSpeed
 
-```python
-sorter = WheelSorterController(toggle_steps=120)
-```
-
-따라서 simulation loop가 120회 실행될 때마다:
+세 소터 모두 다음 값을 사용한다.
 
 ```text
-False -> True -> False -> True ...
+SorterSpeed = -1.0
 ```
 
-순서로 전환한다.
-
-`time.sleep()`, 별도 thread, asyncio timer는 사용하지 않는다. 기존 simulation loop에서 정수 counter 하나만 증가시키므로 테스트 제어의 추가 부담을 작게 유지한다.
-
-## 실행
-
-저장소 루트에서:
-
-```bash
-./scripts/run_isaac.sh
-```
-
-별도로 Isaac Sim Extensions 창에서 Conveyor UI extension을 직접 켤 필요는 없다.
-
-`main.py`에서 runtime에 필요한 extension을 자동으로 활성화한다.
-
-```python
-enable_extension("isaacsim.asset.gen.conveyor")
-```
-
-## 정상 동작 확인
-
-Isaac 실행 로그에서 다음과 비슷한 내용을 확인한다.
+예시:
 
 ```text
-[CONVEYOR] /World/.../ConveyorBeltGraph speed=1.00
-[SORTER] binary switch ready: ... toggle_steps=120
-[SORTER] binary switch=True
-[SORTER] binary switch=False
+/World/ConveyorTrack_01/Sorter/ActionGraph/SorterSpeed.inputs:value
 ```
 
-화면에서는 physics가 설정된 Cube를 컨베이어 위에 두고 Play 했을 때 다음을 확인한다.
+`SorterSpeed`는 실행 중 분류 조건에 따라 바꾸지 않는다.
+초기 setup / reset 이후 재적용 / play 이후 확인 시 같은 `-1.0`을 적용한다.
 
-1. Cube가 컨베이어 진행 방향으로 이동하는지 확인한다.
-2. Wheel Sorter가 일정 간격으로 방향을 바꾸는지 확인한다.
-3. `True`와 `False`가 실제 어느 방향인지 확인한다.
+## 7. 실제 Wheel Sorter 방향 제어
 
-## 속도 변경
+현재 맵에서 실제 물리 방향을 바꾸는 대상은 다음 노드다.
 
-`isaac_sim/main.py`:
-
-```python
-conveyor = ConveyorController(speed=1.0)
+```text
+/World/ConveyorTrack_XX/Sorter/ActionGraph/conveyor_belt
 ```
 
-예를 들어 속도를 `0.5`로 테스트하려면:
+변경하는 입력:
 
-```python
-conveyor = ConveyorController(speed=0.5)
+```text
+inputs:direction
 ```
 
-## Wheel Sorter 전환 간격 변경
+현재 검증한 두 상태:
 
-현재:
+```text
+sorter_state = 0 / False
+    direction = (1.0, 0.0, 0.0)
 
-```python
-sorter = WheelSorterController(toggle_steps=120)
+sorter_state = 1 / True
+    direction = (1.0, -2.0, 0.0)
 ```
 
-더 자주 바꾸려면 숫자를 줄이고, 더 늦게 바꾸려면 숫자를 늘린다.
+즉 Python에서는 벡터를 여러 곳에서 직접 작성하지 않고 한 곳에서 다음처럼 매핑한다.
 
-이 값은 wall-clock second가 아니라 simulation loop 횟수다.
-
-## 실제 분류 조건 연결
-
-현재 임시 테스트는:
-
-```python
-sorter.update()
+```text
+0 / False -> STRAIGHT -> (1.0, 0.0, 0.0)
+1 / True  -> DIVERT   -> (1.0, -2.0, 0.0)
 ```
 
-가 simulation loop마다 호출되면서 자동으로 방향을 전환한다.
+과거 ActionGraph 안의 `Direction` Constant Bool이나 `binary_switch`를 다시 연결하거나 새 노드를 만들지 않는다.
+Python의 논리 상태만 0/1 또는 False/True로 사용하고, 그 상태를 기존 `conveyor_belt.inputs:direction` 값으로 변환한다.
 
-나중에 barcode / vision / mission 조건이 정해지면 자동 toggle은 제거하고 다음 인터페이스를 사용한다.
+## 8. box_id 기준 제어
 
-```python
-sorter.route("A")
-sorter.route("B")
+테스트 Box에는 USD custom int attribute를 추가한다.
+
+```text
+box_id
 ```
 
-예:
+박스 생성 함수:
 
-```python
-if sorting_result == "A":
-    sorter.route("A")
-elif sorting_result == "B":
-    sorter.route("B")
+```text
+isaac_sim/cargo/box_spawner.py
 ```
 
-이렇게 하면 기존 USD ActionGraph와 Wheel Sorter 물리 구성은 그대로 유지하고 판단 조건만 교체할 수 있다.
+시연 2에서는 일정 주기마다 Box를 생성하고 각 Box에 랜덤 `box_id`를 부여한다.
+Wheel Sorter Controller는 박스 위치를 확인하다가 해당 소터의 진입 영역에 도달하면 `box_id`를 읽어 그 소터의 0/1 상태를 결정한다.
 
-## 주의사항
+기본 동작 흐름:
 
-- 기존 `Sorter/ActionGraph`를 삭제하거나 다시 만들지 않는다.
-- 기존 `binary_switch` Prim 경로를 임의로 변경하지 않는다.
-- Conveyor asset의 기존 physics / graph 구성은 유지하고 Python에서는 속도 값만 제어한다.
-- IW Hub LiDAR 및 NVIDIA Navigation 설정은 이 기능 구현과 무관하므로 변경하지 않는다.
+```text
+Box spawn
+    -> random box_id
+    -> Conveyor 이동
+    -> Track 01 / 02 / 03 중 현재 접근한 sorter 판정
+    -> box_id에 따른 해당 sorter 상태 결정
+    -> direction = (1,0,0) 또는 (1,-2,0)
+    -> Box가 sorter 통과
+    -> 해당 sorter direction을 (1,0,0)으로 자동 복귀
+```
+
+중요: `box_id`가 어느 Track에서 `DIVERT`되어야 하는지에 대한 최종 숫자 매핑은 구현 직전에 별도로 확정한다. 임의로 `box_id=1 -> Track01` 같은 규칙을 만들지 않는다.
+
+## 9. 시연 방식
+
+### 시연 2 — 먼저 구현
+
+목적: Wheel Sorter의 `box_id` 기반 분류 동작을 여러 박스로 명확하게 보여준다.
+
+```text
+현재 완성 맵 사용
+AMR 스폰 상태 유지, 동작시키지 않음
+P3020 스폰 상태 유지, 동작시키지 않음
+Conveyor만 동작
+Wheel Sorter 01 / 02 / 03 동작
+일정 주기마다 random box_id Box 생성
+box_id에 따라 sorter 방향 전환
+통과 후 기본 방향 자동 복귀
+```
+
+AMR / P3020 다중 박스 작업을 시연 2에 넣지 않는다.
+
+### 시연 1 — 이후 결합
+
+목적: 이미 성공한 단일 Box 기준으로 AMR + P3020 + Conveyor + Wheel Sorter 전체 흐름을 보여준다.
+
+시연 2에서 만든 Conveyor / Sorter 로직을 그대로 재사용하고, `주기적인 랜덤 Box 생성`만 제거한 뒤 기존 단일 Box 미션과 결합한다.
+
+```text
+AMR
+ -> 단일 Box 운반
+ -> P3020 작업
+ -> Conveyor
+ -> Box의 box_id
+ -> Wheel Sorter
+```
+
+## 10. 초기값 유지와 reset 검증
+
+Python에서 Graph 값을 한 번 설정한 뒤 다른 코드나 Graph가 덮어쓰지 않으면 실행 중 해당 값은 유지되는 것을 전제로 한다.
+매 simulation step마다 Conveyor Velocity나 SorterSpeed를 반복해서 쓰지 않는다.
+
+다만 OmniGraph 초기화 구간은 별도로 확인한다.
+
+```text
+1. setup 직후
+2. world.reset() 직후 재적용
+3. world.play() 직후 확인 / 재적용
+4. 장시간 실행 후 값 유지 확인
+```
+
+따라서 구현은 초기화 구간에서만 값을 재적용하고 정상 실행 중에는 `conveyor_belt.direction`처럼 실제로 조건에 따라 바뀌어야 하는 값만 변경한다.
+
+## 11. 구현 시 건드리지 않는 것
+
+- `ConveyorTrack_05`
+- 기존 Sorter ActionGraph 구조
+- 기존 Conveyor physics
+- 새 OmniGraph Node 추가
+- 새 ROS2 Node 추가
+- AMR Nav2 / LiDAR 설정
+- P3020 기존 성공 로직
+
+## 12. 핵심 기준 요약
+
+```text
+Track 01 / 02 / 03
+    ConveyorBeltGraph     =  1.0
+    ConveyorBeltGraph_01  = -1.0
+    SorterSpeed           = -1.0
+    Sorter direction      = (1,0,0) <-> (1,-2,0)
+
+Track 04 / 06 / 07 / 10 / 11 / 16 / 17
+    ConveyorBeltGraph     = 1.0
+
+Track 05
+    제어 대상 제외
+
+Wheel Sorter 상태
+    0 / False -> (1,0,0)
+    1 / True  -> (1,-2,0)
+
+Box
+    custom attribute: box_id
+
+과거 binary_switch
+    현재 구현에서 사용하지 않음
+```
