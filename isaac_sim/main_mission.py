@@ -5,6 +5,7 @@ local start -> cargo -> lift -> Nav2 delivery -> P3020 action
 -> Nav2 return -> local precision return -> lift down -> local spawn return.
 """
 
+import random
 from pathlib import Path
 
 from isaacsim import SimulationApp
@@ -26,8 +27,6 @@ from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 
 from project_config.robot_config import (
-    CARGO_REGISTRY,
-    IW_HUB_USD,
     PARCEL_REGISTRY,
     ROBOT_REGISTRY,
 )
@@ -48,14 +47,9 @@ enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
 simulation_app.update()
 
-from cargo.cargo_guard_clone import (
-    resolve_parcel_layer,
-    spawn_cargo_guard_clone,
-)
-from cargo.cargo_pod_physics import add_parcel_asset
+from cargo.cargo_pod_physics import add_parcel_asset_scaled
 from equipment.conveyor.conveyor_controller import ConveyorController
 from equipment.wheel_sorter.wheel_sorter_controller import WheelSorterController
-import robots.iw_hub.iw_hub_mission_agent as iw_hub_mission_module
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
     P3020PickPlaceAgent,
@@ -89,30 +83,6 @@ def _create_clock_graph():
     )
 
 
-def _spawn_cargo_guards():
-    if not CARGO_REGISTRY:
-        return []
-
-    stage = omni.usd.get_context().get_stage()
-    UsdGeom.Xform.Define(stage, "/World/Cargo")
-    spawned_paths = []
-
-    for config in CARGO_REGISTRY:
-        prim_path = f"/World/Cargo/{config['name']}"
-        spawned_paths.append(
-            spawn_cargo_guard_clone(
-                stage,
-                prim_path,
-                spawn_xyz=config["spawn_xyz"],
-                spawn_yaw=float(config.get("spawn_yaw", 0.0)),
-                source_name=config["source_prim_name"],
-                mass_kg=float(config.get("mass_kg", 20.0)),
-            )
-        )
-
-    return spawned_paths
-
-
 def _spawn_parcels(parcel_configs):
     if not parcel_configs:
         return
@@ -122,14 +92,17 @@ def _spawn_parcels(parcel_configs):
     # them under /World/Cargo so Stage clearly shows they belong to this load.
     UsdGeom.Xform.Define(stage, "/World/Cargo/Parcels")
 
-    for config in parcel_configs:
+    box_ids = random.sample([1, 2, 3, 4], len(parcel_configs))
+
+    for config, box_id in zip(parcel_configs, box_ids):
         prim_path = f"/World/Cargo/Parcels/{config['name']}"
-        add_parcel_asset(
+        add_parcel_asset_scaled(
             stage,
             prim_path,
             asset_url=config["usd"],
             center=config["spawn_xyz"],
-            max_size=config["max_size_xyz"],
+            scale_xyz=config["scale_xyz"],
+            box_id=box_id,
             mass_kg=float(config.get("mass_kg", 15.0)),
         )
 
@@ -261,31 +234,17 @@ def main():
     conveyor.setup()
     sorter.setup()
 
-    cargo_paths = _spawn_cargo_guards()
-
-    resolved_parcels = []
-    if cargo_paths:
-        iw_hub_mission_module.CARGO_PRIM_PATH = cargo_paths[0]
-
-        cargo_xyz = CARGO_REGISTRY[0]["spawn_xyz"]
-        resolved_parcels = resolve_parcel_layer(
-            omni.usd.get_context().get_stage(),
-            cargo_paths[0],
-            PARCEL_REGISTRY,
-            cargo_center_xy=(float(cargo_xyz[0]), float(cargo_xyz[1])),
-        )
-    _spawn_parcels(resolved_parcels)
+    # The cargo pod is baked into the map now (not code-spawned) --
+    # iw_hub_mission_agent.CARGO_PRIM_PATH already defaults to the real
+    # baked-in pod's path. Only the 4 parcel boxes are still spawned here.
+    _spawn_parcels(PARCEL_REGISTRY)
 
     agents = []
     for config in ROBOT_REGISTRY:
         if config["type"] != "iw_hub":
             continue
 
-        agent = MissionIwHubAgent(
-            config,
-            world,
-            IW_HUB_USD,
-        )
+        agent = MissionIwHubAgent(config, world)
         agent.setup()
         agents.append(agent)
 

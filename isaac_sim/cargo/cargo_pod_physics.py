@@ -258,6 +258,97 @@ def add_parcel_asset(
     UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
     UsdGeom.Imageable(collider.GetPrim()).MakeInvisible()
 
+
+def add_parcel_asset_scaled(
+    stage,
+    prim_path,
+    asset_url,
+    center,
+    scale_xyz,
+    box_id,
+    mass_kg=15.0,
+):
+    """Spawn a referenced cardboard-box asset at an explicit, non-uniform
+    scale (e.g. (0.75, 0.75, 0.5) to flatten it), tagged with a box_id
+    custom int attribute.
+
+    Unlike add_parcel_asset (which uniformly fits the asset's aspect ratio
+    inside a target max_size box), this applies scale_xyz directly since the
+    caller already knows the exact desired shape. ``center`` is the
+    geometric center of the final scaled box, matching add_parcel_asset's
+    convention.
+    """
+
+    root = UsdGeom.Xform.Define(stage, prim_path)
+    root_xform = UsdGeom.Xformable(root.GetPrim())
+    root_xform.AddTranslateOp().Set(Gf.Vec3d(*center))
+
+    scale_path = f"{prim_path}/VisualScale"
+    offset_path = f"{scale_path}/VisualOffset"
+    asset_path = f"{offset_path}/Asset"
+
+    scale_prim = UsdGeom.Xform.Define(stage, scale_path)
+    offset_prim = UsdGeom.Xform.Define(stage, offset_path)
+    asset_prim = stage.DefinePrim(asset_path)
+    asset_prim.GetReferences().AddReference(str(asset_url))
+
+    bbox_cache = UsdGeom.BBoxCache(
+        Usd.TimeCode.Default(),
+        [UsdGeom.Tokens.default_],
+        useExtentsHint=True,
+    )
+    local_range = bbox_cache.ComputeLocalBound(asset_prim).GetRange()
+
+    if local_range.IsEmpty():
+        raise RuntimeError(
+            f"Parcel asset has no measurable bounds: {asset_url}"
+        )
+
+    source_min = local_range.GetMin()
+    source_max = local_range.GetMax()
+    source_center = (source_min + source_max) * 0.5
+    source_size = source_max - source_min
+
+    source_dims = tuple(float(source_size[i]) for i in range(3))
+    if any(v <= 1.0e-6 for v in source_dims):
+        raise RuntimeError(
+            f"Invalid parcel asset bounds {source_dims}: {asset_url}"
+        )
+
+    scale_dims = tuple(float(v) for v in scale_xyz)
+    final_dims = tuple(source_dims[i] * scale_dims[i] for i in range(3))
+
+    UsdGeom.Xformable(scale_prim.GetPrim()).AddScaleOp().Set(
+        Gf.Vec3f(*scale_dims)
+    )
+    UsdGeom.Xformable(offset_prim.GetPrim()).AddTranslateOp().Set(
+        Gf.Vec3d(
+            -float(source_center[0]),
+            -float(source_center[1]),
+            -float(source_center[2]),
+        )
+    )
+
+    _disable_referenced_physics(asset_prim)
+
+    rigid_body = UsdPhysics.RigidBodyAPI.Apply(root.GetPrim())
+    rigid_body.CreateRigidBodyEnabledAttr(True)
+    rigid_body.CreateKinematicEnabledAttr(False)
+
+    mass = UsdPhysics.MassAPI.Apply(root.GetPrim())
+    mass.CreateMassAttr(float(mass_kg))
+
+    collider = UsdGeom.Cube.Define(stage, f"{prim_path}/PhysicsCollider")
+    collider.CreateSizeAttr(1.0)
+    collider_xform = UsdGeom.Xformable(collider.GetPrim())
+    collider_xform.AddScaleOp().Set(Gf.Vec3f(*final_dims))
+    UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+    UsdGeom.Imageable(collider.GetPrim()).MakeInvisible()
+
+    root.GetPrim().CreateAttribute("box_id", Sdf.ValueTypeNames.Int).Set(
+        int(box_id)
+    )
+
     print(
         f"[PARCEL] NVIDIA CardBox spawned {prim_path}: "
         f"source={source_dims}, fit={final_dims} m, "

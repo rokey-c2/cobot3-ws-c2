@@ -2,10 +2,12 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/warehouse_final_final/navigation/maps/warehouse_navigation.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map/navigation/maps/Parcel_Sorting_Map.yaml"
 
-START_X="10.5"
-START_Y="1.80122"
+# Real IW Hub spawn in Parcel_Sorting_Map (measured headlessly off
+# /World/iw_hub_warehouse_navigation/iw_hub_ROS): (9, -6), yaw=0.
+START_X="9"
+START_Y="-6"
 LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
 
 # About 3x the previous Nav2 travel speed (0.65 -> 1.95 m/s).

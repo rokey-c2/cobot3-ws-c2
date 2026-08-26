@@ -34,7 +34,6 @@ from isaacsim.core.utils.stage import open_stage
 
 from project_config.robot_config import (
     CARGO_REGISTRY,
-    IW_HUB_USD,
     PARCEL_REGISTRY,
     ROBOT_REGISTRY,
 )
@@ -141,7 +140,7 @@ def main():
 
     spawn_cargo_and_parcels(stage)
 
-    agent = MissionIwHubAgent(ROBOT_REGISTRY[0], world, IW_HUB_USD)
+    agent = MissionIwHubAgent(ROBOT_REGISTRY[0], world)
     agent.setup()
 
     p3020_agent = P3020PickPlaceAgent(world)

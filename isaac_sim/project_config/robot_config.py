@@ -73,37 +73,53 @@ CARGO_REGISTRY = [
 ]
 
 
-# Four parcels are arranged as ONE 2 x 2 floor layer INSIDE the cloned guard.
-# X/Y are offsets from the exact cargo center (10.5, -1.5). Z is resolved at
-# runtime from the cloned guard's actual world bounds so the boxes are placed
-# above the guard bottom instead of reusing the old cargo_pod's Z blindly.
+# Cargo pod is now baked into the map (not code-spawned) at
+# /World/Cargo/cargo_box_gaurd_size_200_fix, translate (9, -3, 0.38).
+# CARGO_FLOOR_TOP_Z is measured directly off that saved prim's
+# PhysicsColliders/floor collider (world Z of its top face) via headless USD
+# inspection -- NOT derived from any formula, since this instance's actual
+# geometry does not match cargo_guard_clone.py's code-spawn baseline anymore.
+CARGO_FLOOR_TOP_Z = 0.055
+
+# User-specified: 2x2 grid at x=9 +-0.25, y=-3 +-0.2, non-uniform scale
+# (0.75, 0.75, 0.5) applied directly to the CardBoxB_01 source (a 0.5 m
+# cube), so half of the scaled height is 0.5 * 0.5 * 0.5 = 0.125 m.
+# User asked for z=0.27, but that assumed a much higher floor than this
+# pod's actual measured 0.055 m -- at z=0.27 the box would float ~0.09 m
+# above the floor and drop when Play starts. Using the real floor height
+# instead: box center z = floor_top + half_height + small clearance.
+PARCEL_SCALE_XYZ = (0.75, 0.75, 0.5)
+_PARCEL_HALF_HEIGHT_Z = 0.125
+_PARCEL_FLOOR_CLEARANCE_Z = 0.005
+PARCEL_Z = CARGO_FLOOR_TOP_Z + _PARCEL_HALF_HEIGHT_Z + _PARCEL_FLOOR_CLEARANCE_Z
+
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
         "usd": CARD_BOX_USD,
-        "offset_xy": (-0.18, -0.18),
-        "max_size_xyz": (0.30, 0.30, 0.30),
+        "spawn_xyz": (9.0 - 0.25, -3.0 - 0.2, PARCEL_Z),
+        "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
     },
     {
         "name": "parcel_box_02",
         "usd": CARD_BOX_USD,
-        "offset_xy": (-0.18, 0.18),
-        "max_size_xyz": (0.30, 0.30, 0.30),
+        "spawn_xyz": (9.0 - 0.25, -3.0 + 0.2, PARCEL_Z),
+        "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
     },
     {
         "name": "parcel_box_03",
         "usd": CARD_BOX_USD,
-        "offset_xy": (0.18, -0.18),
-        "max_size_xyz": (0.30, 0.30, 0.30),
+        "spawn_xyz": (9.0 + 0.25, -3.0 - 0.2, PARCEL_Z),
+        "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
     },
     {
         "name": "parcel_box_04",
         "usd": CARD_BOX_USD,
-        "offset_xy": (0.18, 0.18),
-        "max_size_xyz": (0.30, 0.30, 0.30),
+        "spawn_xyz": (9.0 + 0.25, -3.0 + 0.2, PARCEL_Z),
+        "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
     },
 ]

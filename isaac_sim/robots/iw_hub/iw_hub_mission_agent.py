@@ -43,24 +43,25 @@ LIFT_KD = 1_000.0
 LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 
-# TEMP TEST VALUES -- Parcel_Sorting_Map final AMR/cargo/conveyor-dock
-# layout is not baked in yet (map still WIP, real coordinates pending).
-# These place the AMR's local test loop in open floor away from the
-# conveyor (x=-6..0, y~0) and from p3020_in (0.2,-1.5)/p3020_out
-# (-14.2,-2.6), matching project_config/robot_config.py's placeholder
-# START_XY/CARGO_REGISTRY. Must match the actual runtime cargo root created
-# by main_mission.py.
+# Real values measured headlessly off the rebuilt Parcel_Sorting_Map (both
+# AMR and cargo pod are baked into the map now, not code-spawned):
+#   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=0 deg
+#   /World/Cargo/cargo_box_gaurd_size_200_fix     -> (9, -3), yaw=0 deg
+# AMR spawn and cargo pod share X=9, so the local dock drive is a straight
+# +Y move -- matching this file's existing "rotate then drive Y" logic.
+# TARGET_ROOT (the AMR's own dock-drive target) is set equal to the cargo
+# pod's position, same convention as the old placeholder values.
 CARGO_PRIM_PATH = "/World/Cargo/cargo_box_gaurd_size_200_fix"
-CARGO_HOME_X = 3.0
-CARGO_HOME_Y = -1.8
+CARGO_HOME_X = 9.0
+CARGO_HOME_Y = -3.0
 CARGO_HOME_YAW = 0.0
 
-SPAWN_X = 3.0
-SPAWN_Y = 1.5
+SPAWN_X = 9.0
+SPAWN_Y = -6.0
 SPAWN_YAW = 0.0
 
-TARGET_ROOT_X = 3.0
-TARGET_ROOT_Y = -1.8
+TARGET_ROOT_X = 9.0
+TARGET_ROOT_Y = -3.0
 TARGET_YAW = math.radians(90.0)
 RETURN_X_YAW = 0.0
 
@@ -103,8 +104,8 @@ def _yaw_from_quaternion(q):
 
 
 class MissionIwHubAgent(IwHubAgent):
-    def __init__(self, cfg, world, usd_path):
-        super().__init__(cfg, world, usd_path)
+    def __init__(self, cfg, world):
+        super().__init__(cfg, world)
         self.robot = None
         self.drive_controller = None
         self.articulation_controller = None

@@ -33,12 +33,18 @@ class AmrP3020Mission(Node):
     def __init__(self):
         super().__init__("amr_p3020_mission")
 
-        self.declare_parameter("delivery_x", 1.30104)
-        self.declare_parameter("delivery_y", -0.06065)
+        # Parcel_Sorting_Map real values: p3020_in base (0.2,-1.5,0.4) +
+        # p3020_mission_agent.py's AMR_DELIVERY_POSE_WORLD -- AMR parks here,
+        # facing 0 deg (toward the arm), so it is within arm #1's 2 m reach.
+        self.declare_parameter("delivery_x", 1.1)
+        self.declare_parameter("delivery_y", -1.5)
         self.declare_parameter("delivery_yaw", 0.0)
 
-        self.declare_parameter("return_x", 10.5)
-        self.declare_parameter("return_y", -0.50)
+        # Approximate return waypoint near the real cargo dock (9, -3) --
+        # iw_hub_mission_agent.py's local RETURN_ALIGN_X/RETURN_ENTER_HOME
+        # steps do the precise re-docking after Nav2 gets it this close.
+        self.declare_parameter("return_x", 9.0)
+        self.declare_parameter("return_y", -3.5)
         self.declare_parameter(
             "return_yaw",
             math.radians(90.0),
@@ -388,7 +394,7 @@ class AmrP3020Mission(Node):
             if self.pickup_state == "RETURN_DOCK_DONE":
                 self.get_logger().info(
                     "IW Hub restored to cargo dock: "
-                    "x=10.5, y=-1.25, yaw=90 deg"
+                    "x=9, y=-3, yaw=90 deg"
                 )
                 self._set_state("REQUEST_LOWER")
             elif self.pickup_state == "ERROR":
@@ -425,7 +431,7 @@ class AmrP3020Mission(Node):
         if self.state == "COMPLETE":
             self.get_logger().info(
                 "AMR mission complete: cargo restored and IW Hub returned "
-                "to spawn (10.5, 1.80122, yaw=0 deg)",
+                "to spawn (9, -6, yaw=0 deg)",
                 throttle_duration_sec=5.0,
             )
             return

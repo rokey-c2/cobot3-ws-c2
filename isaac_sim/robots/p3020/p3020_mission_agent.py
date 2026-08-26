@@ -96,14 +96,37 @@ SAFE_JOINT_LIMITS = {
     "joint_6": (-3.14, 3.14),
 }
 
+# p3020_in's authored home pose (degrees) -- matches
+# state:angular:physics:position on /World/p3020_in's joints in the saved
+# map exactly, confirmed via headless inspection. This is what post_reset()
+# now sets directly instead of overwriting it with an IK-computed scan pose.
+HOME_JOINT_DEG = {
+    "joint_1": 0.0,
+    "joint_2": 0.0,
+    "joint_3": 90.0,
+    "joint_5": 76.8,
+    "joint_6": 56.8,
+}
+
 DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
 
 # Parcel_Sorting_Map에서 직접 확인한 P3020(arm #1, /World/p3020_in) 베이스
-# 월드 좌표 (회전 없음). 헤드리스로 직접 측정함.
+# 월드 좌표/방향. 헤드리스로 직접 측정함 -- 맵 재구성 후 p3020_in 자체가
+# Z축 53.5도 회전된 채로 배치되어 있어서(스탠드가 아니라 팔 프림 본인의
+# 정적 orient), 회전이 없다고 가정하면 IK 타겟이 그만큼 어긋난다.
 ROBOT_BASE_POS = np.array([0.2, -1.5, 0.4])
-ROBOT_BASE_QUAT = np.array([1.0, 0.0, 0.0, 0.0])
+ROBOT_BASE_QUAT = np.array([0.8929789662361145, 0.0, 0.0, 0.45009845495224])
+
+# p3020_out(불량품 쪽, /World/p3020_out) 베이스 -- 헤드리스로 함께 측정함.
+# 이 파일이 구동하는 건 여전히 arm #1(p3020_in)뿐이라 아직 어디서도 안 쓰이지만,
+# p3020_out용 에이전트를 만들 때 ROBOT_BASE_POS/ROBOT_BASE_QUAT 자리에
+# 이 값으로 바꿔 끼우면 된다.
+P3020_OUT_BASE_POS = np.array([-14.2, -2.6, 0.4])
+P3020_OUT_BASE_QUAT = np.array(
+    [-0.4226182699203491, 0.0, 0.0, -0.9063078165054321]
+)
 
 SPEC_REACH = 2.0
 
@@ -604,10 +627,7 @@ class P3020PickPlaceAgent:
         self.camera = None
         self.home_q = None
 
-    def setup(self):
-        _disable_baked_camera_graph(self.stage)
-
-        self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
+    def _configure_arm_drives(self):
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)):
             if prim.GetName() not in ARM_JOINTS:
                 continue
@@ -617,6 +637,12 @@ class P3020PickPlaceAgent:
                     drive.GetStiffnessAttr().Set(DRIVE_STIFFNESS)
                     drive.GetDampingAttr().Set(DRIVE_DAMPING)
                     drive.GetMaxForceAttr().Set(DRIVE_MAX_FORCE)
+
+    def setup(self):
+        _disable_baked_camera_graph(self.stage)
+
+        self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
+        self._configure_arm_drives()
 
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(GRIPPER_BODY_PATH)):
             attr = prim.GetAttribute("physics:collisionEnabled")
@@ -665,27 +691,34 @@ class P3020PickPlaceAgent:
         self.camera.initialize()
 
     def post_reset(self):
+        # world.reset() re-parses the physics scene, and drive stiffness/
+        # damping/maxForce authored in setup() (before that reset) doesn't
+        # always stick through it -- same class of issue this file's
+        # caller already works around for the conveyor/sorter by calling
+        # their setup() again after world.reset(). Re-authoring here, right
+        # before initialize()/_set_home_pose(), makes sure the home pose is
+        # actually reached with the intended stiff drives on the very first
+        # Play, not only after a manual Stop+Play.
+        self._configure_arm_drives()
         self.robot.initialize()
-        self._compute_ready_pose()
+        self._set_home_pose()
 
-    def _compute_ready_pose(self, steps=200):
-        scan_xy_world = ROBOT_BASE_POS[:2] + DEFAULT_SCAN_XY
-        target_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG,
-                                        yaw_toward(DEFAULT_SCAN_XY))
-        tcp_target = np.array([scan_xy_world[0], scan_xy_world[1], SCAN_HEIGHT])
-        flange_target = tcp_to_flange(tcp_target, target_quat)
-        for _ in range(steps):
-            action, solved = self.ik_solver.compute_inverse_kinematics(
-                target_position=flange_target,
-                target_orientation=target_quat,
-                orientation_tolerance=0.15,
-            )
-            if solved:
-                action = clamp_to_safe_limits(action, self.robot.dof_names)
-                self.robot.apply_action(action)
-            self.world.step(render=True)
-        self.home_q = np.array(self.robot.get_joint_positions(), dtype=float)
-        self.robot.set_joint_positions(self.home_q)
+    def _set_home_pose(self):
+        """Set the arm to its authored home pose (HOME_JOINT_DEG).
+
+        Previously this computed a camera-scan pose via 200 IK steps and
+        used whatever that converged to as home -- which silently
+        overwrote the pose the user had deliberately saved into the map,
+        every time main_mission.py started. Now it just sets that saved
+        pose directly.
+        """
+
+        home_q = np.array(
+            [np.radians(HOME_JOINT_DEG[name]) for name in self.robot.dof_names],
+            dtype=float,
+        )
+        self.robot.set_joint_positions(home_q)
+        self.home_q = home_q
 
     def set_ready_pose(self):
         self.robot.set_joint_positions(self.home_q)

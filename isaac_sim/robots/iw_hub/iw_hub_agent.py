@@ -1,7 +1,7 @@
-"""Spawn NVIDIA's official IW Hub Nav2 robot setup in the project world."""
+"""Attach to the IW Hub that is already baked into the map (not spawned)."""
 
 import carb
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
+from pxr import Sdf, Usd, UsdPhysics
 import omni.usd
 
 from robots.base_robot import BaseRobotAgent
@@ -344,74 +344,33 @@ def _configure_lidar_range(
 
 
 class IwHubAgent(BaseRobotAgent):
-    """Spawn NVIDIA's IW Hub while limiting only its useful LiDAR range."""
+    """Locate the IW Hub already baked into the map and tune its LiDAR range.
 
-    def __init__(self, cfg, world, usd_path):
+    Nothing is spawned or moved here -- the robot, its dual LiDAR, and its
+    ROS graph are already part of the saved map. This only discovers the
+    existing prim (reusing the same odom/LiDAR-topic-based search that used
+    to locate the source sub-prim before referencing it) and applies the
+    same rangeOffset/near/far LiDAR tuning as before.
+    """
+
+    def __init__(self, cfg, world):
         super().__init__(cfg, world)
-        self.usd_path = str(usd_path)
-        self.spawn_xyz = tuple(cfg["spawn_xyz"])
-        self.spawn_yaw = float(cfg.get("spawn_yaw", 0.0))
         self.lidar_range_offset_m = float(
             cfg.get("lidar_range_offset_m", 0.75)
         )
         self.lidar_min_range_m = float(cfg.get("lidar_min_range_m", 0.8))
         self.lidar_max_range_m = float(cfg.get("lidar_max_range_m", 5.0))
-        self.prim_path = f"/World/Robots/{self.name}"
-        self._source_prim_path = None
-
-    def _get_source_prim_path(self):
-        if self._source_prim_path is not None:
-            return self._source_prim_path
-
-        carb.log_info(
-            "[IW HUB] reading NVIDIA IW Hub Navigation sample "
-            "for the official robot + dual LiDAR setup"
-        )
-
-        source_stage = Usd.Stage.Open(self.usd_path)
-        if source_stage is None:
-            raise RuntimeError(
-                "Failed to open NVIDIA IW Hub navigation scene: "
-                f"{self.usd_path}"
-            )
-
-        self._source_prim_path = _navigation_robot_prim_path(source_stage)
-
-        carb.log_info(
-            "[IW HUB] NVIDIA navigation robot prim: "
-            f"{self._source_prim_path}"
-        )
-
-        return self._source_prim_path
+        self.prim_path = None
 
     def setup(self):
         stage = omni.usd.get_context().get_stage()
-        UsdGeom.Xform.Define(stage, "/World/Robots")
 
-        source_prim_path = self._get_source_prim_path()
-
-        prim = stage.DefinePrim(self.prim_path, "Xform")
-        prim.GetReferences().AddReference(
-            self.usd_path,
-            source_prim_path,
-        )
-
-        # Preserve NVIDIA's sensor mounting, ROS graph, scan rate, firing rate,
-        # tick rate, horizontal resolution, position, and orientation. Only
-        # rangeOffset/near/far are overridden locally in this stage.
-        transform = UsdGeom.Xformable(prim)
-        transform.ClearXformOpOrder()
-        transform.AddTranslateOp().Set(Gf.Vec3d(*self.spawn_xyz))
-        transform.AddRotateXYZOp().Set(
-            Gf.Vec3f(0.0, 0.0, self.spawn_yaw)
-        )
-
-        stage.Load(self.prim_path)
+        self.prim_path = str(_navigation_robot_prim_path(stage))
 
         robot_prim = stage.GetPrimAtPath(self.prim_path)
         if not robot_prim.IsValid():
             raise RuntimeError(
-                f"IW Hub prim failed to load: {self.prim_path}"
+                f"Baked-in IW Hub prim not found: {self.prim_path}"
             )
 
         configured_lidars = _configure_lidar_range(
@@ -423,15 +382,17 @@ class IwHubAgent(BaseRobotAgent):
 
         if configured_lidars:
             carb.log_info(
-                f"[IW HUB] spawned {self.name} at {self.spawn_xyz}; "
+                f"[IW HUB] attached to baked-in {self.name} at "
+                f"{self.prim_path}; "
                 f"LiDAR rangeOffset={self.lidar_range_offset_m} m, "
                 f"valid range={self.lidar_min_range_m}-"
                 f"{self.lidar_max_range_m} m; "
-                "scan rate/resolution/pose=NVIDIA original"
+                "scan rate/resolution/pose=map original"
             )
         else:
             carb.log_warn(
-                f"[IW HUB] spawned {self.name} at {self.spawn_xyz}; "
+                f"[IW HUB] attached to baked-in {self.name} at "
+                f"{self.prim_path}; "
                 "LiDAR range optimization was skipped."
             )
 
