@@ -1,38 +1,38 @@
-"""Spawns simple physics-enabled test cubes tagged with a box_id."""
+"""Spawn demo CardBox parcels tagged with a custom ``box_id``.
 
-from pxr import Gf, Sdf, UsdGeom, UsdPhysics
+This module intentionally stays small.  The actual NVIDIA CardBox asset
+reference, rigid body, mass, collider, non-uniform scale, and box_id authoring
+are handled by ``cargo_pod_physics.add_parcel_asset_scaled()``, which is
+already used by the current project.
+"""
+
+from cargo.cargo_pod_physics import add_parcel_asset_scaled
 
 
-def spawn_box_with_id(stage, prim_path, position, box_id, size=0.15, mass_kg=0.5):
-    """Spawn one dynamic physics cube carrying a `box_id` custom attribute.
+def spawn_box_with_id(
+    stage,
+    prim_path,
+    position,
+    box_id,
+    asset_url,
+    scale_xyz=(0.75, 0.75, 0.5),
+    mass_kg=15.0,
+):
+    """Spawn one dynamic NVIDIA CardBox parcel with a custom integer box_id."""
 
-    This file is brought from hwi_conveyor_test as a reusable starting point
-    for the wheel-sorter-only demo on hwi_new_sorter.
-    """
-
-    cube = UsdGeom.Cube.Define(stage, prim_path)
-    cube.CreateSizeAttr(1.0)
-
-    xform = UsdGeom.Xformable(cube.GetPrim())
-    xform.AddTranslateOp().Set(Gf.Vec3d(*position))
-    xform.AddScaleOp().Set(Gf.Vec3f(size, size, size))
-
-    rigid_body = UsdPhysics.RigidBodyAPI.Apply(cube.GetPrim())
-    rigid_body.CreateRigidBodyEnabledAttr(True)
-    rigid_body.CreateKinematicEnabledAttr(False)
-
-    mass = UsdPhysics.MassAPI.Apply(cube.GetPrim())
-    mass.CreateMassAttr(float(mass_kg))
-
-    UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
-
-    box_id_attr = cube.GetPrim().CreateAttribute(
-        "box_id", Sdf.ValueTypeNames.Int, custom=True
+    add_parcel_asset_scaled(
+        stage,
+        prim_path,
+        asset_url=asset_url,
+        center=position,
+        scale_xyz=scale_xyz,
+        box_id=int(box_id),
+        mass_kg=float(mass_kg),
     )
-    box_id_attr.Set(int(box_id))
 
     print(
-        f"[BOX] spawned {prim_path} at {tuple(position)} box_id={int(box_id)}"
+        f"[BOX] spawned {prim_path} at {tuple(position)} "
+        f"box_id={int(box_id)} scale={tuple(scale_xyz)}"
     )
 
-    return cube.GetPrim()
+    return stage.GetPrimAtPath(prim_path)
