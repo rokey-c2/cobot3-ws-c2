@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api";
 import StatusPill from "../components/StatusPill";
 
 const EQUIPMENT_CODE = "AMR_IN";
 const CAMERA_STREAM_URL = import.meta.env.VITE_AMR_CAMERA_STREAM_URL || "";
+const MANUAL_HEARTBEAT_MS = 180;
 
 export default function AmrControlPage() {
   const [equipment, setEquipment] = useState([]);
@@ -12,6 +13,10 @@ export default function AmrControlPage() {
   const [command, setCommand] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [manualDirection, setManualDirection] = useState("STOP");
+
+  const manualTimerRef = useRef(null);
+  const manualDirectionRef = useRef("STOP");
 
   const loadEquipment = useCallback(async () => {
     try {
@@ -29,12 +34,28 @@ export default function AmrControlPage() {
     return () => window.clearInterval(timer);
   }, [loadEquipment]);
 
+  useEffect(() => {
+    const handleWindowBlur = () => stopManual();
+    window.addEventListener("blur", handleWindowBlur);
+
+    return () => {
+      window.removeEventListener("blur", handleWindowBlur);
+      clearManualTimer();
+
+      if (manualDirectionRef.current !== "STOP") {
+        api.manualAmr(EQUIPMENT_CODE, "STOP").catch(() => {});
+        manualDirectionRef.current = "STOP";
+      }
+    };
+  }, []);
+
   const amr = useMemo(
     () => equipment.find((item) => item.code === EQUIPMENT_CODE),
     [equipment],
   );
 
   async function runAction(label, action) {
+    stopManual();
     setBusy(true);
     setError("");
     try {
@@ -64,7 +85,66 @@ export default function AmrControlPage() {
     runAction("NAVIGATE", () => api.navigateAmr(EQUIPMENT_CODE, parsed));
   }
 
+  function clearManualTimer() {
+    if (manualTimerRef.current !== null) {
+      window.clearInterval(manualTimerRef.current);
+      manualTimerRef.current = null;
+    }
+  }
+
+  function sendManual(direction) {
+    api.manualAmr(EQUIPMENT_CODE, direction).catch((requestError) => {
+      clearManualTimer();
+      manualDirectionRef.current = "STOP";
+      setManualDirection("STOP");
+      setCommand({ label: `MANUAL ${direction}`, status: "FAILED" });
+      setError(requestError.message);
+
+      api.manualAmr(EQUIPMENT_CODE, "STOP").catch(() => {});
+    });
+  }
+
+  function startManual(direction) {
+    if (busy || amr?.status !== "RUNNING") {
+      return;
+    }
+
+    clearManualTimer();
+    setError("");
+    manualDirectionRef.current = direction;
+    setManualDirection(direction);
+    setCommand({ label: `MANUAL ${direction}`, status: "RUNNING" });
+
+    sendManual(direction);
+    manualTimerRef.current = window.setInterval(
+      () => sendManual(direction),
+      MANUAL_HEARTBEAT_MS,
+    );
+  }
+
+  function stopManual() {
+    clearManualTimer();
+
+    if (manualDirectionRef.current === "STOP") {
+      return;
+    }
+
+    manualDirectionRef.current = "STOP";
+    setManualDirection("STOP");
+    setCommand({ label: "MANUAL STOP", status: "SUCCESS" });
+    api.manualAmr(EQUIPMENT_CODE, "STOP").catch((requestError) => {
+      setError(requestError.message);
+    });
+  }
+
+  function manualPointerDown(event, direction) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    startManual(direction);
+  }
+
   const direction = yawDegrees(amr?.yaw);
+  const manualDisabled = busy || amr?.status !== "RUNNING";
 
   return (
     <div className="stack-lg">
@@ -73,7 +153,7 @@ export default function AmrControlPage() {
           <p className="eyebrow">Robot Operation</p>
           <h2>AMR Control</h2>
           <p className="muted">
-            AMR_IN의 실제 Start/Stop, Navigate, Lift 명령을 실행합니다. Manual Jog는 Adapter 연결 전까지 잠금 상태입니다.
+            AMR_IN의 실제 Start/Stop, Navigate, Lift, Manual Jog 명령을 실행합니다.
           </p>
         </div>
         <div className="amr-header-state">
@@ -138,29 +218,68 @@ export default function AmrControlPage() {
           </div>
 
           <div className="detail-stats three-col">
-            <Info label="Mode" value={amr?.mode || "-"} />
+            <Info label="Mode" value={manualDirection === "STOP" ? (amr?.mode || "-") : "MANUAL"} />
             <Info label="Lift" value={amr?.lift_state || "-"} />
             <Info label="Last Seen" value={formatTime(amr?.last_seen_at)} />
           </div>
         </div>
 
-        <div className="panel manual-panel disabled-panel">
+        <div className="panel manual-panel">
           <div className="panel-title">
             <div>
               <span>MANUAL</span>
               <h3>Jog Control</h3>
             </div>
-            <small>ADAPTER REQUIRED</small>
+            <small>{manualDirection === "STOP" ? "PRESS & HOLD" : manualDirection}</small>
           </div>
-          <div className="dpad" aria-label="Manual control preview">
-            <button disabled className="dpad-up">↑</button>
-            <button disabled className="dpad-left">←</button>
-            <button disabled className="dpad-stop">STOP</button>
-            <button disabled className="dpad-right">→</button>
-            <button disabled className="dpad-down">↓</button>
+          <div className="dpad" aria-label="AMR manual jog control">
+            <ManualButton
+              className="dpad-up"
+              label="↑"
+              direction="FORWARD"
+              activeDirection={manualDirection}
+              disabled={manualDisabled}
+              onPointerDown={manualPointerDown}
+              onStop={stopManual}
+            />
+            <ManualButton
+              className="dpad-left"
+              label="←"
+              direction="LEFT"
+              activeDirection={manualDirection}
+              disabled={manualDisabled}
+              onPointerDown={manualPointerDown}
+              onStop={stopManual}
+            />
+            <button
+              type="button"
+              className="dpad-stop"
+              disabled={manualDisabled}
+              onClick={stopManual}
+            >
+              STOP
+            </button>
+            <ManualButton
+              className="dpad-right"
+              label="→"
+              direction="RIGHT"
+              activeDirection={manualDirection}
+              disabled={manualDisabled}
+              onPointerDown={manualPointerDown}
+              onStop={stopManual}
+            />
+            <ManualButton
+              className="dpad-down"
+              label="↓"
+              direction="BACKWARD"
+              activeDirection={manualDirection}
+              disabled={manualDisabled}
+              onPointerDown={manualPointerDown}
+              onStop={stopManual}
+            />
           </div>
           <p className="panel-help">
-            현재 /cmd_vel은 STOP 안전 제어 용도로 사용합니다. 수동 주행 API/MQTT 규격이 확정된 후 활성화합니다.
+            화살표를 누르고 있는 동안만 주행합니다. 버튼을 놓거나 창 포커스를 잃으면 STOP을 전송하며, Adapter의 deadman timeout도 자동 정지시킵니다.
           </p>
         </div>
 
@@ -224,6 +343,35 @@ export default function AmrControlPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function ManualButton({
+  className,
+  label,
+  direction,
+  activeDirection,
+  disabled,
+  onPointerDown,
+  onStop,
+}) {
+  const active = activeDirection === direction;
+
+  return (
+    <button
+      type="button"
+      className={className}
+      disabled={disabled}
+      aria-label={direction}
+      aria-pressed={active}
+      style={active ? { background: "#3978f6", borderColor: "#3978f6", color: "#fff" } : undefined}
+      onPointerDown={(event) => onPointerDown(event, direction)}
+      onPointerUp={onStop}
+      onPointerCancel={onStop}
+      onLostPointerCapture={onStop}
+    >
+      {label}
+    </button>
   );
 }
 
