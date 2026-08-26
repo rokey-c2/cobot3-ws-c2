@@ -32,12 +32,13 @@ echo "[2] local reverse drive -> (9, -3.3)"
 echo "[3] lift up -> PICKUP_DONE"
 echo "[4] Nav2 delivery -> (1.1, -1.5)"
 echo "[5] P3020 PickPlace action"
-echo "[6] Nav2 return near cargo"
-echo "[7] local dock -> (9, -3.3, yaw=-90 deg)"
-echo "[8] lift down + cargo pose verification"
-echo "[9] local return -> (9, -6, yaw=-90 deg)"
+echo "[6] wait for real P3020 DONE_SUCCESS"
+echo "[7] Nav2 return near cargo"
+echo "[8] local dock -> (9, -3.3, yaw=-90 deg)"
+echo "[9] lift down + cargo pose verification"
+echo "[10] local return -> (9, -6, yaw=-90 deg)"
 echo
-echo "[TEST DEFAULT] simulate_p3020:=true"
+echo "[REAL DEFAULT] simulate_p3020:=false"
 echo "============================================"
 
 exec python3 \
