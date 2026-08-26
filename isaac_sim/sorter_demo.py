@@ -52,10 +52,9 @@ BOX_ID_TO_TRACK = {
     4: None,  # Pass every sorter straight through.
 }
 
-# These are deliberately easy-to-tune because the new map has not yet been
-# physically timed against the proximity detector.  Logs print live distance.
-SORTER_APPROACH_THRESHOLD_M = 0.45
-SORTER_RESET_THRESHOLD_M = 0.70
+# Trigger only when a box is close to the physical sorter center.
+# Automatic reset is disabled; the next arriving box writes the next state.
+SORTER_APPROACH_THRESHOLD_M = 0.25
 
 
 enable_extension("isaacsim.asset.gen.conveyor")
@@ -84,6 +83,8 @@ def _print_demo_config():
     print("[SORTER] SorterSpeed=-1.0")
     print("[SORTER] STRAIGHT=(1, 0, 0)")
     print("[SORTER] DIVERT=(1, -2, 0)")
+    print(f"[SORTER] approach threshold={SORTER_APPROACH_THRESHOLD_M:.2f} m")
+    print("[SORTER] auto reset: disabled")
     print("[INFO] AMR/P3020 controllers are NOT started in this demo")
     print("============================================")
     print()
@@ -96,7 +97,6 @@ def main():
     if open_stage(str(WORLD_USD)) is False:
         raise RuntimeError(f"Failed to open stage: {WORLD_USD}")
 
-    # Let referenced assets/graphs finish loading before World is created.
     for _ in range(5):
         simulation_app.update()
 
@@ -105,19 +105,14 @@ def main():
     conveyor = ConveyorController()
     sorter = WheelSorterController(
         approach_threshold=SORTER_APPROACH_THRESHOLD_M,
-        reset_threshold=SORTER_RESET_THRESHOLD_M,
     )
 
-    # Reset first.  The runtime OmniGraphs can be unavailable before reset/play,
-    # so do not repeatedly write values every simulation frame.
     world.reset()
     world.play()
 
-    # Give the existing authored ActionGraphs a few frames to become live.
     for _ in range(5):
         world.step(render=True)
 
-    # Apply initial values once after the graph runtime is active.
     conveyor.setup()
     sorter.setup()
     conveyor.start()
