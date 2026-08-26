@@ -54,7 +54,9 @@ class AmrP3020Mission(Node):
             "p3020_action_name",
             "/p3020/pick_place",
         )
-        self.declare_parameter("simulate_p3020", True)
+        # Full mission must wait for the real P3020 ActionServer/result.
+        # Simulation remains available only when explicitly enabled.
+        self.declare_parameter("simulate_p3020", False)
         self.declare_parameter("simulated_p3020_duration", 3.0)
         self.declare_parameter("object_id", "box")
 
