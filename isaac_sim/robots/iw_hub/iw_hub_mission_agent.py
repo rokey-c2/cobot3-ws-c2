@@ -89,6 +89,11 @@ class MissionIwHubAgent(IwHubAgent):
         self._cargo_before_z = None
         self._last_error = ""
 
+        # Manual lift control used by Control Tower / ROS2 lift commands.
+        # This is only active while the cargo mission state is IDLE.
+        self._manual_lift_target = 0.0
+        self._manual_lift_state = "DOWN"
+
     def setup(self):
         super().setup()
 
@@ -133,6 +138,8 @@ class MissionIwHubAgent(IwHubAgent):
         )
 
         self._hold_lift(0.0)
+        self._manual_lift_target = 0.0
+        self._manual_lift_state = "DOWN"
         self.mission_state = "IDLE"
         self._state_elapsed = 0.0
 
@@ -145,6 +152,30 @@ class MissionIwHubAgent(IwHubAgent):
             f"max={LOCAL_MAX_LINEAR_SPEED:.2f} m/s "
             "(precision creep unchanged)"
         )
+
+    def request_manual_lift(self, action):
+        """Request manual lift UP/DOWN while the cargo mission is idle."""
+
+        action = str(action).strip().upper()
+
+        # Do not let manual lift commands interfere with the cargo mission FSM.
+        if self.mission_state != "IDLE":
+            return False
+
+        if action == "UP":
+            self._manual_lift_target = LIFT_TARGET
+            self._manual_lift_state = "MOVING_UP"
+            return True
+
+        if action == "DOWN":
+            self._manual_lift_target = 0.0
+            self._manual_lift_state = "MOVING_DOWN"
+            return True
+
+        return False
+
+    def get_manual_lift_state(self):
+        return self._manual_lift_state
 
     def request_pickup(self):
         if self.mission_state == "PICKUP_DONE":
@@ -180,6 +211,8 @@ class MissionIwHubAgent(IwHubAgent):
 
     def reset_mission(self):
         self._stop()
+        self._manual_lift_target = 0.0
+        self._manual_lift_state = "DOWN"
         self._hold_lift(0.0)
         self._cargo_before_z = None
         self._last_error = ""
@@ -394,7 +427,28 @@ class MissionIwHubAgent(IwHubAgent):
             self._hold_lift(LIFT_TARGET)
             return
 
-        if self.mission_state in {"IDLE", "LOWER_DONE", "SPAWN_DONE", "ERROR"}:
+        if self.mission_state == "IDLE":
+            # Manual lift control is independent of Nav2 wheel velocity.
+            # Do not call _stop() here, because that would override /cmd_vel.
+            self._hold_lift(self._manual_lift_target)
+
+            joint_position = self._joint_position()
+
+            if (
+                self._manual_lift_target >= LIFT_TARGET
+                and joint_position >= 0.035
+            ):
+                self._manual_lift_state = "UP"
+
+            elif (
+                self._manual_lift_target <= 0.0
+                and joint_position <= 0.005
+            ):
+                self._manual_lift_state = "DOWN"
+
+            return
+
+        if self.mission_state in {"LOWER_DONE", "SPAWN_DONE", "ERROR"}:
             return
 
         if self.mission_state == "ROTATE_TO_DOCK":

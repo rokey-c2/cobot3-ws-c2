@@ -1,0 +1,71 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: control_tower_postgres
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - control_tower_pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    restart: unless-stopped
+
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: control_tower_mosquitto
+
+    ports:
+      - "1883:1883"
+
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - control_tower_mqtt_data:/mosquitto/data
+
+    restart: unless-stopped
+
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: control_tower_backend
+
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      mosquitto:
+        condition: service_started
+
+    restart: unless-stopped
+
+
+volumes:
+  control_tower_pgdata:
+  control_tower_mqtt_data:

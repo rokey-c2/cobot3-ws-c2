@@ -137,6 +137,7 @@ class AmrMissionBridge(Node):
         super().__init__("isaac_amr_mission_bridge")
         self.agent = agent
         self.last_state = None
+        self.last_lift_state = None
 
         self.create_subscription(
             String,
@@ -144,11 +145,24 @@ class AmrMissionBridge(Node):
             self._command_callback,
             10,
         )
+        self.create_subscription(
+            String,
+            "/amr_a/lift_command",
+            self._lift_command_callback,
+            10,
+        )
+
         self.state_pub = self.create_publisher(
             String,
             "/amr_a/pickup_state",
             10,
         )
+        self.lift_state_pub = self.create_publisher(
+            String,
+            "/amr_a/lift_state",
+            10,
+        )
+
         self.create_timer(0.2, self._publish_state)
 
     def _command_callback(self, message):
@@ -169,6 +183,20 @@ class AmrMissionBridge(Node):
                 f"unknown command: {command}"
             )
 
+    def _lift_command_callback(self, message):
+        action = message.data.strip().upper()
+
+        accepted = self.agent.request_manual_lift(action)
+
+        if accepted:
+            self.get_logger().info(
+                f"lift command accepted: {action}"
+            )
+        else:
+            self.get_logger().warning(
+                f"lift command rejected: {action}"
+            )
+
     def _publish_state(self):
         state = self.agent.get_mission_state()
         msg = String()
@@ -178,6 +206,17 @@ class AmrMissionBridge(Node):
         if state != self.last_state:
             self.get_logger().info(f"pickup state: {state}")
             self.last_state = state
+
+        lift_state = self.agent.get_manual_lift_state()
+        lift_msg = String()
+        lift_msg.data = lift_state
+        self.lift_state_pub.publish(lift_msg)
+
+        if lift_state != self.last_lift_state:
+            self.get_logger().info(
+                f"lift state: {lift_state}"
+            )
+            self.last_lift_state = lift_state
 
 
 class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
@@ -316,6 +355,8 @@ def main():
     print("[LOCAL] return spawn: (10.5, 1.80122), yaw=0 deg")
     print("[ROS2] /amr_a/pickup_command")
     print("[ROS2] /amr_a/pickup_state")
+    print("[ROS2] /amr_a/lift_command")
+    print("[ROS2] /amr_a/lift_state")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
