@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# P3020 vision dependencies are installed in a project venv without modifying
-# the system Python. --system-site-packages keeps ROS2 apt packages visible.
+# Install the non-ROS Python dependency for scripts/ros2_mqtt_adapter.py while
+# keeping ROS2 packages from /opt/ros visible through --system-site-packages.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="$ROOT_DIR/.venv"
-REQUIREMENTS="$ROOT_DIR/requirements/vision.txt"
+REQUIREMENTS="$ROOT_DIR/requirements/ros2-adapter.txt"
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "[ERROR] python3 is not installed"
@@ -29,5 +29,5 @@ python3 -m venv --system-site-packages "$VENV_DIR"
 "$VENV_DIR/bin/python3" -m pip install -r "$REQUIREMENTS"
 
 echo ""
-echo "[Vision] setup complete"
-echo "Activate with: source $VENV_DIR/bin/activate"
+echo "[ROS2 MQTT Adapter] setup complete"
+echo "Run with: $VENV_DIR/bin/python3 scripts/ros2_mqtt_adapter.py"

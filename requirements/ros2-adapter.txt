@@ -1,0 +1,2 @@
+# Non-ROS Python dependency used by scripts/ros2_mqtt_adapter.py.
+paho-mqtt
