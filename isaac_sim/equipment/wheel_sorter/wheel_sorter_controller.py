@@ -84,6 +84,8 @@ class WheelSorterUnit:
         self.set_direction(direction)
 
     def reset(self):
+        """Manual/shutdown reset only; demo routing does not auto-reset."""
+
         self.set_state(False)
 
     def get_world_xy(self):
@@ -110,9 +112,13 @@ class WheelSorterUnit:
 class WheelSorterController:
     """Control the three existing sorters in the current Parcel Sorting Map.
 
-    The old binary_switch/reroute nodes are not used.  Python keeps a simple
+    The old binary_switch/reroute nodes are not used. Python keeps a simple
     boolean state and maps it to the already-existing conveyor_belt direction
-    input.  No ROS2 node or OmniGraph node is created.
+    input. No ROS2 node or OmniGraph node is created.
+
+    Demo routing intentionally has no automatic reset threshold. Each sorter
+    keeps its most recently selected direction until the next box reaches the
+    approach threshold and writes the next state.
     """
 
     TRACK_IDS = ("01", "02", "03")
@@ -124,12 +130,10 @@ class WheelSorterController:
         self,
         regions=None,
         sorter_speed=None,
-        approach_threshold: float = 0.45,
-        reset_threshold: float = 0.70,
+        approach_threshold: float = 0.25,
     ):
         # `regions` and `sorter_speed` remain accepted only so the current
-        # main_mission.py does not fail before the demo integration step.
-        # The current-map values are fixed by the verified MD specification.
+        # main_mission.py does not fail before the demo-1 integration step.
         if regions is not None:
             print(
                 "[SORTER] legacy regions argument ignored; "
@@ -142,21 +146,16 @@ class WheelSorterController:
             )
 
         self.approach_threshold = float(approach_threshold)
-        self.reset_threshold = float(reset_threshold)
-
-        if self.reset_threshold <= self.approach_threshold:
-            raise ValueError(
-                "reset_threshold must be greater than approach_threshold"
-            )
+        if self.approach_threshold <= 0.0:
+            raise ValueError("approach_threshold must be greater than 0")
 
         self.units = {
             track_id: WheelSorterUnit(track_id)
             for track_id in self.TRACK_IDS
         }
 
-        # Per-box state used by the demo routing helper.
+        # Each box is allowed to trigger each sorter at most once.
         self._triggered_pairs = set()
-        self._completed_pairs = set()
 
     def setup(self):
         """Apply verified initial values to all three existing sorters."""
@@ -174,8 +173,11 @@ class WheelSorterController:
             unit.setup()
 
         self._triggered_pairs.clear()
-        self._completed_pairs.clear()
-        print("[SORTER] current-map sorters 01/02/03 ready")
+        print(
+            "[SORTER] current-map sorters 01/02/03 ready; "
+            f"approach_threshold={self.approach_threshold:.2f} m; "
+            "auto-reset disabled"
+        )
 
     def start(self):
         """Re-apply fixed speed/default direction after world.play()."""
@@ -204,9 +206,13 @@ class WheelSorterController:
         self.units[key].set_direction(direction)
 
     def reset_sorter(self, track_id):
+        """Manual reset helper; not called by update_boxes()."""
+
         self.set_state(track_id, False)
 
     def reset_all(self):
+        """Reset all sorters for shutdown/manual cleanup only."""
+
         for unit in self.units.values():
             unit.reset()
 
@@ -247,17 +253,12 @@ class WheelSorterController:
         return None if value is None else int(value)
 
     def update_boxes(self, box_prim_paths, box_id_to_track):
-        """Route demo boxes by proximity to the three physical sorters.
+        """Route demo boxes when they enter the sorter approach radius.
 
-        `box_id_to_track` is deliberately supplied by the caller.  The code
-        does NOT invent the user's final routing policy.  Example shape only:
-
-            {10: "01", 20: "02", 30: "03"}
-
-        When a box enters a sorter's approach radius, that sorter becomes
-        DIVERT only if this box's configured target is that track; otherwise
-        it stays STRAIGHT.  After the box leaves the reset radius, the sorter
-        returns to STRAIGHT automatically.
+        There is no automatic reset after a box passes. A sorter keeps the
+        direction selected by the latest box that reached it. When the next
+        box reaches the same sorter, that box writes the next STRAIGHT/DIVERT
+        state.
         """
 
         for box_path in tuple(box_prim_paths):
@@ -280,7 +281,7 @@ class WheelSorterController:
 
             for track_id, unit in self.units.items():
                 pair = (box_path, track_id)
-                if pair in self._completed_pairs:
+                if pair in self._triggered_pairs:
                     continue
 
                 sorter_xy = unit.get_world_xy()
@@ -289,33 +290,23 @@ class WheelSorterController:
                     box_xy[1] - sorter_xy[1],
                 )
 
-                if pair not in self._triggered_pairs:
-                    if distance > self.approach_threshold:
-                        continue
-
-                    should_divert = target_track == track_id
-                    unit.set_state(should_divert)
-                    self._triggered_pairs.add(pair)
-                    print(
-                        f"[SORTER] box={box_path} box_id={box_id} "
-                        f"reached track={track_id} distance={distance:.3f} "
-                        f"state={int(should_divert)}"
-                    )
+                if distance > self.approach_threshold:
                     continue
 
-                if distance >= self.reset_threshold:
-                    unit.reset()
-                    self._completed_pairs.add(pair)
-                    print(
-                        f"[SORTER] box={box_path} passed track={track_id}; "
-                        "direction reset to (1, 0, 0)"
-                    )
+                should_divert = target_track == track_id
+                unit.set_state(should_divert)
+                self._triggered_pairs.add(pair)
+                print(
+                    f"[SORTER] box={box_path} box_id={box_id} "
+                    f"reached track={track_id} distance={distance:.3f} "
+                    f"state={int(should_divert)}; state held until next box"
+                )
 
     def route_box(self, destination: str):
         """Compatibility hook for the existing single-box mission.
 
         Existing main_mission/P3020 code currently calls route_box("A"/"B"/
-        "C").  Keep that call alive until demo 1 is merged, but implement it
+        "C"). Keep that call alive until demo 1 is merged, but implement it
         with the new direction-vector controller rather than binary_switch.
         """
 
