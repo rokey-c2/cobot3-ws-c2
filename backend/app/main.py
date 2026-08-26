@@ -8,6 +8,7 @@ from app.mqtt_client import start_mqtt, stop_mqtt
 from app.api.amr import router as amr_router
 from app.api.equipment import router as equipment_router
 from app.api.events import router as events_router
+from app.api.manual import router as manual_router
 from app.api.missions import router as missions_router
 from app.api.packages import router as packages_router
 from app.api.system import router as system_router
@@ -37,6 +38,7 @@ app.include_router(packages_router)
 app.include_router(events_router)
 app.include_router(system_router)
 app.include_router(amr_router)
+app.include_router(manual_router)
 
 
 @app.get("/")
