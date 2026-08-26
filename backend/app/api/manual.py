@@ -65,7 +65,8 @@ def manual_drive(
                         e.name,
                         e.type,
                         e.enabled,
-                        es.status
+                        es.status,
+                        es.sync_status
                     FROM equipment e
                     LEFT JOIN equipment_state es
                         ON es.equipment_id = e.id
@@ -87,7 +88,7 @@ def manual_drive(
                         detail="Equipment is not an AMR",
                     )
 
-                if not equipment["enabled"]:
+                if not equipment["enabled"] and direction != "STOP":
                     raise HTTPException(
                         status_code=409,
                         detail="AMR is disabled",
@@ -102,6 +103,12 @@ def manual_drive(
                                 "AMR must be RUNNING "
                                 "before manual control"
                             ),
+                        )
+
+                    if equipment["sync_status"] != "SYNCED":
+                        raise HTTPException(
+                            status_code=409,
+                            detail="AMR pose is not synchronized",
                         )
 
                     # Nav2가 주행 중일 때 수동 /cmd_vel과 경쟁하지 않도록 막는다.
