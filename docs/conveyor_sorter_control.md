@@ -135,14 +135,14 @@ box_id = 4
 현재 구현은 Box 중심과 Sorter 중심의 world XY 거리를 사용한다.
 
 ```text
-approach_threshold = 0.35 m
+approach_threshold = 0.45 m
 reset_threshold    = 0.70 m
 ```
 
 동작 순서:
 
 ```text
-Box가 Sorter에서 0.35 m 이내로 접근
+Box가 Sorter에서 0.45 m 이내로 접근
     -> box_id 확인
     -> 해당 Sorter 상태 결정
     -> 목적 Track이면 DIVERT
@@ -154,20 +154,6 @@ Box가 Sorter에서 0.35 m 이내로 접근
 ```
 
 Reset을 다시 사용하는 이유는 이전 Box가 DIVERT 상태를 남긴 경우 다음 Box가 접근 임계값에 도달하기 전에 잘못 분기되는 상황을 막기 위해서다.
-
-예:
-
-```text
-box_id=1
-    -> Track 01 DIVERT
-    -> Box 통과
-    -> Track 01 reset -> STRAIGHT
-
-다음 box_id=2
-    -> Track 01은 이미 STRAIGHT 상태
-    -> Track 01 통과
-    -> Track 02 접근 시 DIVERT
-```
 
 `busy` 상태는 사용하지 않는다.
 
@@ -202,7 +188,7 @@ Parcel_Sorting_Map 로드
  -> 초기 direction=(1,0,0)
  -> 2.0 simulation seconds마다 CardBox 생성
  -> random box_id 1~4
- -> 0.35 m 이내 접근 시 분류
+ -> 0.45 m 이내 접근 시 분류
  -> Box 통과 후 0.70 m에서 STRAIGHT reset
 ```
 
@@ -238,7 +224,7 @@ Conveyor Velocity와 SorterSpeed는 매 simulation step마다 반복해서 쓰�
 ```text
 Box spawn interval = 2.0 simulation seconds
 
-Approach = 0.35 m
+Approach = 0.45 m
 Reset    = 0.70 m
 Busy     = 사용 안 함
 
