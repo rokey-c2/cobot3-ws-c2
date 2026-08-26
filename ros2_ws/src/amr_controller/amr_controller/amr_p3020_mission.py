@@ -402,7 +402,7 @@ class AmrP3020Mission(Node):
             if self.pickup_state == "RETURN_DOCK_DONE":
                 self.get_logger().info(
                     "IW Hub restored to cargo dock: "
-                    "x=9, y=-3, yaw=90 deg"
+                    "x=9, y=-3.3, yaw=-90 deg"
                 )
                 self._set_state("REQUEST_LOWER")
             elif self.pickup_state == "ERROR":
@@ -439,7 +439,7 @@ class AmrP3020Mission(Node):
         if self.state == "COMPLETE":
             self.get_logger().info(
                 "AMR mission complete: cargo restored and IW Hub returned "
-                "to spawn (9, -6, yaw=0 deg)",
+                "to spawn (9, -6, yaw=-90 deg)",
                 throttle_duration_sec=5.0,
             )
             return

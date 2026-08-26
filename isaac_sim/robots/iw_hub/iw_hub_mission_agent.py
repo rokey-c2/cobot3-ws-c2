@@ -2,7 +2,7 @@
 
 Movement is split into three phases:
 1. AMR (local) precision control while docking at the cargo pod and lifting
-   it -- start -> rotate +90 -> drive to cargo dock -> lift -> PICKUP_DONE.
+   it -- start -> hold -90 -> reverse to (9, -3.3) -> lift -> PICKUP_DONE.
    Precision matters here because the lift is a fixed vertical actuator
    that must be centered under the cargo pod to engage it.
 2. AGV (Nav2) autonomous navigation from the cargo dock to near the conveyor
@@ -47,10 +47,9 @@ LIFT_TARGET = 0.04
 # (both AMR and cargo pod are baked into the map, not code-spawned):
 #   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=-90 deg
 #   /World/cargo_box_gaurd_size_200_fix_02        -> (9, -3), yaw=0 deg
-# AMR spawn and cargo pod share X=9, so the local dock drive is a straight
-# +Y move -- matching this file's existing "rotate then drive Y" logic.
-# TARGET_ROOT (the AMR's own dock-drive target) is set equal to the cargo
-# pod's position, same convention as the old placeholder values.
+# The measured AMR lift pose is (9, -3.3), yaw=-90 deg. The cargo pod center
+# remains at (9, -3), so the AMR root is intentionally offset 0.3 m in -Y.
+# The AMR keeps yaw=-90 deg and reverses along +Y into the lift pose.
 CARGO_PRIM_PATH = "/World/cargo_box_gaurd_size_200_fix_02"
 CARGO_HOME_X = 9.0
 CARGO_HOME_Y = -3.0
@@ -63,8 +62,8 @@ SPAWN_Y = -6.0
 SPAWN_YAW = math.radians(-90.0)
 
 TARGET_ROOT_X = 9.0
-TARGET_ROOT_Y = -3.0
-TARGET_YAW = math.radians(90.0)
+TARGET_ROOT_Y = -3.3
+TARGET_YAW = math.radians(-90.0)
 RETURN_X_YAW = 0.0
 
 # Nav2's goal pose for the conveyor-front approach should land within
@@ -405,7 +404,9 @@ class MissionIwHubAgent(IwHubAgent):
             )
             return
 
-        linear = math.copysign(
+        # At yaw=-90 deg, reverse motion travels toward +Y. Inverting the
+        # Y-error sign also makes the return-to-spawn leg travel forward.
+        linear = -math.copysign(
             min(
                 LOCAL_MAX_LINEAR_SPEED,
                 max(LOCAL_MIN_LINEAR_SPEED, 0.55 * abs(error_y)),
@@ -440,7 +441,9 @@ class MissionIwHubAgent(IwHubAgent):
             )
             return
 
-        linear = math.copysign(
+        # At yaw=-90 deg, reverse motion travels toward +Y. Inverting the
+        # Y-error sign also makes the return-to-spawn leg travel forward.
+        linear = -math.copysign(
             min(
                 LOCAL_MAX_LINEAR_SPEED,
                 max(LOCAL_MIN_LINEAR_SPEED, 0.55 * abs(error_y)),
