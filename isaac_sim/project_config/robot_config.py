@@ -106,7 +106,7 @@ PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 - _PARCEL_GRID_OFFSET, -3.0 - _PARCEL_GRID_OFFSET, PARCEL_Z),
+        "spawn_xyz": (9.0, -3.0, PARCEL_Z),
         "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
         "destination": "A",
