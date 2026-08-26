@@ -8,7 +8,7 @@ CONVEYOR_NODE_TYPE = "isaacsim.asset.gen.conveyor.IsaacConveyor"
 class ConveyorController:
     """Control the existing conveyor OmniGraphs in the current parcel map.
 
-    No OmniGraph nodes are created here.  This class only changes values on
+    No OmniGraph nodes are created here. This class only changes values on
     graphs that already exist in the USD stage.
     """
 
@@ -25,7 +25,11 @@ class ConveyorController:
     def _expected_graph_speeds(self):
         """Return the exact graph paths and their target velocities."""
 
-        graph_speeds = {}
+        # The current stage also contains one unnumbered /World/ConveyorTrack.
+        # It is a normal single-graph conveyor in the new map and runs at +1.
+        graph_speeds = {
+            "/World/ConveyorTrack/ConveyorBeltGraph": self.MAIN_GRAPH_SPEED,
+        }
 
         for track_id in self.SORTER_TRACKS:
             track_path = f"/World/ConveyorTrack_{track_id}"
@@ -59,7 +63,7 @@ class ConveyorController:
             except og.OmniGraphError:
                 # Before world.reset() a USD-authored graph can exist while
                 # its runtime OmniGraph object is not live yet. setup() is
-                # intentionally called again after reset.
+                # intentionally called again after reset/play when needed.
                 continue
 
             if attribute.is_valid():
