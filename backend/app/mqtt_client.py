@@ -2,6 +2,7 @@ import json
 import os
 
 import paho.mqtt.client as mqtt
+from psycopg.rows import dict_row
 
 from app.database import get_db_connection
 
@@ -117,10 +118,14 @@ def update_amr_odom(equipment_code: str, payload: dict):
 
 
 def update_command_result(payload: dict):
-    command_id = payload.get("command_id")
-    status = payload.get("status")
+    """Adapter 결과를 명령 기록과 실제 장비 상태에 함께 반영한다."""
 
-    if command_id is None or status is None:
+    command_id = payload.get("command_id")
+    equipment_code = payload.get("equipment_code")
+    status = str(payload.get("status", "")).strip().upper()
+    error_message = payload.get("error_message")
+
+    if command_id is None or not status:
         print(
             f"[MQTT][DB] Invalid command result: {payload}",
             flush=True,
@@ -131,22 +136,67 @@ def update_command_result(payload: dict):
 
     try:
         with get_db_connection() as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(row_factory=dict_row) as cursor:
                 cursor.execute(
                     """
-                    UPDATE equipment_command
-                    SET status = %s
-                    WHERE id = %s;
+                    UPDATE equipment_command AS ec
+                    SET
+                        status = %s,
+                        completed_at = CASE
+                            WHEN %s IN ('SUCCESS', 'FAILED', 'CANCELED')
+                                THEN NOW()
+                            ELSE ec.completed_at
+                        END,
+                        error_message = %s
+                    FROM equipment AS e
+                    WHERE
+                        ec.id = %s
+                        AND ec.equipment_id = e.id
+                        AND (%s IS NULL OR e.code = %s)
+                    RETURNING
+                        ec.equipment_id,
+                        ec.command_type;
                     """,
-                    (db_status, command_id),
+                    (
+                        db_status,
+                        db_status,
+                        error_message,
+                        command_id,
+                        equipment_code,
+                        equipment_code,
+                    ),
                 )
+                command = cursor.fetchone()
 
-                if cursor.rowcount == 0:
+                if command is None:
                     print(
-                        f"[MQTT][DB] Command not found: id={command_id}",
+                        f"[MQTT][DB] Command not found or equipment mismatch: "
+                        f"id={command_id} equipment={equipment_code}",
                         flush=True,
                     )
                     return
+
+                if (
+                    db_status == "SUCCESS"
+                    and command["command_type"] in {"START", "STOP"}
+                ):
+                    target_status = (
+                        "RUNNING"
+                        if command["command_type"] == "START"
+                        else "STOPPED"
+                    )
+
+                    cursor.execute(
+                        """
+                        UPDATE equipment_state
+                        SET
+                            status = %s,
+                            last_seen_at = NOW(),
+                            updated_at = NOW()
+                        WHERE equipment_id = %s;
+                        """,
+                        (target_status, command["equipment_id"]),
+                    )
 
                 conn.commit()
 
@@ -163,6 +213,29 @@ def update_command_result(payload: dict):
         )
 
 
+def _publish_command(topic: str, payload: dict, command_name: str, retain=False):
+    if not mqtt_client.is_connected():
+        raise RuntimeError("MQTT broker is not connected")
+
+    result = mqtt_client.publish(
+        topic,
+        json.dumps(payload),
+        qos=1,
+        retain=retain,
+    )
+
+    if result.rc != mqtt.MQTT_ERR_SUCCESS:
+        raise RuntimeError(
+            f"MQTT {command_name} publish failed rc={result.rc}"
+        )
+
+    print(
+        f"[MQTT] Published {command_name} "
+        f"topic={topic} payload={payload}",
+        flush=True,
+    )
+
+
 def publish_navigation_command(
     equipment_code: str,
     command_id: int,
@@ -170,36 +243,14 @@ def publish_navigation_command(
     y: float,
     yaw: float,
 ):
-    topic = (
-        f"controltower/command/amr/"
-        f"{equipment_code}/navigate"
-    )
-
+    topic = f"controltower/command/amr/{equipment_code}/navigate"
     payload = {
         "command_id": int(command_id),
         "x": float(x),
         "y": float(y),
         "yaw": float(yaw),
     }
-
-    if not mqtt_client.is_connected():
-        raise RuntimeError("MQTT broker is not connected")
-
-    result = mqtt_client.publish(
-        topic,
-        json.dumps(payload),
-    )
-
-    if result.rc != mqtt.MQTT_ERR_SUCCESS:
-        raise RuntimeError(
-            f"MQTT NAVIGATE publish failed rc={result.rc}"
-        )
-
-    print(
-        f"[MQTT] Published NAVIGATE "
-        f"topic={topic} payload={payload}",
-        flush=True,
-    )
+    _publish_command(topic, payload, "NAVIGATE")
 
 
 def publish_lift_command(
@@ -210,37 +261,45 @@ def publish_lift_command(
     normalized_action = str(action).strip().upper()
 
     if normalized_action not in {"UP", "DOWN"}:
-        raise ValueError(
-            f"Invalid lift action: {action}"
-        )
+        raise ValueError(f"Invalid lift action: {action}")
 
-    topic = (
-        f"controltower/command/amr/"
-        f"{equipment_code}/lift"
-    )
-
+    topic = f"controltower/command/amr/{equipment_code}/lift"
     payload = {
         "command_id": int(command_id),
         "action": normalized_action,
     }
+    _publish_command(topic, payload, "LIFT")
 
-    if not mqtt_client.is_connected():
-        raise RuntimeError("MQTT broker is not connected")
 
-    result = mqtt_client.publish(
-        topic,
-        json.dumps(payload),
+def publish_equipment_control_command(
+    equipment_code: str,
+    command_id: int,
+    action: str,
+):
+    """실제 장비 Adapter에 START 또는 STOP 제어 명령을 보낸다.
+
+    retain=True로 마지막 제어 상태를 보존한다. Adapter가 재시작되면 마지막
+    STOP 명령을 다시 받아 정지 상태를 임의로 풀지 않는다.
+    """
+
+    normalized_action = str(action).strip().upper()
+
+    if normalized_action not in {"START", "STOP"}:
+        raise ValueError(f"Invalid equipment control action: {action}")
+
+    topic = (
+        f"controltower/command/equipment/"
+        f"{equipment_code}/control"
     )
-
-    if result.rc != mqtt.MQTT_ERR_SUCCESS:
-        raise RuntimeError(
-            f"MQTT LIFT publish failed rc={result.rc}"
-        )
-
-    print(
-        f"[MQTT] Published LIFT "
-        f"topic={topic} payload={payload}",
-        flush=True,
+    payload = {
+        "command_id": int(command_id),
+        "action": normalized_action,
+    }
+    _publish_command(
+        topic,
+        payload,
+        f"EQUIPMENT_{normalized_action}",
+        retain=True,
     )
 
 
@@ -251,10 +310,7 @@ def handle_message(topic: str, payload: dict):
 
     parts = topic.split("/")
 
-    if len(parts) != 4:
-        return
-
-    if parts[0] != "controltower":
+    if len(parts) != 4 or parts[0] != "controltower":
         return
 
     resource_type = parts[1]
@@ -345,8 +401,7 @@ mqtt_client.on_message = on_message
 
 def start_mqtt():
     print(
-        f"[MQTT] Connecting to "
-        f"{MQTT_HOST}:{MQTT_PORT}",
+        f"[MQTT] Connecting to {MQTT_HOST}:{MQTT_PORT}",
         flush=True,
     )
 
@@ -355,7 +410,6 @@ def start_mqtt():
         MQTT_PORT,
         keepalive=60,
     )
-
     mqtt_client.loop_start()
 
 
