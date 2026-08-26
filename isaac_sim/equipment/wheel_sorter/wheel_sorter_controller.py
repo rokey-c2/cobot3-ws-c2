@@ -82,7 +82,7 @@ class WheelSorterController:
         self,
         regions=None,
         sorter_speed=None,
-        approach_threshold: float = 0.25,
+        approach_threshold: float = 0.45,
         reset_threshold: float = 0.70,
     ):
         if regions is not None:
