@@ -53,4 +53,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ action }),
     }),
+  manualAmr: (equipmentCode, direction) =>
+    request(`/api/amr/${encodeURIComponent(equipmentCode)}/manual`, {
+      method: "POST",
+      body: JSON.stringify({ direction }),
+    }),
 };
