@@ -4,10 +4,6 @@ set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map_real_real_final_final/navigation/maps/Parcel_Sorting_Map.yaml"
 
-# Real IW Hub spawn in Parcel_Sorting_Map (measured headlessly off
-# /World/iw_hub_warehouse_navigation/iw_hub_ROS): (9, -6), yaw=0.
-START_X="9"
-START_Y="-6"
 LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
 
 # About 3x the previous Nav2 travel speed (0.65 -> 1.95 m/s).
@@ -170,12 +166,8 @@ fi
 set_loaded_footprint
 set_nav2_speed
 
-sleep 1
-
-echo "[ROS2] setting initial pose: ($START_X, $START_Y), yaw=-90 deg"
-ros2 topic pub --once \
-    /initialpose \
-    geometry_msgs/msg/PoseWithCovarianceStamped \
-    "{header: {frame_id: map}, pose: {pose: {position: {x: $START_X, y: $START_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.7071068, w: 0.7071068}}}}"
+echo "[ROS2] Nav2 is ready."
+echo "[ROS2] /initialpose is owned by scripts/pose_sync_manager.py."
+echo "[ROS2] Start ./scripts/run_pose_sync.sh to initialize AMCL from Isaac."
 
 wait "$NAV2_PID"

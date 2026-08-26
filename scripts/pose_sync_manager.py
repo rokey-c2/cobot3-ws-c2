@@ -9,7 +9,7 @@ import uuid
 import paho.mqtt.client as mqtt
 import rclpy
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from rclpy.node import Node
 from rclpy.time import Time
 from tf2_ros import Buffer, TransformListener
@@ -20,6 +20,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 
 EQUIPMENT_CODE = os.getenv("EQUIPMENT_CODE", "AMR_IN")
 ROS_MAP_POSE_TOPIC = os.getenv("ROS_MAP_POSE_TOPIC", "/amr_a/map_pose")
+ROS_INITIAL_POSE_TOPIC = os.getenv("ROS_INITIAL_POSE_TOPIC", "/initialpose")
 MAP_FRAME = os.getenv("MAP_FRAME", "map")
 BASE_FRAME = os.getenv("BASE_FRAME", "base_link")
 
@@ -28,6 +29,12 @@ POSE_TIMEOUT = float(os.getenv("POSE_TIMEOUT", "2.0"))
 POSITION_TOLERANCE_M = float(os.getenv("POSITION_TOLERANCE_M", "0.05"))
 YAW_TOLERANCE_RAD = math.radians(
     float(os.getenv("YAW_TOLERANCE_DEG", "2.0"))
+)
+INITIAL_POSE_RETRY_COUNT = int(
+    os.getenv("INITIAL_POSE_RETRY_COUNT", "5")
+)
+INITIAL_POSE_RETRY_INTERVAL = float(
+    os.getenv("INITIAL_POSE_RETRY_INTERVAL", "0.5")
 )
 
 MQTT_POSE_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/pose"
@@ -47,14 +54,14 @@ def angle_error(a, b):
 class PoseSyncManager(Node):
     """Own the Control Tower canonical map pose for one AMR.
 
-    Step 1-3 scope:
+    Step 1-5 scope:
     - Consume the actual Isaac World pose published as frame=map.
     - Publish only that pose as the canonical MQTT/DB position.
     - Compare it with map->base_link when Nav2 TF exists.
     - Report OFFLINE/SYNCING/SYNCED/DESYNC.
+    - Initialize AMCL from the current canonical pose whenever Nav2 appears.
 
-    Nav2 /initialpose restore and Isaac pose restore are intentionally left for
-    later steps so existing validated navigation behavior is not changed here.
+    Isaac pose restore is intentionally left for a later step.
     """
 
     def __init__(self):
@@ -71,6 +78,9 @@ class PoseSyncManager(Node):
         self.last_pose_rx_time = None
         self.last_pose_publish_time = 0.0
         self.last_sync_status = None
+        self.nav2_initial_pose_subscriber_available = False
+        self.initial_pose_retries_remaining = 0
+        self.next_initial_pose_publish_time = 0.0
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(
@@ -83,6 +93,11 @@ class PoseSyncManager(Node):
             PoseStamped,
             ROS_MAP_POSE_TOPIC,
             self.map_pose_callback,
+            10,
+        )
+        self.initial_pose_publisher = self.create_publisher(
+            PoseWithCovarianceStamped,
+            ROS_INITIAL_POSE_TOPIC,
             10,
         )
 
@@ -115,6 +130,7 @@ class PoseSyncManager(Node):
         self.mqtt_client.loop_start()
 
         self.create_timer(0.2, self.process_pose)
+        self.create_timer(0.2, self.manage_nav2_initial_pose)
         self.create_timer(0.5, self.check_sync)
 
         self.get_logger().info(
@@ -128,6 +144,9 @@ class PoseSyncManager(Node):
         )
         self.get_logger().info(
             f"TF check: {MAP_FRAME} -> {BASE_FRAME}"
+        )
+        self.get_logger().info(
+            f"Nav2 initial pose output: {ROS_INITIAL_POSE_TOPIC}"
         )
         self.get_logger().info(
             f"Tolerance: position={POSITION_TOLERANCE_M:.3f} m "
@@ -169,6 +188,83 @@ class PoseSyncManager(Node):
             float(yaw),
         )
         self.last_pose_rx_time = time.monotonic()
+
+    def manage_nav2_initial_pose(self):
+        subscriber_count = (
+            self.initial_pose_publisher.get_subscription_count()
+        )
+        subscriber_available = subscriber_count > 0
+
+        if (
+            subscriber_available
+            and not self.nav2_initial_pose_subscriber_available
+        ):
+            self.initial_pose_retries_remaining = (
+                INITIAL_POSE_RETRY_COUNT
+            )
+            self.next_initial_pose_publish_time = 0.0
+            self.get_logger().info(
+                "Nav2 /initialpose subscriber detected; "
+                "scheduling canonical pose initialization"
+            )
+        elif (
+            not subscriber_available
+            and self.nav2_initial_pose_subscriber_available
+        ):
+            self.initial_pose_retries_remaining = 0
+            self.get_logger().warning(
+                "Nav2 /initialpose subscriber disappeared; "
+                "waiting for restart"
+            )
+
+        self.nav2_initial_pose_subscriber_available = (
+            subscriber_available
+        )
+
+        if not subscriber_available or self.latest_pose is None:
+            return
+
+        if self.initial_pose_retries_remaining <= 0:
+            return
+
+        now = time.monotonic()
+        if now < self.next_initial_pose_publish_time:
+            return
+
+        self.publish_initial_pose()
+        self.initial_pose_retries_remaining -= 1
+        self.next_initial_pose_publish_time = (
+            now + INITIAL_POSE_RETRY_INTERVAL
+        )
+
+    def publish_initial_pose(self):
+        x, y, yaw = self.latest_pose
+        message = PoseWithCovarianceStamped()
+        message.header.stamp = self.get_clock().now().to_msg()
+        message.header.frame_id = MAP_FRAME
+        message.pose.pose.position.x = x
+        message.pose.pose.position.y = y
+        message.pose.pose.position.z = 0.0
+        message.pose.pose.orientation.z = math.sin(yaw / 2.0)
+        message.pose.pose.orientation.w = math.cos(yaw / 2.0)
+
+        # AMCL's conventional planar initial-pose covariance:
+        # x/y variance 0.25 m^2 and yaw variance (15 deg)^2.
+        message.pose.covariance[0] = 0.25
+        message.pose.covariance[7] = 0.25
+        message.pose.covariance[35] = math.radians(15.0) ** 2
+
+        self.initial_pose_publisher.publish(message)
+        attempt = (
+            INITIAL_POSE_RETRY_COUNT
+            - self.initial_pose_retries_remaining
+            + 1
+        )
+        self.get_logger().info(
+            f"Published Nav2 initial pose attempt={attempt}/"
+            f"{INITIAL_POSE_RETRY_COUNT} "
+            f"x={x:.3f} y={y:.3f} yaw={yaw:.3f}"
+        )
 
     def process_pose(self):
         if self.latest_pose is None:
@@ -219,6 +315,13 @@ class PoseSyncManager(Node):
             or time.monotonic() - self.last_pose_rx_time > POSE_TIMEOUT
         ):
             self.publish_sync_status("OFFLINE")
+            return
+
+        if (
+            not self.nav2_initial_pose_subscriber_available
+            or self.initial_pose_retries_remaining > 0
+        ):
+            self.publish_sync_status("SYNCING")
             return
 
         try:
