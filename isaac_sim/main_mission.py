@@ -18,7 +18,7 @@ import omni.graph.core as og
 import omni.usd
 import rclpy
 
-from pxr import UsdGeom
+from pxr import Sdf, UsdGeom
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -36,7 +36,7 @@ ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
     ISAAC_SIM_DIR
     / "usd"
-    / "Parcel_Sorting_Map_real_real_final_final"
+    / "Parcel_Sorting_Map"
     / "Parcel_Sorting_Map.usd"
 )
 
@@ -52,6 +52,7 @@ from equipment.conveyor.conveyor_controller import ConveyorController
 from equipment.wheel_sorter.wheel_sorter_controller import WheelSorterController
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
+    PARCEL_DESTINATION_ATTR,
     P3020PickPlaceAgent,
     P3020RosBridge,
     pixel_to_world_xy,
@@ -105,6 +106,11 @@ def _spawn_parcels(parcel_configs):
             box_id=box_id,
             mass_kg=float(config.get("mass_kg", 15.0)),
         )
+        destination = random.choice(["A", "B", "C", "D"])
+        stage.GetPrimAtPath(prim_path).CreateAttribute(
+            PARCEL_DESTINATION_ATTR, Sdf.ValueTypeNames.String
+        ).Set(destination)
+        print(f"[CARGO] {config['name']} -> box_id={box_id}, destination={destination}")
 
 
 class AmrMissionBridge(Node):
@@ -133,6 +139,10 @@ class AmrMissionBridge(Node):
             self.agent.request_pickup()
         elif command == "CONVEYOR_DOCK":
             self.agent.request_conveyor_dock()
+        elif command == "LOWER_AT_DELIVERY":
+            self.agent.request_lower_at_delivery()
+        elif command == "RAISE_AT_DELIVERY":
+            self.agent.request_raise_at_delivery()
         elif command == "RETURN_DOCK":
             self.agent.request_return_dock()
         elif command == "LOWER":

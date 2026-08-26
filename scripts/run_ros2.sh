@@ -2,10 +2,10 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map_real_real_final_final/navigation/maps/Parcel_Sorting_Map.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map/navigation/maps/Parcel_Sorting_Map.yaml"
 
 # Real IW Hub spawn in Parcel_Sorting_Map (measured headlessly off
-# /World/iw_hub_warehouse_navigation/iw_hub_ROS): (9, -6), yaw=0.
+# /World/iw_hub_warehouse_navigation/iw_hub_ROS): (9, -6), yaw=+90.
 START_X="9"
 START_Y="-6"
 LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
@@ -172,10 +172,10 @@ set_nav2_speed
 
 sleep 1
 
-echo "[ROS2] setting initial pose: ($START_X, $START_Y), yaw=-90 deg"
+echo "[ROS2] setting initial pose: ($START_X, $START_Y), yaw=+90 deg"
 ros2 topic pub --once \
     /initialpose \
     geometry_msgs/msg/PoseWithCovarianceStamped \
-    "{header: {frame_id: map}, pose: {pose: {position: {x: $START_X, y: $START_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.7071068, w: 0.7071068}}}}"
+    "{header: {frame_id: map}, pose: {pose: {position: {x: $START_X, y: $START_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.7071068, w: 0.7071068}}}}"
 
 wait "$NAV2_PID"

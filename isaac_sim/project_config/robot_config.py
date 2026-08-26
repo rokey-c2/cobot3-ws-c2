@@ -74,60 +74,23 @@ CARGO_REGISTRY = [
 
 
 # Cargo pod is baked into the map (not code-spawned). In
-# Parcel_Sorting_Map_real_real_final_final it's at
-# /World/cargo_box_gaurd_size_200_fix_02, translate (9, -3, 0.5) -- both the
-# path and Z changed from the previous map (was /World/Cargo/... at z=0.38),
-# and the pod was rebuilt with a different internal structure (no more
-# separate Visual/PhysicsColliders split). PARCEL_Z below is carried over
-# from the OLD pod's empirical drop-test value (rest z=0.4) and has NOT been
-# re-verified against this rebuilt pod -- box placement should be re-checked
-# (e.g. another drop test) before trusting it here.
+# Parcel_Sorting_Map it's at
+# /World/cargo_box_gaurd_size_200_fix_02, translate (9, -3, 0.5).
 #
-# CARGO_FLOOR_TOP_Z was previously "measured" as 0.055 via a static USD
-# BBoxCache read of PhysicsColliders/floor -- that method turned out to be
-# unreliable for this pod (the same method also mismeasured the wall
-# height earlier). A real physics drop test (spawn a parcel well above the
-# pod, let gravity settle it, read where it actually stops) showed the box
-# comes to rest with its center at world Z 0.4, not ~0.185. Using the
-# empirically-verified value directly instead of a derived floor-top +
-# half-height formula, since the formula's own inputs were unreliable.
-PARCEL_SCALE_XYZ = (0.75, 0.75, 0.5)
+# User decision: 4 boxes made the pod rock (uneven weight distribution as
+# each one got picked) -- spawn just 1 box instead, centered on the pod, at
+# scale (0.7,0.7,0.7). PARCEL_Z is a fresh drop test with this exact scale
+# on this exact pod (spawn well above, let gravity settle, read rest
+# position): box center comes to rest at world Z 0.4518.
+PARCEL_SCALE_XYZ = (0.7, 0.7, 0.7)
 _PARCEL_SETTLE_CLEARANCE_Z = 0.005
-PARCEL_Z = 0.4 + _PARCEL_SETTLE_CLEARANCE_Z
-
-# Real measured box footprint is 0.375 x 0.375 m (half=0.1875 m). The old
-# offsets (+-0.25 X, +-0.2 Y) left only a 2.5 cm gap on the Y axis, tight
-# enough that the P3020 camera was seeing two adjacent boxes as one blob.
-# +-0.28 on both axes gives a 0.56 m center-to-center spacing -> ~18.5 cm
-# clear gap between box edges on both axes.
-_PARCEL_GRID_OFFSET = 0.28
+PARCEL_Z = 0.4518 + _PARCEL_SETTLE_CLEARANCE_Z
 
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
         "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 - _PARCEL_GRID_OFFSET, -3.0 - _PARCEL_GRID_OFFSET, PARCEL_Z),
-        "scale_xyz": PARCEL_SCALE_XYZ,
-        "mass_kg": 15.0,
-    },
-    {
-        "name": "parcel_box_02",
-        "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 - _PARCEL_GRID_OFFSET, -3.0 + _PARCEL_GRID_OFFSET, PARCEL_Z),
-        "scale_xyz": PARCEL_SCALE_XYZ,
-        "mass_kg": 15.0,
-    },
-    {
-        "name": "parcel_box_03",
-        "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 + _PARCEL_GRID_OFFSET, -3.0 - _PARCEL_GRID_OFFSET, PARCEL_Z),
-        "scale_xyz": PARCEL_SCALE_XYZ,
-        "mass_kg": 15.0,
-    },
-    {
-        "name": "parcel_box_04",
-        "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 + _PARCEL_GRID_OFFSET, -3.0 + _PARCEL_GRID_OFFSET, PARCEL_Z),
+        "spawn_xyz": (9.0, -3.0, PARCEL_Z),
         "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
     },

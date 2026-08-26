@@ -39,7 +39,7 @@ from project_config.robot_config import (
 )
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map_real_real_final_final" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map" / "Parcel_Sorting_Map.usd"
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
