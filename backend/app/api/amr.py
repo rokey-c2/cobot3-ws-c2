@@ -50,7 +50,8 @@ def navigate_amr(
                         e.name,
                         e.type,
                         e.enabled,
-                        es.status
+                        es.status,
+                        es.sync_status
                     FROM equipment e
                     LEFT JOIN equipment_state es
                         ON es.equipment_id = e.id
@@ -86,6 +87,12 @@ def navigate_amr(
                             "AMR must be RUNNING "
                             "before navigation"
                         ),
+                    )
+
+                if equipment["sync_status"] != "SYNCED":
+                    raise HTTPException(
+                        status_code=409,
+                        detail="AMR pose is not synchronized",
                     )
 
                 payload = {

@@ -36,6 +36,11 @@ def get_equipment():
                         es.position_x,
                         es.position_y,
                         es.yaw,
+                        es.pose_frame,
+                        es.pose_source,
+                        es.pose_seq,
+                        es.pose_updated_at,
+                        es.sync_status,
                         es.lift_state,
                         es.last_seen_at,
                         es.updated_at

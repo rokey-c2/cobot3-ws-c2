@@ -53,6 +53,14 @@ export default function AmrControlPage() {
     () => equipment.find((item) => item.code === EQUIPMENT_CODE),
     [equipment],
   );
+  const poseSyncStatus = amr?.sync_status || "OFFLINE";
+  const poseSynced = poseSyncStatus === "SYNCED";
+
+  useEffect(() => {
+    if (!poseSynced && manualDirectionRef.current !== "STOP") {
+      stopManual();
+    }
+  }, [poseSynced]);
 
   async function runAction(label, action) {
     stopManual();
@@ -105,7 +113,7 @@ export default function AmrControlPage() {
   }
 
   function startManual(direction) {
-    if (busy || amr?.status !== "RUNNING") {
+    if (busy || amr?.status !== "RUNNING" || !poseSynced) {
       return;
     }
 
@@ -144,7 +152,8 @@ export default function AmrControlPage() {
   }
 
   const direction = yawDegrees(amr?.yaw);
-  const manualDisabled = busy || amr?.status !== "RUNNING";
+  const manualDisabled = busy || amr?.status !== "RUNNING" || !poseSynced;
+  const navigationDisabled = busy || amr?.status !== "RUNNING" || !poseSynced;
 
   return (
     <div className="stack-lg">
@@ -166,6 +175,11 @@ export default function AmrControlPage() {
       </section>
 
       {error && <div className="alert">{error}</div>}
+      {amr && !poseSynced && (
+        <div className="alert">
+          Pose Sync {poseSyncStatus}: 좌표 동기화가 완료될 때까지 Navigate와 Manual 이동을 사용할 수 없습니다.
+        </div>
+      )}
 
       <section className="amr-control-grid">
         <div className="panel camera-panel">
@@ -218,10 +232,17 @@ export default function AmrControlPage() {
           </div>
 
           <div className="detail-stats three-col">
+            <Info label="Pose Sync" value={poseSyncStatus} />
+            <Info label="Frame" value={amr?.pose_frame || "-"} />
+            <Info label="Source" value={amr?.pose_source || "-"} />
+          </div>
+
+          <div className="detail-stats three-col">
             <Info label="Mode" value={manualDirection === "STOP" ? (amr?.mode || "-") : "MANUAL"} />
             <Info label="Lift" value={amr?.lift_state || "-"} />
             <Info label="Last Seen" value={formatTime(amr?.last_seen_at)} />
           </div>
+          <p className="panel-help">Pose Updated: {formatDateTime(amr?.pose_updated_at)}</p>
         </div>
 
         <div className="panel manual-panel">
@@ -254,7 +275,6 @@ export default function AmrControlPage() {
             <button
               type="button"
               className="dpad-stop"
-              disabled={manualDisabled}
               onClick={stopManual}
             >
               STOP
@@ -296,7 +316,7 @@ export default function AmrControlPage() {
             <CoordinateInput label="Target Y" unit="m" value={target.y} onChange={(value) => setTarget((current) => ({ ...current, y: value }))} />
             <CoordinateInput label="Target Yaw" unit="rad" value={target.yaw} onChange={(value) => setTarget((current) => ({ ...current, yaw: value }))} />
           </div>
-          <button className="button button-primary button-wide" disabled={busy} onClick={navigate}>
+          <button className="button button-primary button-wide" disabled={navigationDisabled} onClick={navigate}>
             SEND NAVIGATION GOAL
           </button>
         </div>
@@ -423,4 +443,12 @@ function formatTime(value) {
   return Number.isNaN(date.getTime())
     ? "-"
     : date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "-"
+    : date.toLocaleString("ko-KR");
 }
