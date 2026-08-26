@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 
 from app.database import get_db_connection
 from app.mqtt_client import start_mqtt, stop_mqtt
+from app.pose_mqtt import start_pose_mqtt, stop_pose_mqtt
 
 from app.api.amr import router as amr_router
 from app.api.equipment import router as equipment_router
@@ -18,10 +19,12 @@ from app.api.system import router as system_router
 async def lifespan(app: FastAPI):
     # FastAPI 시작
     start_mqtt()
+    start_pose_mqtt()
 
     yield
 
     # FastAPI 종료
+    stop_pose_mqtt()
     stop_mqtt()
 
 
