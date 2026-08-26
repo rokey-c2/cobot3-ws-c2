@@ -93,6 +93,7 @@ PARCEL_REGISTRY = [
         "spawn_xyz": (9.0, -3.0, PARCEL_Z),
         "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
+        "destination": "A",
     },
 ]
 

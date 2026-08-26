@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
-from app.database import get_db_connection
+from app.database import apply_migrations, get_db_connection
 from app.mqtt_client import start_mqtt, stop_mqtt
 from app.pose_mqtt import start_pose_mqtt, stop_pose_mqtt
 
@@ -18,6 +18,7 @@ from app.api.system import router as system_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # FastAPI 시작
+    apply_migrations()
     start_mqtt()
     start_pose_mqtt()
 

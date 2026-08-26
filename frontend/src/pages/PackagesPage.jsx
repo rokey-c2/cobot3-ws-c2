@@ -90,7 +90,7 @@ export default function PackagesPage() {
           <p className="eyebrow">Tracking</p>
           <h2>Packages</h2>
           <p className="muted">
-            Package 현재 Zone과 이벤트 이력을 조회합니다. 실제 자동 Zone 갱신은 장비 이벤트 연동 후 활성화됩니다.
+            ROS2 장비 이벤트로 자동 갱신되는 Package 현재 Zone과 이력을 조회합니다.
           </p>
         </div>
         <div className="metric-box">

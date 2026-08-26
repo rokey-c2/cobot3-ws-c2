@@ -5,6 +5,7 @@ local start -> cargo -> lift -> Nav2 delivery -> P3020 action
 -> Nav2 return -> local precision return -> lift down -> local spawn return.
 """
 
+import json
 import math
 import random
 import time
@@ -94,8 +95,6 @@ def _spawn_parcels(parcel_configs):
         return
 
     stage = omni.usd.get_context().get_stage()
-    # Keep parcel rigid bodies outside the cargo rigid body hierarchy, but group
-    # them under /World/Cargo so Stage clearly shows they belong to this load.
     UsdGeom.Xform.Define(stage, "/World/Cargo/Parcels")
 
     box_ids = random.sample([1, 2, 3, 4], len(parcel_configs))
@@ -111,11 +110,12 @@ def _spawn_parcels(parcel_configs):
             box_id=box_id,
             mass_kg=float(config.get("mass_kg", 15.0)),
         )
-        destination = random.choice(["A", "B", "C", "D"])
-        stage.GetPrimAtPath(prim_path).CreateAttribute(
+        parcel_prim = stage.GetPrimAtPath(prim_path)
+        destination = str(config.get("destination", "UNKNOWN")).strip().upper()
+        parcel_prim.CreateAttribute(
             PARCEL_DESTINATION_ATTR, Sdf.ValueTypeNames.String
         ).Set(destination)
-        print(f"[CARGO] {config['name']} -> box_id={box_id}, destination={destination}")
+        print(f"[PARCEL] {config['name']} -> box_id={box_id}, destination={destination}")
 
 
 class AmrMissionBridge(Node):
@@ -203,7 +203,6 @@ class AmrMissionBridge(Node):
 
     def _lift_command_callback(self, message):
         action = message.data.strip().upper()
-
         accepted = self.agent.request_manual_lift(action)
 
         if accepted:
@@ -293,7 +292,6 @@ class AmrMissionBridge(Node):
             self.last_lift_state = lift_state
 
     def _publish_map_pose(self):
-        """Publish the actual Isaac World pose as the canonical ROS map pose."""
         if self.agent.robot is None:
             return
 
@@ -373,6 +371,102 @@ class OptimizedP3020RosBridge(P3020RosBridge):
         del depth_map
 
 
+class ProcessEquipmentBridge(Node):
+    """Expose P3020/conveyor/sorter control and process feedback to ROS2."""
+
+    def __init__(self, conveyor, sorter):
+        super().__init__("isaac_process_equipment_bridge")
+        self.conveyor = conveyor
+        self.sorter = sorter
+        self.p3020_enabled = True
+        self.status_pub = self.create_publisher(
+            String, "/controltower/equipment/status", 10
+        )
+        self.process_pub = self.create_publisher(
+            String, "/controltower/process/event", 10
+        )
+        self.create_subscription(
+            String,
+            "/controltower/equipment/command",
+            self._on_command,
+            10,
+        )
+        self.create_timer(1.0, self._publish_all_status)
+        self.create_timer(0.1, self._publish_sorter_events)
+
+    def _on_command(self, message):
+        try:
+            payload = json.loads(message.data)
+        except json.JSONDecodeError as error:
+            self.get_logger().error(f"bad equipment command: {error}")
+            return
+
+        code = str(payload.get("equipment_code", "")).strip().upper()
+        action = str(payload.get("action", "")).strip().upper()
+        enabled = action == "START"
+        if action not in {"START", "STOP"}:
+            return
+
+        if code == "P3020_IN":
+            self.p3020_enabled = enabled
+        elif code == "MAIN_CONVEYOR":
+            self.conveyor.start() if enabled else self.conveyor.stop()
+        elif code.startswith("SORTER_"):
+            self.sorter.set_region_enabled(code.removeprefix("SORTER_"), enabled)
+        else:
+            return
+        self._publish_status(code)
+
+    def _status_for(self, code):
+        if code == "P3020_IN":
+            return "RUNNING" if self.p3020_enabled else "STOPPED"
+        if code == "MAIN_CONVEYOR":
+            return self.conveyor.get_status()
+        if code.startswith("SORTER_"):
+            return self.sorter.get_region_status(code.removeprefix("SORTER_"))
+        return "UNKNOWN"
+
+    def _publish_status(self, code):
+        message = String()
+        message.data = json.dumps(
+            {"equipment_code": code, "status": self._status_for(code)}
+        )
+        self.status_pub.publish(message)
+
+    def _publish_all_status(self):
+        for code in (
+            "P3020_IN", "MAIN_CONVEYOR", "SORTER_A", "SORTER_B", "SORTER_C"
+        ):
+            self._publish_status(code)
+
+    def publish_conveyor_event(self, state):
+        message = String()
+        message.data = json.dumps(
+            {
+                "event_type": "CONVEYOR_STATE",
+                "equipment_code": "MAIN_CONVEYOR",
+                "state": state,
+            }
+        )
+        self.process_pub.publish(message)
+
+    def _publish_sorter_events(self):
+        for event in self.sorter.take_process_events():
+            state = event["state"]
+            _, _, region = state.partition(":")
+            equipment_region = region if region in {"A", "B", "C"} else "C"
+            message = String()
+            message.data = json.dumps(
+                {
+                    "event_type": "SORTER_STATE",
+                    "equipment_code": f"SORTER_{equipment_region}",
+                    "state": state,
+                    "region": region,
+                }
+            )
+            self.process_pub.publish(message)
+
+
 def main():
     if not WORLD_USD.is_file():
         raise FileNotFoundError(
@@ -396,9 +490,6 @@ def main():
     conveyor.setup()
     sorter.setup()
 
-    # The cargo pod is baked into the map now (not code-spawned) --
-    # iw_hub_mission_agent.CARGO_PRIM_PATH already defaults to the real
-    # baked-in pod's path. Only the 4 parcel boxes are still spawned here.
     _spawn_parcels(PARCEL_REGISTRY)
 
     agents = []
@@ -421,12 +512,10 @@ def main():
         agent.post_reset()
     p3020_agent.post_reset()
 
-    # Re-apply equipment state after reset so the run starts deterministically.
     conveyor.setup()
     sorter.setup()
 
     world.play()
-
     conveyor.start()
 
     for _ in range(30):
@@ -435,6 +524,7 @@ def main():
     rclpy.init(args=None)
     bridge = AmrMissionBridge(agents[0])
     p3020_bridge = OptimizedP3020RosBridge()
+    equipment_bridge = ProcessEquipmentBridge(conveyor, sorter)
 
     print()
     print("============================================")
@@ -458,6 +548,8 @@ def main():
     print("[ROS2] /amr_a/map_pose (frame=map, source=Isaac World)")
     print("[ROS2] /amr_a/pose_source_session")
     print("[ROS2] /amr_a/restore_pose")
+    print("[P3020] one command = one Pick & Place cycle")
+    print("[CONTROL] /controltower/equipment/command + status/event feedback")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
@@ -465,34 +557,55 @@ def main():
     def tick_iw_hub_agents(step_dt):
         for agent in agents:
             agent.on_physics_step(step_dt)
+        sorter.on_physics_step(step_dt)
 
     try:
         while simulation_app.is_running():
             rclpy.spin_once(bridge, timeout_sec=0.0)
             rclpy.spin_once(p3020_bridge, timeout_sec=0.0)
+            rclpy.spin_once(equipment_bridge, timeout_sec=0.0)
 
             dt = float(world.get_physics_dt())
             tick_iw_hub_agents(dt)
 
             command = p3020_bridge.take_command()
             if command is not None:
-                place_xy = (float(command["place_x"]), float(command["place_y"]))
+                if not equipment_bridge.p3020_enabled:
+                    p3020_bridge.publish_status("DONE_FAIL:P3020_IN is STOPPED")
+                    world.step(render=True)
+                    continue
+                place_xy = (
+                    float(command["place_x"]),
+                    float(command["place_y"]),
+                )
                 scan_hint = None
                 if "scan_hint_x" in command and "scan_hint_y" in command:
-                    scan_hint = (float(command["scan_hint_x"]), float(command["scan_hint_y"]))
+                    scan_hint = (
+                        float(command["scan_hint_x"]),
+                        float(command["scan_hint_y"]),
+                    )
+
                 print(
                     "\n[P3020] pick_place command received: "
-                    f"place={place_xy} scan_hint={scan_hint} "
-                    "-- emptying cargo pod"
+                    f"place={place_xy} scan_hint={scan_hint}"
                 )
-                p3020_agent.run_until_cargo_empty(
+
+                # FigJam / backup-main-20260824 기준:
+                # 한 액션 명령은 박스 한 개의 Vision -> Pick -> Place -> Result
+                # 사이클만 수행한다. Cargo 전체를 자동으로 비우거나 Sorter를
+                # P3020 내부에서 직접 제어하지 않는다.
+                success, message = p3020_agent.run_pick_place(
                     p3020_bridge,
                     place_xy_world=place_xy,
-                    amr_agent=agents[0],
                     scan_xy_world=scan_hint,
                     tick_others=tick_iw_hub_agents,
                     dt=dt,
                     sorter=sorter,
+                )
+                if success:
+                    equipment_bridge.publish_conveyor_event("PACKAGE_ENTERED")
+                print(
+                    f"[P3020] result: success={success} message={message}"
                 )
 
             world.step(render=True)
@@ -503,6 +616,7 @@ def main():
     finally:
         bridge.destroy_node()
         p3020_bridge.destroy_node()
+        equipment_bridge.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 
