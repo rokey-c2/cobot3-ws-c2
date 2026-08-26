@@ -11,9 +11,9 @@ router = APIRouter(
 )
 
 
-# 현재 실제 MQTT/ROS2 제어 Adapter가 연결된 장비 종류다.
-# P3020, Conveyor, Sorter Adapter가 추가되면 여기에 종류를 추가한다.
-SUPPORTED_CONTROL_TYPES = {"AMR"}
+# AMR is handled by ros2_mqtt_adapter.py.  The other three equipment types
+# are handled by process_mqtt_adapter.py and the Isaac process bridge.
+SUPPORTED_CONTROL_TYPES = {"AMR", "MANIPULATOR", "CONVEYOR", "SORTER"}
 
 
 @router.get("")

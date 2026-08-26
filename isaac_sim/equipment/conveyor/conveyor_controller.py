@@ -11,6 +11,7 @@ class ConveyorController:
     def __init__(self, speed: float = 1.0):
         self.speed = float(speed)
         self._graph_paths = []
+        self.running = False
 
     def _enable_conveyor_nodes(self, graph_prim):
         """Some plain ConveyorBeltGraph segments in Parcel_Sorting_Map ship
@@ -139,9 +140,14 @@ class ConveyorController:
         """Re-apply speed after simulation playback has started."""
 
         self.set_speed(self.speed)
+        self.running = True
 
     def stop(self):
         """Stop every conveyor graph."""
 
         for graph_path in self._graph_paths:
             self._set_graph_speed(graph_path, 0.0)
+        self.running = False
+
+    def get_status(self):
+        return "RUNNING" if self.running else "STOPPED"

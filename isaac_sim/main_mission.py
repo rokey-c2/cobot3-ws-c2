@@ -5,6 +5,7 @@ local start -> cargo -> lift -> Nav2 delivery -> P3020 action
 -> Nav2 return -> local precision return -> lift down -> local spawn return.
 """
 
+import json
 import math
 import random
 import time
@@ -22,7 +23,7 @@ import omni.usd
 import rclpy
 
 from geometry_msgs.msg import PoseStamped
-from pxr import UsdGeom
+from pxr import Sdf, UsdGeom
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import String
@@ -108,6 +109,12 @@ def _spawn_parcels(parcel_configs):
             box_id=box_id,
             mass_kg=float(config.get("mass_kg", 15.0)),
         )
+        parcel_prim = stage.GetPrimAtPath(prim_path)
+        destination = str(config.get("destination", "UNKNOWN")).strip().upper()
+        parcel_prim.CreateAttribute(
+            "destination", Sdf.ValueTypeNames.String
+        ).Set(destination)
+        print(f"[PARCEL] {config['name']} destination={destination}")
 
 
 class AmrMissionBridge(Node):
@@ -359,6 +366,102 @@ class OptimizedP3020RosBridge(P3020RosBridge):
         del depth_map
 
 
+class ProcessEquipmentBridge(Node):
+    """Expose P3020/conveyor/sorter control and process feedback to ROS2."""
+
+    def __init__(self, conveyor, sorter):
+        super().__init__("isaac_process_equipment_bridge")
+        self.conveyor = conveyor
+        self.sorter = sorter
+        self.p3020_enabled = True
+        self.status_pub = self.create_publisher(
+            String, "/controltower/equipment/status", 10
+        )
+        self.process_pub = self.create_publisher(
+            String, "/controltower/process/event", 10
+        )
+        self.create_subscription(
+            String,
+            "/controltower/equipment/command",
+            self._on_command,
+            10,
+        )
+        self.create_timer(1.0, self._publish_all_status)
+        self.create_timer(0.1, self._publish_sorter_events)
+
+    def _on_command(self, message):
+        try:
+            payload = json.loads(message.data)
+        except json.JSONDecodeError as error:
+            self.get_logger().error(f"bad equipment command: {error}")
+            return
+
+        code = str(payload.get("equipment_code", "")).strip().upper()
+        action = str(payload.get("action", "")).strip().upper()
+        enabled = action == "START"
+        if action not in {"START", "STOP"}:
+            return
+
+        if code == "P3020_IN":
+            self.p3020_enabled = enabled
+        elif code == "MAIN_CONVEYOR":
+            self.conveyor.start() if enabled else self.conveyor.stop()
+        elif code.startswith("SORTER_"):
+            self.sorter.set_region_enabled(code.removeprefix("SORTER_"), enabled)
+        else:
+            return
+        self._publish_status(code)
+
+    def _status_for(self, code):
+        if code == "P3020_IN":
+            return "RUNNING" if self.p3020_enabled else "STOPPED"
+        if code == "MAIN_CONVEYOR":
+            return self.conveyor.get_status()
+        if code.startswith("SORTER_"):
+            return self.sorter.get_region_status(code.removeprefix("SORTER_"))
+        return "UNKNOWN"
+
+    def _publish_status(self, code):
+        message = String()
+        message.data = json.dumps(
+            {"equipment_code": code, "status": self._status_for(code)}
+        )
+        self.status_pub.publish(message)
+
+    def _publish_all_status(self):
+        for code in (
+            "P3020_IN", "MAIN_CONVEYOR", "SORTER_A", "SORTER_B", "SORTER_C"
+        ):
+            self._publish_status(code)
+
+    def publish_conveyor_event(self, state):
+        message = String()
+        message.data = json.dumps(
+            {
+                "event_type": "CONVEYOR_STATE",
+                "equipment_code": "MAIN_CONVEYOR",
+                "state": state,
+            }
+        )
+        self.process_pub.publish(message)
+
+    def _publish_sorter_events(self):
+        for event in self.sorter.take_process_events():
+            state = event["state"]
+            _, _, region = state.partition(":")
+            equipment_region = region if region in {"A", "B", "C"} else "C"
+            message = String()
+            message.data = json.dumps(
+                {
+                    "event_type": "SORTER_STATE",
+                    "equipment_code": f"SORTER_{equipment_region}",
+                    "state": state,
+                    "region": region,
+                }
+            )
+            self.process_pub.publish(message)
+
+
 def main():
     if not WORLD_USD.is_file():
         raise FileNotFoundError(
@@ -416,6 +519,7 @@ def main():
     rclpy.init(args=None)
     bridge = AmrMissionBridge(agents[0])
     p3020_bridge = OptimizedP3020RosBridge()
+    equipment_bridge = ProcessEquipmentBridge(conveyor, sorter)
 
     print()
     print("============================================")
@@ -440,6 +544,7 @@ def main():
     print("[ROS2] /amr_a/pose_source_session")
     print("[ROS2] /amr_a/restore_pose")
     print("[P3020] one command = one Pick & Place cycle")
+    print("[CONTROL] /controltower/equipment/command + status/event feedback")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
@@ -447,17 +552,23 @@ def main():
     def tick_iw_hub_agents(step_dt):
         for agent in agents:
             agent.on_physics_step(step_dt)
+        sorter.on_physics_step(step_dt)
 
     try:
         while simulation_app.is_running():
             rclpy.spin_once(bridge, timeout_sec=0.0)
             rclpy.spin_once(p3020_bridge, timeout_sec=0.0)
+            rclpy.spin_once(equipment_bridge, timeout_sec=0.0)
 
             dt = float(world.get_physics_dt())
             tick_iw_hub_agents(dt)
 
             command = p3020_bridge.take_command()
             if command is not None:
+                if not equipment_bridge.p3020_enabled:
+                    p3020_bridge.publish_status("DONE_FAIL:P3020_IN is STOPPED")
+                    world.step(render=True)
+                    continue
                 place_xy = (
                     float(command["place_x"]),
                     float(command["place_y"]),
@@ -484,7 +595,10 @@ def main():
                     scan_xy_world=scan_hint,
                     tick_others=tick_iw_hub_agents,
                     dt=dt,
+                    sorter=sorter,
                 )
+                if success:
+                    equipment_bridge.publish_conveyor_event("PACKAGE_ENTERED")
                 print(
                     f"[P3020] result: success={success} message={message}"
                 )
@@ -497,6 +611,7 @@ def main():
     finally:
         bridge.destroy_node()
         p3020_bridge.destroy_node()
+        equipment_bridge.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 

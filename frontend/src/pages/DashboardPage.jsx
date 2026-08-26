@@ -17,10 +17,13 @@ const pipeline = [
 export default function DashboardPage() {
   const [equipment, setEquipment] = useState([]);
   const [mission, setMission] = useState(null);
+  const [missionStages, setMissionStages] = useState([]);
   const [packages, setPackages] = useState([]);
   const [events, setEvents] = useState([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [packageCode, setPackageCode] = useState(() => `PKG-${Date.now()}`);
+  const [region, setRegion] = useState("A");
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -34,6 +37,7 @@ export default function DashboardPage() {
 
       setEquipment(equipmentData.equipment || []);
       setMission(missionData.mission || null);
+      setMissionStages(missionData.stages || []);
       setPackages(packagesData.packages || []);
       setEvents(eventsData.events || []);
       setError("");
@@ -53,11 +57,51 @@ export default function DashboardPage() {
     [equipment],
   );
 
+  const visiblePipeline = useMemo(
+    () =>
+      missionStages.length
+        ? missionStages
+        : pipeline.map((stage_code) => ({ stage_code, status: "WAITING" })),
+    [missionStages],
+  );
+  const missionActive = ["READY", "RUNNING", "PAUSED"].includes(mission?.status);
+  const missionLabel = missionActive
+    ? `Active: ${mission.mission_code}`
+    : mission
+      ? `Last: ${mission.mission_code} (${mission.status})`
+      : "Start a package mission";
+
   async function changeSystem(action) {
     setBusy(true);
     try {
       if (action === "START") await api.startSystem();
       else await api.stopSystem();
+      await loadDashboard();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeEquipment(equipmentCode, action) {
+    setBusy(true);
+    try {
+      if (action === "START") await api.startEquipment(equipmentCode);
+      else await api.stopEquipment(equipmentCode);
+      await loadDashboard();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createMission(event) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      await api.createMission({ package_code: packageCode, region });
       await loadDashboard();
     } catch (requestError) {
       setError(requestError.message);
@@ -96,12 +140,48 @@ export default function DashboardPage() {
 
       {error && <div className="alert">Backend: {error}</div>}
 
+      <form className="panel mission-create-bar" onSubmit={createMission}>
+        <div>
+          <span className="eyebrow">LIVE TRACKING</span>
+          <strong>{missionLabel}</strong>
+        </div>
+        <label>
+          <span>Package</span>
+          <input
+            value={packageCode}
+            onChange={(event) => setPackageCode(event.target.value)}
+            disabled={missionActive || busy}
+          />
+        </label>
+        <label>
+          <span>Region</span>
+          <select
+            value={region}
+            onChange={(event) => setRegion(event.target.value)}
+            disabled={missionActive || busy}
+          >
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="UNKNOWN">Exception</option>
+          </select>
+        </label>
+        <button className="button button-primary" disabled={missionActive || busy}>
+          CREATE MISSION
+        </button>
+      </form>
+
       <section className="equipment-grid">
         {equipment.length === 0 ? (
           <EmptyCard text="장비 데이터를 기다리는 중입니다." />
         ) : (
           equipment.map((item) => (
-            <EquipmentCard key={item.code} equipment={item} />
+            <EquipmentCard
+              key={item.code}
+              equipment={item}
+              busy={busy}
+              onControl={changeEquipment}
+            />
           ))
         )}
       </section>
@@ -114,15 +194,19 @@ export default function DashboardPage() {
             meta={mission?.mission_code || "No active mission"}
           />
           <div className="pipeline">
-            {pipeline.map((stage, index) => {
+            {visiblePipeline.map((stageItem, index) => {
+              const stage = stageItem.stage_code;
               const current = matchesStage(mission?.current_stage, stage);
+              const stateClass = String(stageItem.status || "").toLowerCase();
               return (
                 <div className="pipeline-item" key={stage}>
-                  <div className={`stage-node ${current ? "current" : ""}`}>
+                  <div
+                    className={`stage-node ${current ? "current" : ""} ${stateClass}`}
+                  >
                     <span>{String(index + 1).padStart(2, "0")}</span>
                     <strong>{stage.replaceAll("_", " ")}</strong>
                   </div>
-                  {index < pipeline.length - 1 && (
+                  {index < visiblePipeline.length - 1 && (
                     <span className="pipeline-arrow">→</span>
                   )}
                 </div>
@@ -211,8 +295,11 @@ export default function DashboardPage() {
   );
 }
 
-function EquipmentCard({ equipment }) {
+function EquipmentCard({ equipment, busy, onControl }) {
   const isAmr = equipment.type === "AMR";
+  const adapterConnected = ["AMR", "MANIPULATOR", "CONVEYOR", "SORTER"].includes(
+    equipment.type,
+  );
   const content = (
     <>
       <div className="equipment-card-head">
@@ -222,8 +309,8 @@ function EquipmentCard({ equipment }) {
       <strong className="equipment-name">{equipment.code}</strong>
       <span className="equipment-type">{equipment.type}</span>
       <div className="equipment-card-foot">
-        <span className={`dot ${isAmr ? "live" : "waiting"}`} />
-        {isAmr ? "Actual control connected" : "Adapter not connected"}
+        <span className={`dot ${adapterConnected ? "live" : "waiting"}`} />
+        {adapterConnected ? "Actual control connected" : "Adapter not connected"}
       </div>
     </>
   );
@@ -236,7 +323,27 @@ function EquipmentCard({ equipment }) {
     );
   }
 
-  return <div className="equipment-card">{content}</div>;
+  return (
+    <div className="equipment-card">
+      {content}
+      <div className="equipment-card-actions">
+        <button
+          className="button button-ghost"
+          disabled={busy || equipment.status === "RUNNING"}
+          onClick={() => onControl(equipment.code, "START")}
+        >
+          START
+        </button>
+        <button
+          className="button button-danger"
+          disabled={busy || equipment.status === "STOPPED"}
+          onClick={() => onControl(equipment.code, "STOP")}
+        >
+          STOP
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function EmptyCard({ text }) {

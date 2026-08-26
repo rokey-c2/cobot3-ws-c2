@@ -28,6 +28,11 @@ export const api = {
   health: () => request("/health"),
   getEquipment: () => request("/api/equipment"),
   getCurrentMission: () => request("/api/missions/current"),
+  createMission: (mission) =>
+    request("/api/missions", {
+      method: "POST",
+      body: JSON.stringify(mission),
+    }),
   getPackages: () => request("/api/packages"),
   getPackage: (packageCode) =>
     request(`/api/packages/${encodeURIComponent(packageCode)}`),

@@ -213,6 +213,8 @@ CREATE TABLE IF NOT EXISTS package_event (
 
     event_type VARCHAR(50) NOT NULL,
     result VARCHAR(30),
+    event_key VARCHAR(150),
+    detail JSONB,
 
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -261,3 +263,7 @@ CREATE INDEX IF NOT EXISTS idx_package_event_package_id
 
 CREATE INDEX IF NOT EXISTS idx_package_event_occurred_at
     ON package_event(occurred_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_package_event_event_key
+    ON package_event(event_key)
+    WHERE event_key IS NOT NULL;
