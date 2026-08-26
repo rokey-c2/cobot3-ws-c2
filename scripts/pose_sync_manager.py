@@ -3,6 +3,7 @@
 import json
 import math
 import os
+import queue
 import time
 import uuid
 
@@ -11,7 +12,9 @@ import rclpy
 
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from rclpy.time import Time
+from std_msgs.msg import String
 from tf2_ros import Buffer, TransformListener
 
 
@@ -21,6 +24,14 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 EQUIPMENT_CODE = os.getenv("EQUIPMENT_CODE", "AMR_IN")
 ROS_MAP_POSE_TOPIC = os.getenv("ROS_MAP_POSE_TOPIC", "/amr_a/map_pose")
 ROS_INITIAL_POSE_TOPIC = os.getenv("ROS_INITIAL_POSE_TOPIC", "/initialpose")
+ROS_RESTORE_POSE_TOPIC = os.getenv(
+    "ROS_RESTORE_POSE_TOPIC",
+    "/amr_a/restore_pose",
+)
+ROS_POSE_SOURCE_SESSION_TOPIC = os.getenv(
+    "ROS_POSE_SOURCE_SESSION_TOPIC",
+    "/amr_a/pose_source_session",
+)
 MAP_FRAME = os.getenv("MAP_FRAME", "map")
 BASE_FRAME = os.getenv("BASE_FRAME", "base_link")
 
@@ -36,9 +47,39 @@ INITIAL_POSE_RETRY_COUNT = int(
 INITIAL_POSE_RETRY_INTERVAL = float(
     os.getenv("INITIAL_POSE_RETRY_INTERVAL", "0.5")
 )
+RESTORE_REQUEST_INTERVAL = float(
+    os.getenv("RESTORE_REQUEST_INTERVAL", "1.0")
+)
+RESTORE_PUBLISH_INTERVAL = float(
+    os.getenv("RESTORE_PUBLISH_INTERVAL", "0.5")
+)
+RESTORE_MAX_ATTEMPTS = int(
+    os.getenv("RESTORE_MAX_ATTEMPTS", "20")
+)
+RESTORE_VERIFY_SAMPLES = int(
+    os.getenv("RESTORE_VERIFY_SAMPLES", "3")
+)
+RESTORE_POSITION_TOLERANCE_M = float(
+    os.getenv("RESTORE_POSITION_TOLERANCE_M", "0.05")
+)
+RESTORE_YAW_TOLERANCE_RAD = math.radians(
+    float(os.getenv("RESTORE_YAW_TOLERANCE_DEG", "2.0"))
+)
 
 MQTT_POSE_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/pose"
 MQTT_SYNC_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/pose_sync"
+MQTT_RESTORE_REQUEST_TOPIC = (
+    f"controltower/amr/{EQUIPMENT_CODE}/pose_restore/request"
+)
+MQTT_RESTORE_RESPONSE_TOPIC = (
+    f"controltower/amr/{EQUIPMENT_CODE}/pose_restore/response"
+)
+
+RESTORE_WAITING_FOR_ISAAC = "WAITING_FOR_ISAAC"
+RESTORE_WAITING_FOR_DB = "WAITING_FOR_DB"
+RESTORE_APPLYING = "APPLYING"
+RESTORE_READY = "READY"
+RESTORE_FAILED = "FAILED"
 
 
 def quaternion_to_yaw(x, y, z, w):
@@ -51,18 +92,15 @@ def angle_error(a, b):
     return math.atan2(math.sin(a - b), math.cos(a - b))
 
 
+def pose_source_session_qos():
+    qos = QoSProfile(depth=1)
+    qos.reliability = ReliabilityPolicy.RELIABLE
+    qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+    return qos
+
+
 class PoseSyncManager(Node):
-    """Own the Control Tower canonical map pose for one AMR.
-
-    Step 1-5 scope:
-    - Consume the actual Isaac World pose published as frame=map.
-    - Publish only that pose as the canonical MQTT/DB position.
-    - Compare it with map->base_link when Nav2 TF exists.
-    - Report OFFLINE/SYNCING/SYNCED/DESYNC.
-    - Initialize AMCL from the current canonical pose whenever Nav2 appears.
-
-    Isaac pose restore is intentionally left for a later step.
-    """
+    """Own canonical pose persistence, Isaac restore, and Nav2 alignment."""
 
     def __init__(self):
         super().__init__("control_tower_pose_sync_manager")
@@ -78,9 +116,23 @@ class PoseSyncManager(Node):
         self.last_pose_rx_time = None
         self.last_pose_publish_time = 0.0
         self.last_sync_status = None
+
+        self.isaac_session_id = None
+        self.restore_state = RESTORE_WAITING_FOR_ISAAC
+        self.restore_request_id = None
+        self.restore_target = None
+        self.restore_attempts = 0
+        self.restore_verified_samples = 0
+        self.last_restore_request_time = 0.0
+        self.last_restore_publish_time = 0.0
+        self.restore_response_queue = queue.Queue()
+
         self.nav2_initial_pose_subscriber_available = False
+        self.nav2_needs_initial_pose = True
         self.initial_pose_retries_remaining = 0
         self.next_initial_pose_publish_time = 0.0
+
+        self.mqtt_connected = False
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(
@@ -95,9 +147,20 @@ class PoseSyncManager(Node):
             self.map_pose_callback,
             10,
         )
+        self.create_subscription(
+            String,
+            ROS_POSE_SOURCE_SESSION_TOPIC,
+            self.pose_source_session_callback,
+            pose_source_session_qos(),
+        )
         self.initial_pose_publisher = self.create_publisher(
             PoseWithCovarianceStamped,
             ROS_INITIAL_POSE_TOPIC,
+            10,
+        )
+        self.restore_pose_publisher = self.create_publisher(
+            PoseStamped,
+            ROS_RESTORE_POSE_TOPIC,
             10,
         )
 
@@ -106,6 +169,8 @@ class PoseSyncManager(Node):
             client_id=f"pose-sync-{EQUIPMENT_CODE.lower()}",
         )
         self.mqtt_client.on_connect = self.on_mqtt_connect
+        self.mqtt_client.on_disconnect = self.on_mqtt_disconnect
+        self.mqtt_client.on_message = self.on_mqtt_message
 
         offline_payload = {
             "status": "OFFLINE",
@@ -129,6 +194,7 @@ class PoseSyncManager(Node):
         )
         self.mqtt_client.loop_start()
 
+        self.create_timer(0.2, self.manage_restore)
         self.create_timer(0.2, self.process_pose)
         self.create_timer(0.2, self.manage_nav2_initial_pose)
         self.create_timer(0.5, self.check_sync)
@@ -137,10 +203,16 @@ class PoseSyncManager(Node):
             f"Canonical pose input: {ROS_MAP_POSE_TOPIC}"
         )
         self.get_logger().info(
+            f"Isaac session input: {ROS_POSE_SOURCE_SESSION_TOPIC}"
+        )
+        self.get_logger().info(
+            f"Isaac restore output: {ROS_RESTORE_POSE_TOPIC}"
+        )
+        self.get_logger().info(
             f"Canonical MQTT pose: {MQTT_POSE_TOPIC}"
         )
         self.get_logger().info(
-            f"Pose sync MQTT: {MQTT_SYNC_TOPIC}"
+            f"DB restore MQTT: {MQTT_RESTORE_REQUEST_TOPIC}"
         )
         self.get_logger().info(
             f"TF check: {MAP_FRAME} -> {BASE_FRAME}"
@@ -161,9 +233,77 @@ class PoseSyncManager(Node):
         reason_code,
         properties,
     ):
+        self.mqtt_connected = True
+        client.subscribe(MQTT_RESTORE_RESPONSE_TOPIC, qos=1)
         print(
             f"[POSE SYNC][MQTT] Connected reason_code={reason_code}",
             flush=True,
+        )
+        print(
+            f"[POSE SYNC][MQTT] Subscribed: "
+            f"{MQTT_RESTORE_RESPONSE_TOPIC}",
+            flush=True,
+        )
+
+    def on_mqtt_disconnect(
+        self,
+        client,
+        userdata,
+        disconnect_flags,
+        reason_code,
+        properties,
+    ):
+        del client, userdata, disconnect_flags, properties
+        self.mqtt_connected = False
+        print(
+            f"[POSE SYNC][MQTT] Disconnected reason_code={reason_code}",
+            flush=True,
+        )
+
+    def on_mqtt_message(self, client, userdata, message):
+        del client, userdata
+
+        if message.topic != MQTT_RESTORE_RESPONSE_TOPIC:
+            return
+
+        try:
+            payload = json.loads(message.payload.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self.get_logger().error(
+                "Invalid DB restore response JSON"
+            )
+            return
+
+        self.restore_response_queue.put(payload)
+
+    def pose_source_session_callback(self, message: String):
+        isaac_session_id = message.data.strip()
+
+        if not isaac_session_id:
+            self.get_logger().error("Rejected empty Isaac pose session")
+            return
+
+        if isaac_session_id == self.isaac_session_id:
+            return
+
+        previous_session = self.isaac_session_id
+        self.isaac_session_id = isaac_session_id
+        self.latest_pose = None
+        self.last_pose_rx_time = None
+        self.restore_state = RESTORE_WAITING_FOR_DB
+        self.restore_request_id = uuid.uuid4().hex
+        self.restore_target = None
+        self.restore_attempts = 0
+        self.restore_verified_samples = 0
+        self.last_restore_request_time = 0.0
+        self.last_restore_publish_time = 0.0
+        self.initial_pose_retries_remaining = 0
+        self.nav2_needs_initial_pose = True
+
+        self.get_logger().warning(
+            "Isaac pose source session changed: "
+            f"{previous_session!r} -> {isaac_session_id!r}; "
+            "canonical DB writes and Nav2 initialization are locked"
         )
 
     def map_pose_callback(self, message: PoseStamped):
@@ -181,13 +321,209 @@ class PoseSyncManager(Node):
             orientation.z,
             orientation.w,
         )
-
-        self.latest_pose = (
+        pose = (
             float(position.x),
             float(position.y),
             float(yaw),
         )
+
+        if not all(math.isfinite(value) for value in pose):
+            self.get_logger().error("Rejected non-finite Isaac map pose")
+            return
+
+        self.latest_pose = pose
         self.last_pose_rx_time = time.monotonic()
+
+        if (
+            self.restore_state == RESTORE_APPLYING
+            and self.restore_attempts > 0
+            and self.restore_target is not None
+        ):
+            self.verify_restored_pose()
+
+    def manage_restore(self):
+        self.process_restore_responses()
+
+        if self.restore_state == RESTORE_WAITING_FOR_DB:
+            self.request_saved_pose_when_ready()
+            return
+
+        if self.restore_state != RESTORE_APPLYING:
+            return
+
+        if self.restore_pose_publisher.get_subscription_count() < 1:
+            return
+
+        if self.restore_attempts >= RESTORE_MAX_ATTEMPTS:
+            self.restore_state = RESTORE_FAILED
+            self.get_logger().error(
+                "Isaac pose restore failed verification after "
+                f"{RESTORE_MAX_ATTEMPTS} attempts; canonical writes remain locked"
+            )
+            return
+
+        now = time.monotonic()
+        if now - self.last_restore_publish_time < RESTORE_PUBLISH_INTERVAL:
+            return
+
+        self.last_restore_publish_time = now
+        self.publish_restore_pose()
+
+    def process_restore_responses(self):
+        while not self.restore_response_queue.empty():
+            payload = self.restore_response_queue.get()
+            self.handle_restore_response(payload)
+
+    def request_saved_pose_when_ready(self):
+        if not self.mqtt_connected or self.isaac_session_id is None:
+            return
+
+        now = time.monotonic()
+        if now - self.last_restore_request_time < RESTORE_REQUEST_INTERVAL:
+            return
+
+        self.last_restore_request_time = now
+        payload = {
+            "request_id": self.restore_request_id,
+            "equipment_code": EQUIPMENT_CODE,
+            "isaac_session_id": self.isaac_session_id,
+            "manager_session_id": self.session_id,
+            "manager_session_epoch_ms": self.session_epoch_ms,
+        }
+        result = self.mqtt_client.publish(
+            MQTT_RESTORE_REQUEST_TOPIC,
+            json.dumps(payload),
+            qos=1,
+            retain=False,
+        )
+
+        if result.rc == mqtt.MQTT_ERR_SUCCESS:
+            self.get_logger().info(
+                "Requested last canonical pose from DB: "
+                f"request_id={self.restore_request_id}"
+            )
+        else:
+            self.get_logger().error(
+                f"DB restore request publish failed rc={result.rc}"
+            )
+
+    def handle_restore_response(self, payload):
+        if self.restore_state != RESTORE_WAITING_FOR_DB:
+            return
+
+        if str(payload.get("request_id", "")).strip() != self.restore_request_id:
+            return
+
+        if (
+            str(payload.get("isaac_session_id", "")).strip()
+            != self.isaac_session_id
+        ):
+            return
+
+        status = str(payload.get("status", "")).strip().upper()
+
+        if status == "NOT_FOUND":
+            self.complete_restore(
+                "DB has no saved canonical pose; using current Isaac pose"
+            )
+            return
+
+        if status == "ERROR":
+            self.get_logger().error(
+                "DB restore lookup error: "
+                f"{payload.get('error', 'unknown error')}"
+            )
+            self.last_restore_request_time = 0.0
+            return
+
+        if status != "FOUND" or payload.get("frame") != MAP_FRAME:
+            self.get_logger().error(
+                f"Rejected invalid DB restore response: {payload}"
+            )
+            return
+
+        try:
+            target = (
+                float(payload["x"]),
+                float(payload["y"]),
+                float(payload["yaw"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            self.get_logger().error(
+                f"Rejected malformed DB restore response: {payload}"
+            )
+            return
+
+        if not all(math.isfinite(value) for value in target):
+            self.get_logger().error(
+                "Rejected non-finite DB restore target"
+            )
+            return
+
+        self.restore_target = target
+        self.restore_attempts = 0
+        self.restore_verified_samples = 0
+        self.last_restore_publish_time = 0.0
+        self.restore_state = RESTORE_APPLYING
+
+        self.get_logger().warning(
+            "DB canonical pose received; restoring Isaac: "
+            f"x={target[0]:.3f} y={target[1]:.3f} "
+            f"yaw={target[2]:.3f}"
+        )
+
+    def publish_restore_pose(self):
+        x, y, yaw = self.restore_target
+        message = PoseStamped()
+        message.header.stamp = self.get_clock().now().to_msg()
+        message.header.frame_id = MAP_FRAME
+        message.pose.position.x = x
+        message.pose.position.y = y
+        message.pose.position.z = 0.0
+        message.pose.orientation.z = math.sin(yaw / 2.0)
+        message.pose.orientation.w = math.cos(yaw / 2.0)
+
+        self.restore_pose_publisher.publish(message)
+        self.restore_attempts += 1
+
+        self.get_logger().info(
+            f"Published Isaac restore pose attempt={self.restore_attempts}/"
+            f"{RESTORE_MAX_ATTEMPTS} "
+            f"x={x:.3f} y={y:.3f} yaw={yaw:.3f}"
+        )
+
+    def verify_restored_pose(self):
+        x, y, yaw = self.latest_pose
+        target_x, target_y, target_yaw = self.restore_target
+        position_error = math.hypot(x - target_x, y - target_y)
+        yaw_error = abs(angle_error(yaw, target_yaw))
+
+        if (
+            position_error <= RESTORE_POSITION_TOLERANCE_M
+            and yaw_error <= RESTORE_YAW_TOLERANCE_RAD
+        ):
+            self.restore_verified_samples += 1
+        else:
+            self.restore_verified_samples = 0
+            return
+
+        if self.restore_verified_samples < RESTORE_VERIFY_SAMPLES:
+            return
+
+        self.complete_restore(
+            "Isaac World pose verified after DB restore: "
+            f"position_error={position_error:.4f} m "
+            f"yaw_error={math.degrees(yaw_error):.2f} deg"
+        )
+
+    def complete_restore(self, reason):
+        self.restore_state = RESTORE_READY
+        self.initial_pose_retries_remaining = 0
+        self.nav2_needs_initial_pose = True
+        self.get_logger().info(f"Pose restore ready: {reason}")
+
+    def restore_is_ready(self):
+        return self.restore_state == RESTORE_READY
 
     def manage_nav2_initial_pose(self):
         subscriber_count = (
@@ -199,19 +535,16 @@ class PoseSyncManager(Node):
             subscriber_available
             and not self.nav2_initial_pose_subscriber_available
         ):
-            self.initial_pose_retries_remaining = (
-                INITIAL_POSE_RETRY_COUNT
-            )
-            self.next_initial_pose_publish_time = 0.0
+            self.nav2_needs_initial_pose = True
             self.get_logger().info(
-                "Nav2 /initialpose subscriber detected; "
-                "scheduling canonical pose initialization"
+                "Nav2 /initialpose subscriber detected"
             )
         elif (
             not subscriber_available
             and self.nav2_initial_pose_subscriber_available
         ):
             self.initial_pose_retries_remaining = 0
+            self.nav2_needs_initial_pose = True
             self.get_logger().warning(
                 "Nav2 /initialpose subscriber disappeared; "
                 "waiting for restart"
@@ -221,8 +554,25 @@ class PoseSyncManager(Node):
             subscriber_available
         )
 
-        if not subscriber_available or self.latest_pose is None:
+        if (
+            not subscriber_available
+            or not self.restore_is_ready()
+            or self.latest_pose is None
+        ):
             return
+
+        if (
+            self.nav2_needs_initial_pose
+            and self.initial_pose_retries_remaining <= 0
+        ):
+            self.initial_pose_retries_remaining = (
+                INITIAL_POSE_RETRY_COUNT
+            )
+            self.next_initial_pose_publish_time = 0.0
+            self.nav2_needs_initial_pose = False
+            self.get_logger().info(
+                "Scheduling Nav2 initialization from verified Isaac pose"
+            )
 
         if self.initial_pose_retries_remaining <= 0:
             return
@@ -247,9 +597,6 @@ class PoseSyncManager(Node):
         message.pose.pose.position.z = 0.0
         message.pose.pose.orientation.z = math.sin(yaw / 2.0)
         message.pose.pose.orientation.w = math.cos(yaw / 2.0)
-
-        # AMCL's conventional planar initial-pose covariance:
-        # x/y variance 0.25 m^2 and yaw variance (15 deg)^2.
         message.pose.covariance[0] = 0.25
         message.pose.covariance[7] = 0.25
         message.pose.covariance[35] = math.radians(15.0) ** 2
@@ -267,7 +614,7 @@ class PoseSyncManager(Node):
         )
 
     def process_pose(self):
-        if self.latest_pose is None:
+        if self.latest_pose is None or not self.restore_is_ready():
             return
 
         now = time.monotonic()
@@ -317,8 +664,17 @@ class PoseSyncManager(Node):
             self.publish_sync_status("OFFLINE")
             return
 
+        if self.restore_state == RESTORE_FAILED:
+            self.publish_sync_status("DESYNC")
+            return
+
+        if not self.restore_is_ready():
+            self.publish_sync_status("SYNCING")
+            return
+
         if (
             not self.nav2_initial_pose_subscriber_available
+            or self.nav2_needs_initial_pose
             or self.initial_pose_retries_remaining > 0
         ):
             self.publish_sync_status("SYNCING")
@@ -335,7 +691,6 @@ class PoseSyncManager(Node):
             return
 
         x, y, yaw = self.latest_pose
-
         tf_position = transform.transform.translation
         tf_orientation = transform.transform.rotation
         tf_yaw = quaternion_to_yaw(
@@ -344,7 +699,6 @@ class PoseSyncManager(Node):
             tf_orientation.z,
             tf_orientation.w,
         )
-
         position_error = math.hypot(
             x - float(tf_position.x),
             y - float(tf_position.y),
@@ -375,7 +729,6 @@ class PoseSyncManager(Node):
             return
 
         self.last_sync_status = status
-
         payload = {
             "status": status,
             "session_id": self.session_id,
@@ -394,10 +747,7 @@ class PoseSyncManager(Node):
             qos=1,
             retain=True,
         )
-
-        self.get_logger().info(
-            f"Pose sync status -> {status}"
-        )
+        self.get_logger().info(f"Pose sync status -> {status}")
 
     def shutdown(self):
         payload = {
@@ -434,3 +784,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

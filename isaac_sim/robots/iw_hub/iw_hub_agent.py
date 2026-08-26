@@ -1,6 +1,9 @@
 """Attach to the IW Hub that is already baked into the map (not spawned)."""
 
+import math
+
 import carb
+import numpy as np
 from pxr import Sdf, Usd, UsdPhysics
 import omni.usd
 
@@ -395,6 +398,49 @@ class IwHubAgent(BaseRobotAgent):
                 f"{self.prim_path}; "
                 "LiDAR range optimization was skipped."
             )
+
+    def set_map_pose(self, x, y, yaw):
+        """Move the existing IW Hub articulation to a verified map pose."""
+
+        values = (float(x), float(y), float(yaw))
+        if not all(math.isfinite(value) for value in values):
+            raise ValueError("IW Hub restore pose must contain finite values")
+
+        robot = getattr(self, "robot", None)
+        if robot is None:
+            raise RuntimeError("IW Hub articulation is not ready for restore")
+
+        stop = getattr(self, "_stop", None)
+        if callable(stop):
+            stop()
+
+        current_position, _ = robot.get_world_pose()
+        position = np.array(
+            [values[0], values[1], float(current_position[2])],
+            dtype=float,
+        )
+        orientation = np.array(
+            [
+                math.cos(values[2] / 2.0),
+                0.0,
+                0.0,
+                math.sin(values[2] / 2.0),
+            ],
+            dtype=float,
+        )
+
+        robot.set_linear_velocity(np.zeros(3, dtype=float))
+        robot.set_angular_velocity(np.zeros(3, dtype=float))
+        robot.set_world_pose(
+            position=position,
+            orientation=orientation,
+        )
+
+        carb.log_info(
+            "[IW HUB][RESTORE] map pose applied: "
+            f"x={values[0]:.3f}, y={values[1]:.3f}, "
+            f"yaw={values[2]:.3f}, z={position[2]:.3f}"
+        )
 
     def post_reset(self):
         stage = omni.usd.get_context().get_stage()

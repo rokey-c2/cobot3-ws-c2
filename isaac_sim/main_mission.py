@@ -7,6 +7,8 @@ local start -> cargo -> lift -> Nav2 delivery -> P3020 action
 
 import math
 import random
+import time
+import uuid
 from pathlib import Path
 
 from isaacsim import SimulationApp
@@ -22,6 +24,7 @@ import rclpy
 from geometry_msgs.msg import PoseStamped
 from pxr import UsdGeom
 from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import String
 
 from isaacsim.core.api import World
@@ -115,6 +118,10 @@ class AmrMissionBridge(Node):
         self.agent = agent
         self.last_state = None
         self.last_lift_state = None
+        self.pose_source_session_id = (
+            f"{time.time_ns() // 1_000_000}-"
+            f"{uuid.uuid4().hex[:8]}"
+        )
 
         self.create_subscription(
             String,
@@ -126,6 +133,12 @@ class AmrMissionBridge(Node):
             String,
             "/amr_a/lift_command",
             self._lift_command_callback,
+            10,
+        )
+        self.create_subscription(
+            PoseStamped,
+            "/amr_a/restore_pose",
+            self._restore_pose_callback,
             10,
         )
 
@@ -144,9 +157,19 @@ class AmrMissionBridge(Node):
             "/amr_a/map_pose",
             10,
         )
+        session_qos = QoSProfile(depth=1)
+        session_qos.reliability = ReliabilityPolicy.RELIABLE
+        session_qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+        self.pose_source_session_pub = self.create_publisher(
+            String,
+            "/amr_a/pose_source_session",
+            session_qos,
+        )
 
         self.create_timer(0.2, self._publish_state)
         self.create_timer(0.2, self._publish_map_pose)
+        self.create_timer(1.0, self._publish_pose_source_session)
+        self._publish_pose_source_session()
 
     def _command_callback(self, message):
         command = message.data.strip().upper()
@@ -181,6 +204,62 @@ class AmrMissionBridge(Node):
             self.get_logger().warning(
                 f"lift command rejected: {action}"
             )
+
+    def _restore_pose_callback(self, message):
+        if message.header.frame_id != "map":
+            self.get_logger().error(
+                "restore pose rejected: "
+                f"frame={message.header.frame_id!r}"
+            )
+            return
+
+        if self.agent.get_mission_state() != "IDLE":
+            self.get_logger().error(
+                "restore pose rejected: mission is not IDLE"
+            )
+            return
+
+        position = message.pose.position
+        orientation = message.pose.orientation
+        yaw = math.atan2(
+            2.0
+            * (
+                float(orientation.w) * float(orientation.z)
+                + float(orientation.x) * float(orientation.y)
+            ),
+            1.0
+            - 2.0
+            * (
+                float(orientation.y) ** 2
+                + float(orientation.z) ** 2
+            ),
+        )
+        values = (float(position.x), float(position.y), float(yaw))
+
+        if not all(math.isfinite(value) for value in values):
+            self.get_logger().error(
+                "restore pose rejected: non-finite value"
+            )
+            return
+
+        try:
+            self.agent.set_map_pose(*values)
+        except Exception as error:
+            self.get_logger().error(
+                f"restore pose failed: {error}"
+            )
+            return
+
+        self.get_logger().info(
+            "restore pose applied: "
+            f"x={values[0]:.3f} y={values[1]:.3f} "
+            f"yaw={values[2]:.3f}"
+        )
+
+    def _publish_pose_source_session(self):
+        message = String()
+        message.data = self.pose_source_session_id
+        self.pose_source_session_pub.publish(message)
 
     def _publish_state(self):
         state = self.agent.get_mission_state()
@@ -367,6 +446,8 @@ def main():
     print("[ROS2] /amr_a/lift_command")
     print("[ROS2] /amr_a/lift_state")
     print("[ROS2] /amr_a/map_pose (frame=map, source=Isaac World)")
+    print("[ROS2] /amr_a/pose_source_session")
+    print("[ROS2] /amr_a/restore_pose")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
