@@ -205,10 +205,10 @@ def main():
     dt = float(world.get_physics_dt())
 
     rclpy.init(args=None)
-    p3020_bridge = P3020RosBridge()
     fake_detector = FakeBoxDetectorNode(
         p3020_agent.camera, stage, iw_hub_mission_module.CARGO_PRIM_PATH
     )
+    p3020_bridge = P3020RosBridge(fake_detector)
 
     def tick_all(step_dt):
         agent.on_physics_step(step_dt)
@@ -272,7 +272,6 @@ def main():
         tick_all(dt)
         world.step(render=True)
 
-    p3020_bridge.destroy_node()
     fake_detector.destroy_node()
     if rclpy.ok():
         rclpy.shutdown()

@@ -15,12 +15,14 @@ Input Zone
 ## 개발 환경
 - Isaac Sim 5.1.0
 - ROS 2 Jazzy
-- ROS_DOMAIN_ID=110
+- ROS_DOMAIN_ID=111
 - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 - Nav2
 - RTX LiDAR
 - PhysX
 - Python
+- Docker + Docker Compose plugin (관제타워 PostgreSQL/Mosquitto/FastAPI)
+- Node.js 18+ / npm 9+ (관제타워 프론트엔드)
 
 ## IW Hub 단일 자율주행 테스트
 
@@ -70,65 +72,111 @@ Control Tower의 P3020·Conveyor·Sorter·Mission·Package 실시간 연동 및
 Nav2 없이 실행하는 방법은
 [Control Tower Live Process Integration](docs/scenario/control_tower_live_integration.md)을 참고합니다.
 
-## 실행 (전체 통합 미션: AMR + P3020 Pick&Place)
+## 최초 1회 설정
 
-저장소를 클론한 경로에서, 터미널 5개로 순서대로 실행합니다.
-(터미널 1이 완전히 뜬 다음 2를 실행하고, 3·4는 순서 상관없이, 마지막에 5)
+```bash
+cp .env.example .env
+./scripts/setup_all.sh
+./scripts/check_environment.sh
+```
+
+`setup_all.sh`가 프론트엔드 npm 패키지, ROS2 rosdep 의존성, 비전(YOLO) venv,
+관제타워 어댑터 venv(`paho-mqtt`)를 모두 설치합니다. 자세한 내용은
+[docs/NEW_PC_SETUP.md](docs/NEW_PC_SETUP.md)를 참고합니다.
+
+## 실행 (전체 통합 미션: AMR + P3020 Pick&Place + 관제타워)
+
+저장소를 클론한 경로에서, 터미널 9개로 아래 순서대로 실행합니다.
+(1이 완전히 뜬 다음 2, 2가 "Nav2 is ready." 뜬 다음 3. 4는 아무 때나 먼저 띄워도 되지만
+5는 4가 뜬 뒤여야 합니다. 6·7·8은 순서 상관없이. 9는 1·2·3·5·6·7이 모두 뜬 마지막에.)
 
 터미널 1 — Isaac Sim (맵 + AMR + P3020 미션 에이전트):
 
 ```bash
+export ROS_DOMAIN_ID=111
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ./scripts/run_isaac_mission.sh
 ```
 
 터미널 2 — Nav2 (터미널 1의 센서 토픽이 뜬 뒤 자동으로 기다렸다가 시작됨):
 
 ```bash
+export ROS_DOMAIN_ID=111
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ./scripts/run_ros2.sh
 ```
 
-터미널 3 — ROS2 빌드 + P3020 액션 서버:
+터미널 3 — Pose Sync (AMCL을 Isaac의 실제 좌표로 초기화):
+
+```bash
+export ROS_DOMAIN_ID=111
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+./scripts/run_pose_sync.sh
+```
+
+터미널 4 — 관제타워 DB/MQTT/백엔드 (Docker):
+
+```bash
+sudo docker compose up -d --build
+sudo docker compose ps
+```
+
+터미널 5 — 관제타워 AMR + Process 어댑터 (Nav2 없이도 P3020/컨베이어/소터/미션 추적은 동작):
+
+```bash
+export ROS_DOMAIN_ID=111
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+./scripts/run_control_tower_adapters.sh
+```
+
+터미널 6 — ROS2 빌드 + P3020 액션 서버:
 
 ```bash
 cd ros2_ws
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install
 source install/setup.bash
-export ROS_DOMAIN_ID=110 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export ROS_DOMAIN_ID=111 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ros2 run arm_controller pick_place_action_server
-
-(venv)
-cd ~/collaboration/cobot3-ws-c2
-source /opt/ros/jazzy/setup.bash
-source .venv/bin/activate
-
-export ROS_DOMAIN_ID=110
-export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ```
 
-터미널 4 — 박스 인식(YOLO):
+터미널 7 — 박스 인식(YOLO):
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-export ROS_DOMAIN_ID=110 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+source .venv/bin/activate
+export ROS_DOMAIN_ID=111 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 python3 isaac_sim/robots/p3020/vision/box_detector_node.py
 ```
 
-onnxruntime이 시스템 python3에 없다면 먼저 `./scripts/setup_vision_env.sh`로 venv를 만들고
-`source .venv/bin/activate` 한 뒤 실행합니다.
-
-터미널 5 — 전체 미션 트리거:
+터미널 8 — 관제타워 프론트엔드:
 
 ```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+브라우저에서 `http://localhost:5173`을 엽니다.
+
+터미널 9 — 전체 미션 트리거:
+
+```bash
+export ROS_DOMAIN_ID=111
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ./scripts/run_amr_p3020_mission.sh --ros-args -p simulate_p3020:=false -p pickup_x:=1.5 -p pickup_y:=-2.0 -p place_x:=-0.5 -p place_y:=0.0
 ```
 
-> `simulate_p3020` 파라미터를 생략하면 기본값 `true`로 동작해서, 터미널 3·4가 떠 있어도
+> `simulate_p3020` 파라미터를 생략하면 기본값 `true`로 동작해서, 터미널 6·7이 떠 있어도
 > 실제 P3020 액션 서버에 요청을 보내지 않고 결과만 흉내 냅니다 (AMR 로직만 먼저 테스트할 때 사용).
 > 실제 로봇팔까지 동작을 확인하려면 반드시 `simulate_p3020:=false`를 명시해야 합니다.
 
-> 각 터미널을 새로 열 때마다 `echo $ROS_DOMAIN_ID`로 110이 맞는지 확인합니다.
+> 각 터미널을 새로 열 때마다 `echo $ROS_DOMAIN_ID`로 111이 맞는지 확인합니다.
 > `.bashrc` 등에 다른 기본값이 설정돼 있으면 터미널끼리 서로 통신이 안 되는 문제가 생길 수 있습니다.
+
+> Docker 볼륨이 이미 있는 상태에서 `.env`를 새로 만들거나 바꿨다면, Postgres는
+> 빈 볼륨일 때만 계정/DB를 초기화하므로 `sudo docker compose down -v` 후
+> `sudo docker compose up -d --build`로 볼륨째 다시 만들어야 반영됩니다.
 
 ## 실행 (IW Hub 단일 자율주행 테스트)
 

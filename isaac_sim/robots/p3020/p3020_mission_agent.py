@@ -44,7 +44,6 @@ import omni.usd
 from pxr import Usd, UsdGeom, UsdPhysics, Gf
 
 import rclpy
-from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.time import Time
 from sensor_msgs.msg import Image
@@ -94,21 +93,6 @@ SAFE_JOINT_LIMITS = {
     "joint_3": (-2.3562, 2.3562),
     "joint_5": (-2.3562, 2.3562),
     "joint_6": (-3.14, 3.14),
-}
-
-# p3020_in's authored home pose (degrees) -- matches
-# state:angular:physics:position on /World/p3020_in's joints in the saved
-# map exactly, confirmed via headless inspection. This is what post_reset()
-# now sets directly instead of overwriting it with an IK-computed scan pose.
-# Re-measured after the user re-tuned the arm's resting pose again in the
-# latest Parcel_Sorting_Map rebuild (joint_3/5/6 moved substantially this
-# time, not just a small tweak; joint_1/2 unchanged).
-HOME_JOINT_DEG = {
-    "joint_1": 0.09999999922536333,
-    "joint_2": 3.500000026248569,
-    "joint_3": 42.99999891985429,
-    "joint_5": 126.80000307318552,
-    "joint_6": 36.80000056870735,
 }
 
 DRIVE_STIFFNESS = 1e8
@@ -474,17 +458,31 @@ class PickPlaceFSM:
 # ══════════════════════════════════════════════════════════════
 #  ROS2 다리 (표준 타입만 사용 -- 모듈 상단 docstring의 ABI 문제 설명 참고)
 # ══════════════════════════════════════════════════════════════
-class P3020RosBridge(Node):
-    def __init__(self):
-        super().__init__("p3020_mission_bridge")
-        self.image_pub = self.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
-        self.depth_pub = self.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
-        self.pixel_sub = self.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
+class P3020RosBridge:
+    """Registers arm_a's pub/sub on a caller-supplied node.
+
+    Isaac Sim's bundled rclpy only reliably bridges the *first* Node object
+    created after rclpy.init() to the outside world -- every additional
+    Node instance created in the same process silently stops receiving
+    external messages (confirmed: /amr_a/* on the first node worked,
+    /arm_a/pick_place_command and /controltower/equipment/command on their
+    own separate Node objects never arrived). Attaching to the already-
+    working node instead of constructing a new one avoids that entirely.
+    """
+
+    def __init__(self, node):
+        self._node = node
+        self.image_pub = node.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
+        self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
+        self.pixel_sub = node.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
         self.latest_pixel = None
 
-        self.status_pub = self.create_publisher(String, STATUS_TOPIC, 10)
-        self.command_sub = self.create_subscription(String, COMMAND_TOPIC, self._on_command, 10)
+        self.status_pub = node.create_publisher(String, STATUS_TOPIC, 10)
+        self.command_sub = node.create_subscription(String, COMMAND_TOPIC, self._on_command, 10)
         self.pending_command = None
+
+    def get_clock(self):
+        return self._node.get_clock()
 
     def _on_pixel(self, msg: PointStamped):
         stamp = Time.from_msg(msg.header.stamp)
@@ -504,7 +502,7 @@ class P3020RosBridge(Node):
         try:
             self.pending_command = json.loads(msg.data)
         except (json.JSONDecodeError, TypeError) as error:
-            self.get_logger().error(f"bad pick_place command payload: {error}")
+            self._node.get_logger().error(f"bad pick_place command payload: {error}")
 
     def take_command(self):
         command = self.pending_command
@@ -515,14 +513,14 @@ class P3020RosBridge(Node):
         msg = String()
         msg.data = status
         self.status_pub.publish(msg)
-        self.get_logger().info(f"status: {status}")
+        self._node.get_logger().info(f"status: {status}")
 
     def publish_image(self, rgba):
         rgb = np.ascontiguousarray(rgba[:, :, :3])
         if rgb.mean() < 1.0:
             return
         msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = self._node.get_clock().now().to_msg()
         msg.header.frame_id = "p3020_rsd455"
         msg.height, msg.width = rgb.shape[:2]
         msg.encoding = "rgb8"
@@ -534,7 +532,7 @@ class P3020RosBridge(Node):
     def publish_depth(self, depth_map):
         d = np.ascontiguousarray(depth_map, dtype=np.float32)
         msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = self._node.get_clock().now().to_msg()
         msg.header.frame_id = "p3020_rsd455"
         msg.height, msg.width = d.shape[:2]
         msg.encoding = "32FC1"
@@ -714,24 +712,33 @@ class P3020PickPlaceAgent:
         self._set_home_pose()
 
     def _set_home_pose(self):
-        """Set the arm to its authored home pose (HOME_JOINT_DEG).
+        """Adopt the arm's authored resting pose straight from the map.
 
         Previously this computed a camera-scan pose via 200 IK steps and
         used whatever that converged to as home -- which silently
         overwrote the pose the user had deliberately saved into the map,
-        every time main_mission.py started. Now it just sets that saved
-        pose directly.
+        every time main_mission.py started. A later fix replaced that with
+        a hardcoded HOME_JOINT_DEG dict re-measured from the map, but the
+        map's arm pose kept getting re-tuned, so the hardcoded numbers kept
+        going stale. Reading get_joint_positions() right after initialize()
+        (before anything else moves the arm) picks up whatever pose is
+        currently authored in the map, with no re-measurement step needed.
         """
 
-        home_q = np.array(
-            [np.radians(HOME_JOINT_DEG[name]) for name in self.robot.dof_names],
-            dtype=float,
-        )
-        self.robot.set_joint_positions(home_q)
-        self.home_q = home_q
+        self.home_q = np.array(self.robot.get_joint_positions(), dtype=float)
 
     def set_ready_pose(self):
+        # set_joint_positions() only teleports the joint state -- it does
+        # NOT move the drive's target angle. With drives this stiff
+        # (DRIVE_STIFFNESS=1e8), the very next physics step yanks the arm
+        # back toward whatever target the drive still holds (stale/default),
+        # not home_q. apply_action() below sets that target too, so the
+        # drive actually holds the teleported pose instead of fighting it.
         self.robot.set_joint_positions(self.home_q)
+        indices = np.arange(len(self.robot.dof_names))
+        self.robot.apply_action(
+            ArticulationAction(joint_positions=self.home_q, joint_indices=indices)
+        )
 
     def on_physics_step(self, dt: float):
         # 유휴 상태에서는 딱히 매 스텝 할 게 없다 (스캔 자세를 유지하는 건
@@ -764,7 +771,7 @@ class P3020PickPlaceAgent:
                 ros_node.publish_image(frame)
                 depth_map = self.camera.get_depth()
                 ros_node.publish_depth(depth_map)
-            rclpy.spin_once(ros_node, timeout_sec=0.0)
+            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
             pixel = ros_node.take_pixel_after(not_before)
             if pixel is not None and depth_map is not None:
                 world_xy = pixel_to_world_xy(pixel, depth_map, self.camera, last_frame)
@@ -910,7 +917,7 @@ class P3020PickPlaceAgent:
                 if frame is not None:
                     ros_node.publish_image(frame)
                     ros_node.publish_depth(self.camera.get_depth())
-            rclpy.spin_once(ros_node, timeout_sec=0.0)
+            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
 
             if tick_others:
                 tick_others(dt)

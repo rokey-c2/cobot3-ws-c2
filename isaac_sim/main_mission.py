@@ -63,6 +63,15 @@ from robots.p3020.p3020_mission_agent import (
     P3020RosBridge,
     pixel_to_world_xy,
 )
+from robots.p3020.p3020_out_mission_agent import (
+    P3020OutRosBridge,
+    P3020UnloadToBinAgent,
+    REJECT_BIN_PRIM_PATH,
+    REJECT_BIN_SPAWN_XY,
+    REJECT_BIN_SPAWN_YAW_DEG,
+    REJECT_BIN_SPAWN_Z,
+)
+from cargo.cargo_guard_clone import spawn_cargo_guard_clone
 
 
 def _create_clock_graph():
@@ -333,7 +342,7 @@ class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
                     ros_node.publish_image(frame)
                     depth_map = self.camera.get_depth()
 
-            rclpy.spin_once(ros_node, timeout_sec=0.0)
+            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
             pixel = ros_node.take_pixel_after(not_before)
 
             if pixel is not None and depth_map is not None:
@@ -356,14 +365,14 @@ class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
 class OptimizedP3020RosBridge(P3020RosBridge):
     """Disable ROS2 depth transport; depth remains local to Isaac Sim."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, node):
+        super().__init__(node)
 
         if self.depth_pub is not None:
-            self.destroy_publisher(self.depth_pub)
+            self._node.destroy_publisher(self.depth_pub)
             self.depth_pub = None
 
-        self.get_logger().info(
+        self._node.get_logger().info(
             "vision optimization: /rgb ~=10 Hz, /depth ROS2 publisher disabled"
         )
 
@@ -371,34 +380,41 @@ class OptimizedP3020RosBridge(P3020RosBridge):
         del depth_map
 
 
-class ProcessEquipmentBridge(Node):
-    """Expose P3020/conveyor/sorter control and process feedback to ROS2."""
+class ProcessEquipmentBridge:
+    """Expose P3020/conveyor/sorter control and process feedback to ROS2.
 
-    def __init__(self, conveyor, sorter):
-        super().__init__("isaac_process_equipment_bridge")
+    Attaches to a caller-supplied node instead of being its own Node --
+    Isaac Sim's bundled rclpy only bridges the first Node created after
+    rclpy.init() to the outside world, so a second Node's subscriptions
+    (like this one's /controltower/equipment/command) never receive
+    anything even though discovery/matching looks fine."""
+
+    def __init__(self, node, conveyor, sorter):
+        self._node = node
         self.conveyor = conveyor
         self.sorter = sorter
         self.p3020_enabled = True
-        self.status_pub = self.create_publisher(
+        self.p3020_out_enabled = True
+        self.status_pub = node.create_publisher(
             String, "/controltower/equipment/status", 10
         )
-        self.process_pub = self.create_publisher(
+        self.process_pub = node.create_publisher(
             String, "/controltower/process/event", 10
         )
-        self.create_subscription(
+        node.create_subscription(
             String,
             "/controltower/equipment/command",
             self._on_command,
             10,
         )
-        self.create_timer(1.0, self._publish_all_status)
-        self.create_timer(0.1, self._publish_sorter_events)
+        node.create_timer(1.0, self._publish_all_status)
+        node.create_timer(0.1, self._publish_sorter_events)
 
     def _on_command(self, message):
         try:
             payload = json.loads(message.data)
         except json.JSONDecodeError as error:
-            self.get_logger().error(f"bad equipment command: {error}")
+            self._node.get_logger().error(f"bad equipment command: {error}")
             return
 
         code = str(payload.get("equipment_code", "")).strip().upper()
@@ -409,6 +425,8 @@ class ProcessEquipmentBridge(Node):
 
         if code == "P3020_IN":
             self.p3020_enabled = enabled
+        elif code == "P3020_OUT":
+            self.p3020_out_enabled = enabled
         elif code == "MAIN_CONVEYOR":
             self.conveyor.start() if enabled else self.conveyor.stop()
         elif code.startswith("SORTER_"):
@@ -420,6 +438,8 @@ class ProcessEquipmentBridge(Node):
     def _status_for(self, code):
         if code == "P3020_IN":
             return "RUNNING" if self.p3020_enabled else "STOPPED"
+        if code == "P3020_OUT":
+            return "RUNNING" if self.p3020_out_enabled else "STOPPED"
         if code == "MAIN_CONVEYOR":
             return self.conveyor.get_status()
         if code.startswith("SORTER_"):
@@ -435,7 +455,8 @@ class ProcessEquipmentBridge(Node):
 
     def _publish_all_status(self):
         for code in (
-            "P3020_IN", "MAIN_CONVEYOR", "SORTER_A", "SORTER_B", "SORTER_C"
+            "P3020_IN", "P3020_OUT", "MAIN_CONVEYOR",
+            "SORTER_A", "SORTER_B", "SORTER_C",
         ):
             self._publish_status(code)
 
@@ -492,6 +513,13 @@ def main():
 
     _spawn_parcels(PARCEL_REGISTRY)
 
+    spawn_cargo_guard_clone(
+        omni.usd.get_context().get_stage(),
+        REJECT_BIN_PRIM_PATH,
+        (REJECT_BIN_SPAWN_XY[0], REJECT_BIN_SPAWN_XY[1], REJECT_BIN_SPAWN_Z),
+        spawn_yaw=REJECT_BIN_SPAWN_YAW_DEG,
+    )
+
     agents = []
     for config in ROBOT_REGISTRY:
         if config["type"] != "iw_hub":
@@ -507,10 +535,14 @@ def main():
     p3020_agent = OptimizedP3020PickPlaceAgent(world)
     p3020_agent.setup()
 
+    p3020_out_agent = P3020UnloadToBinAgent(world)
+    p3020_out_agent.setup()
+
     world.reset()
     for agent in agents:
         agent.post_reset()
     p3020_agent.post_reset()
+    p3020_out_agent.post_reset()
 
     conveyor.setup()
     sorter.setup()
@@ -522,9 +554,16 @@ def main():
         world.step(render=True)
 
     rclpy.init(args=None)
+    # Every pub/sub below rides on this one node -- Isaac Sim's bundled
+    # rclpy only bridges the first Node created after rclpy.init() to the
+    # outside world, so separate Node objects for p3020/p3020_out/equipment
+    # would silently stop receiving external messages (confirmed directly:
+    # /arm_a/pick_place_command and /controltower/equipment/command never
+    # arrived when p3020_bridge/equipment_bridge were their own Nodes).
     bridge = AmrMissionBridge(agents[0])
-    p3020_bridge = OptimizedP3020RosBridge()
-    equipment_bridge = ProcessEquipmentBridge(conveyor, sorter)
+    p3020_bridge = OptimizedP3020RosBridge(bridge)
+    p3020_out_bridge = P3020OutRosBridge(bridge)
+    equipment_bridge = ProcessEquipmentBridge(bridge, conveyor, sorter)
 
     print()
     print("============================================")
@@ -549,6 +588,8 @@ def main():
     print("[ROS2] /amr_a/pose_source_session")
     print("[ROS2] /amr_a/restore_pose")
     print("[P3020] one command = one Pick & Place cycle")
+    print("[P3020_OUT] watches conveyor end-of-line, loads reject bin via OutboundLoadPlanner")
+    print("[ROS2] /arm_b/rgb, /arm_b/box_pixel, /arm_b/pick_place_status")
     print("[CONTROL] /controltower/equipment/command + status/event feedback")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
@@ -561,9 +602,15 @@ def main():
 
     try:
         while simulation_app.is_running():
-            rclpy.spin_once(bridge, timeout_sec=0.0)
-            rclpy.spin_once(p3020_bridge, timeout_sec=0.0)
-            rclpy.spin_once(equipment_bridge, timeout_sec=0.0)
+            # bridge is now the single Node backing all four bridges above
+            # (see the rclpy.init() comment). spin_once() only ever
+            # executes one ready callback per call, and this one node now
+            # carries every timer/subscription that used to be spread
+            # across 4 separate Nodes -- looping a bounded number of times
+            # drains the backlog each outer-loop pass instead of servicing
+            # only one callback while the rest wait for the next pass.
+            for _ in range(20):
+                rclpy.spin_once(bridge, timeout_sec=0.0)
 
             dt = float(world.get_physics_dt())
             tick_iw_hub_agents(dt)
@@ -608,15 +655,24 @@ def main():
                     f"[P3020] result: success={success} message={message}"
                 )
 
+            if equipment_bridge.p3020_out_enabled:
+                out_success, out_message = p3020_out_agent.try_unload_cycle(
+                    p3020_out_bridge,
+                    tick_others=tick_iw_hub_agents,
+                    dt=dt,
+                )
+                if out_success:
+                    print(f"[P3020_OUT] result: {out_message}")
+
             world.step(render=True)
 
     except KeyboardInterrupt:
         print("\n[SYSTEM] Ctrl+C received")
 
     finally:
+        # p3020_bridge/p3020_out_bridge/equipment_bridge are no longer
+        # separate Nodes -- destroying bridge tears down their pub/sub too.
         bridge.destroy_node()
-        p3020_bridge.destroy_node()
-        equipment_bridge.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 
