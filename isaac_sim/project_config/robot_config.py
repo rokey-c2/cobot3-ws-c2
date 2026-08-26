@@ -111,30 +111,7 @@ PARCEL_REGISTRY = [
         "mass_kg": 15.0,
         "destination": "A",
     },
-    {
-        "name": "parcel_box_02",
-        "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 - _PARCEL_GRID_OFFSET, -3.0 + _PARCEL_GRID_OFFSET, PARCEL_Z),
-        "scale_xyz": PARCEL_SCALE_XYZ,
-        "mass_kg": 15.0,
-        "destination": "B",
-    },
-    {
-        "name": "parcel_box_03",
-        "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 + _PARCEL_GRID_OFFSET, -3.0 - _PARCEL_GRID_OFFSET, PARCEL_Z),
-        "scale_xyz": PARCEL_SCALE_XYZ,
-        "mass_kg": 15.0,
-        "destination": "C",
-    },
-    {
-        "name": "parcel_box_04",
-        "usd": CARD_BOX_USD,
-        "spawn_xyz": (9.0 + _PARCEL_GRID_OFFSET, -3.0 + _PARCEL_GRID_OFFSET, PARCEL_Z),
-        "scale_xyz": PARCEL_SCALE_XYZ,
-        "mass_kg": 15.0,
-        "destination": "UNKNOWN",
-    },
+
 ]
 
 

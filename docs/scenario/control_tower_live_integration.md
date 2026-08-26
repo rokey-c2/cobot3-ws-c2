@@ -17,7 +17,7 @@ Isaac AMR / P3020 / Conveyor / Sorter
 
 - P3020 `SCANNING`부터 `DONE_SUCCESS`/`DONE_FAIL`까지 Mission에 반영
 - P3020 성공 후 실제 Parcel destination 속성으로 Wheel Sorter 경로 설정
-- 기본 Parcel 4개에 `A`, `B`, `C`, `UNKNOWN` 목적지 속성 부여
+- 기본 Parcel은 `parcel_box_01` 1개만 생성하며 목적지는 `A`로 설정
 - 컨베이어·소터·P3020 START/STOP을 Dashboard System 제어에 포함
 - Package 현재 Zone 및 Event History 자동 갱신
 - Region A/B/C에 따라 실제 통과하는 Sorter Stage를 동적으로 생성
