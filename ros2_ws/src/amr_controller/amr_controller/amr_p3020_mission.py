@@ -33,11 +33,11 @@ class AmrP3020Mission(Node):
     def __init__(self):
         super().__init__("amr_p3020_mission")
 
-        # Parcel_Sorting_Map real values: p3020_in base (0.2,-1.5,0.4) +
-        # p3020_mission_agent.py's AMR_DELIVERY_POSE_WORLD -- AMR parks here,
+        # rviz2 Publish Point real measurement -- matches
+        # p3020_mission_agent.py's AMR_DELIVERY_POSE_WORLD. AMR parks here,
         # facing 0 deg (toward the arm), so it is within arm #1's 2 m reach.
-        self.declare_parameter("delivery_x", 1.1)
-        self.declare_parameter("delivery_y", -1.5)
+        self.declare_parameter("delivery_x", 1.7009891271591187)
+        self.declare_parameter("delivery_y", -1.369241714477539)
         self.declare_parameter("delivery_yaw", 0.0)
 
         # Approximate return waypoint near the real cargo dock (9, -3) --

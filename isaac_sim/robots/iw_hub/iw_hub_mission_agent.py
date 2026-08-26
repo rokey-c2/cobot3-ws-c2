@@ -43,22 +43,24 @@ LIFT_KD = 1_000.0
 LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 
-# Real values measured headlessly off the rebuilt Parcel_Sorting_Map (both
-# AMR and cargo pod are baked into the map now, not code-spawned):
-#   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=0 deg
-#   /World/Cargo/cargo_box_gaurd_size_200_fix     -> (9, -3), yaw=0 deg
+# Real values measured headlessly off Parcel_Sorting_Map_real_real_final_final
+# (both AMR and cargo pod are baked into the map, not code-spawned):
+#   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=-90 deg
+#   /World/cargo_box_gaurd_size_200_fix_02        -> (9, -3), yaw=0 deg
 # AMR spawn and cargo pod share X=9, so the local dock drive is a straight
 # +Y move -- matching this file's existing "rotate then drive Y" logic.
 # TARGET_ROOT (the AMR's own dock-drive target) is set equal to the cargo
 # pod's position, same convention as the old placeholder values.
-CARGO_PRIM_PATH = "/World/Cargo/cargo_box_gaurd_size_200_fix"
+CARGO_PRIM_PATH = "/World/cargo_box_gaurd_size_200_fix_02"
 CARGO_HOME_X = 9.0
 CARGO_HOME_Y = -3.0
 CARGO_HOME_YAW = 0.0
 
 SPAWN_X = 9.0
 SPAWN_Y = -6.0
-SPAWN_YAW = 0.0
+# Real measured spawn yaw is -90 deg (matches the AMR's actual authored
+# orientation in the map), not 0 -- see CARGO_PRIM_PATH comment above.
+SPAWN_YAW = math.radians(-90.0)
 
 TARGET_ROOT_X = 9.0
 TARGET_ROOT_Y = -3.0

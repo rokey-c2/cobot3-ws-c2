@@ -36,7 +36,7 @@ ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
     ISAAC_SIM_DIR
     / "usd"
-    / "Parcel_Sorting_Map"
+    / "Parcel_Sorting_Map_real_real_final_final"
     / "Parcel_Sorting_Map.usd"
 )
 

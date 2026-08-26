@@ -12,6 +12,7 @@ that needs the external YOLO box detector node publishing /box_pixel,
 which isn't started here.
 """
 
+import random
 import sys
 from pathlib import Path
 
@@ -33,21 +34,19 @@ from isaacsim.core.utils.extensions import enable_extension
 from isaacsim.core.utils.stage import open_stage
 
 from project_config.robot_config import (
-    CARGO_REGISTRY,
     PARCEL_REGISTRY,
     ROBOT_REGISTRY,
 )
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map_real_real_final_final" / "Parcel_Sorting_Map.usd"
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
 simulation_app.update()
 
-from cargo.cargo_guard_clone import resolve_parcel_layer, spawn_cargo_guard_clone
-from cargo.cargo_pod_physics import add_parcel_asset
+from cargo.cargo_pod_physics import add_parcel_asset_scaled
 import robots.iw_hub.iw_hub_mission_agent as iw_hub_mission_module
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import P3020PickPlaceAgent
@@ -66,26 +65,11 @@ def check(name, ok, detail=""):
 
 
 def spawn_cargo_and_parcels(stage):
-    UsdGeom.Xform.Define(stage, "/World/Cargo")
-    config = CARGO_REGISTRY[0]
-    prim_path = f"/World/Cargo/{config['name']}"
-    spawn_cargo_guard_clone(
-        stage,
-        prim_path,
-        spawn_xyz=config["spawn_xyz"],
-        spawn_yaw=float(config.get("spawn_yaw", 0.0)),
-        source_name=config["source_prim_name"],
-        mass_kg=float(config.get("mass_kg", 20.0)),
-    )
-    iw_hub_mission_module.CARGO_PRIM_PATH = prim_path
-
-    cargo_xyz = config["spawn_xyz"]
-    resolved = resolve_parcel_layer(
-        stage,
-        prim_path,
-        PARCEL_REGISTRY,
-        cargo_center_xy=(float(cargo_xyz[0]), float(cargo_xyz[1])),
-    )
+    """Cargo pod is baked into the map now (not code-spawned) -- this only
+    spawns the 4 parcels onto it, mirroring main_mission.py's
+    _spawn_parcels(). iw_hub_mission_module.CARGO_PRIM_PATH already
+    defaults to the real baked-in pod's path, so it doesn't need overriding
+    here the way it did when cargo was cloned fresh per run."""
 
     UsdGeom.Xform.Define(stage, "/World/Cargo/Parcels")
     # TEST-ONLY: real destinations will come from a "destination" attribute
@@ -93,23 +77,29 @@ def spawn_cargo_and_parcels(stage):
     # p3020_mission_agent.py's PARCEL_DESTINATION_ATTR) -- here we just
     # cycle through A/B/C/D so every sorter path gets exercised.
     destinations = ["A", "B", "C", "D"]
-    for i, parcel_cfg in enumerate(resolved):
+    box_ids = random.sample([1, 2, 3, 4], len(PARCEL_REGISTRY))
+
+    for i, (parcel_cfg, box_id) in enumerate(zip(PARCEL_REGISTRY, box_ids)):
         parcel_path = f"/World/Cargo/Parcels/{parcel_cfg['name']}"
-        add_parcel_asset(
+        add_parcel_asset_scaled(
             stage,
             parcel_path,
             asset_url=parcel_cfg["usd"],
             center=parcel_cfg["spawn_xyz"],
-            max_size=parcel_cfg["max_size_xyz"],
+            scale_xyz=parcel_cfg["scale_xyz"],
+            box_id=box_id,
             mass_kg=float(parcel_cfg.get("mass_kg", 15.0)),
         )
         dest = destinations[i % len(destinations)]
         stage.GetPrimAtPath(parcel_path).CreateAttribute(
             "destination", Sdf.ValueTypeNames.String
         ).Set(dest)
-        print(f"[TEST] parcel {parcel_cfg['name']} -> destination={dest}")
+        print(
+            f"[TEST] parcel {parcel_cfg['name']} -> "
+            f"box_id={box_id}, destination={dest}"
+        )
 
-    return prim_path
+    return iw_hub_mission_module.CARGO_PRIM_PATH
 
 
 def main():

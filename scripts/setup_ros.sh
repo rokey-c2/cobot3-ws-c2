@@ -2,7 +2,7 @@
 set -e
 
 source /opt/ros/jazzy/setup.bash
-export ROS_DOMAIN_ID=110
+export ROS_DOMAIN_ID=111
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 echo "ROS2 Jazzy configured"

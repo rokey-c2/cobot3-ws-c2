@@ -2,7 +2,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map/navigation/maps/Parcel_Sorting_Map.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map_real_real_final_final/navigation/maps/Parcel_Sorting_Map.yaml"
 
 # Real IW Hub spawn in Parcel_Sorting_Map (measured headlessly off
 # /World/iw_hub_warehouse_navigation/iw_hub_ROS): (9, -6), yaw=0.
@@ -21,7 +21,7 @@ source /opt/ros/jazzy/setup.bash
 unset GTK_PATH
 unset GIO_MODULE_DIR
 
-export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-111}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
 if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
@@ -172,10 +172,10 @@ set_nav2_speed
 
 sleep 1
 
-echo "[ROS2] setting initial pose: ($START_X, $START_Y), yaw=0 deg"
+echo "[ROS2] setting initial pose: ($START_X, $START_Y), yaw=-90 deg"
 ros2 topic pub --once \
     /initialpose \
     geometry_msgs/msg/PoseWithCovarianceStamped \
-    "{header: {frame_id: map}, pose: {pose: {position: {x: $START_X, y: $START_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}"
+    "{header: {frame_id: map}, pose: {pose: {position: {x: $START_X, y: $START_Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: -0.7071068, w: 0.7071068}}}}"
 
 wait "$NAV2_PID"

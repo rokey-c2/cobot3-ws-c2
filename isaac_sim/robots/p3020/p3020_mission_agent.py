@@ -132,13 +132,17 @@ SPEC_REACH = 2.0
 
 TCP_OFFSET = np.array([0.0049, 0.0321, 0.0942])
 
-# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 측정해서 확인함
-# (min=(10.35,-1.65,0.3), max=(10.65,-1.35,0.6), 즉 0.3m 정육면체) -- 반높이
-# 0.15m가 실측치와 정확히 일치한다. 박스 프림 원점은 add_parcel_asset()이
+# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 재측정함 --
+# add_parcel_asset_scaled()가 scale_xyz=PARCEL_SCALE_XYZ=(0.75,0.75,0.5)를
+# 적용한 이후로는 더 이상 정육면체가 아니라 0.375 x 0.375 x 0.25 m 납작한
+# 상자다 (world bbox size=(0.375,0.375,0.25) 확인됨). 반높이는 0.125m --
+# 이전에 남아있던 0.15m는 scale 적용 전(0.3m 정육면체 시절) 값이 그대로
+# 남아있던 것으로, 흡착 접촉 판정을 2.5cm 어긋나게 만들어 AMR이 튕겨나갈
+# 정도로 과하게 눌리는 원인이었다. 박스 프림 원점은 add_parcel_asset_scaled()가
 # "기하학적 중심"에 맞춰서 만들기 때문에(예전 p3020_pick_place_poc.py의 박스
 # 애셋처럼 바닥면 원점이 아님), ContactGripper의 snap_distance/contact_threshold
 # 도 전체 높이가 아니라 반높이 기준으로 잡는다.
-PARCEL_HALF_HEIGHT = 0.15
+PARCEL_HALF_HEIGHT = 0.125
 PARCEL_SNAP_DISTANCE = PARCEL_HALF_HEIGHT + 0.01
 
 # 픽업 쪽(카고 포드 위)과 플레이스 쪽(컨베이어) 높이가 서로 많이 달라서
@@ -179,14 +183,11 @@ APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여�
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
-# TEMP TEST VALUE -- 테스트 스크립트(test_new_logic.py, test_full_pipeline.py)의
-# AMR 텔레포트 목표 좌표와 동일해야 한다 (AMR이 적재함을 대고 서는 월드
-# 좌표). 준비 자세가 엉뚱한 방향을 보고 있던 버그의 원인이 이 값이 AMR
-# 도착 지점과 안 맞았던 것이었다. base(0.2,-1.5)에서 0.9m -- 기존 1.2m보다
-# 가까워서 준비 자세가 덜 어색해 보임(2.0m 사거리 안에서 여유 충분). 액션
-# goal에 pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR 도착
-# 지점 방향)을 쓴다.
-AMR_DELIVERY_POSE_WORLD = np.array([1.1, -1.5])
+# rviz2 Publish Point로 실측한 컨베이어 앞 AMR 도착 지점 (map 좌표 = world
+# 좌표와 1:1 확인됨). base(0.2,-1.5)에서 거리 약 1.51m -- 2.0m 사거리 안.
+# 액션 goal에 pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR
+# 도착 지점 방향)을 쓴다.
+AMR_DELIVERY_POSE_WORLD = np.array([1.7009891271591187, -1.369241714477539])
 DEFAULT_SCAN_XY = AMR_DELIVERY_POSE_WORLD - ROBOT_BASE_POS[:2]
 
 MIN_VALID_SCAN_DEPTH = 0.4

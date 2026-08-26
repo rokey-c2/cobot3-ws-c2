@@ -4,7 +4,7 @@ set -eo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 source /opt/ros/jazzy/setup.bash
-export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-111}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
 if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
