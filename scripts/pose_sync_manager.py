@@ -41,6 +41,10 @@ POSITION_TOLERANCE_M = float(os.getenv("POSITION_TOLERANCE_M", "0.05"))
 YAW_TOLERANCE_RAD = math.radians(
     float(os.getenv("YAW_TOLERANCE_DEG", "2.0"))
 )
+DESYNC_DEBOUNCE_SECONDS = max(
+    0.0,
+    float(os.getenv("DESYNC_DEBOUNCE_SECONDS", "2.0")),
+)
 INITIAL_POSE_RETRY_COUNT = int(
     os.getenv("INITIAL_POSE_RETRY_COUNT", "5")
 )
@@ -116,6 +120,7 @@ class PoseSyncManager(Node):
         self.last_pose_rx_time = None
         self.last_pose_publish_time = 0.0
         self.last_sync_status = None
+        self.desync_started_at = None
 
         self.isaac_session_id = None
         self.restore_state = RESTORE_WAITING_FOR_ISAAC
@@ -224,6 +229,10 @@ class PoseSyncManager(Node):
             f"Tolerance: position={POSITION_TOLERANCE_M:.3f} m "
             f"yaw={math.degrees(YAW_TOLERANCE_RAD):.1f} deg"
         )
+        self.get_logger().info(
+            f"DESYNC debounce: {DESYNC_DEBOUNCE_SECONDS:.1f} s "
+            "of continuous mismatch"
+        )
 
     def on_mqtt_connect(
         self,
@@ -290,6 +299,7 @@ class PoseSyncManager(Node):
         self.isaac_session_id = isaac_session_id
         self.latest_pose = None
         self.last_pose_rx_time = None
+        self.desync_started_at = None
         self.restore_state = RESTORE_WAITING_FOR_DB
         self.restore_request_id = uuid.uuid4().hex
         self.restore_target = None
@@ -656,19 +666,24 @@ class PoseSyncManager(Node):
         )
 
     def check_sync(self):
+        now = time.monotonic()
+
         if (
             self.latest_pose is None
             or self.last_pose_rx_time is None
-            or time.monotonic() - self.last_pose_rx_time > POSE_TIMEOUT
+            or now - self.last_pose_rx_time > POSE_TIMEOUT
         ):
+            self.desync_started_at = None
             self.publish_sync_status("OFFLINE")
             return
 
         if self.restore_state == RESTORE_FAILED:
+            self.desync_started_at = None
             self.publish_sync_status("DESYNC")
             return
 
         if not self.restore_is_ready():
+            self.desync_started_at = None
             self.publish_sync_status("SYNCING")
             return
 
@@ -677,6 +692,7 @@ class PoseSyncManager(Node):
             or self.nav2_needs_initial_pose
             or self.initial_pose_retries_remaining > 0
         ):
+            self.desync_started_at = None
             self.publish_sync_status("SYNCING")
             return
 
@@ -687,6 +703,7 @@ class PoseSyncManager(Node):
                 Time(),
             )
         except Exception:
+            self.desync_started_at = None
             self.publish_sync_status("SYNCING")
             return
 
@@ -704,13 +721,31 @@ class PoseSyncManager(Node):
             y - float(tf_position.y),
         )
         yaw_error = abs(angle_error(yaw, tf_yaw))
-
-        if (
+        pose_matches_tf = (
             position_error <= POSITION_TOLERANCE_M
             and yaw_error <= YAW_TOLERANCE_RAD
-        ):
+        )
+
+        if pose_matches_tf:
+            self.desync_started_at = None
             status = "SYNCED"
         else:
+            if self.desync_started_at is None:
+                self.desync_started_at = now
+
+            mismatch_duration = now - self.desync_started_at
+            if mismatch_duration < DESYNC_DEBOUNCE_SECONDS:
+                # Keep a previously confirmed SYNCED state during a short,
+                # moving-pose/TF timing gap. During startup, remain SYNCING
+                # until a matching sample is observed.
+                if self.last_sync_status != "SYNCED":
+                    self.publish_sync_status(
+                        "SYNCING",
+                        position_error=position_error,
+                        yaw_error=yaw_error,
+                    )
+                return
+
             status = "DESYNC"
 
         self.publish_sync_status(
