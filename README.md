@@ -66,6 +66,10 @@ Wheel Sorter는 기존 ActionGraph의 `binary_switch` 값을 Python에서 변경
 
 상세 내용은 [docs/conveyor_sorter_control.md](docs/conveyor_sorter_control.md)를 참고합니다.
 
+Control Tower의 P3020·Conveyor·Sorter·Mission·Package 실시간 연동 및
+Nav2 없이 실행하는 방법은
+[Control Tower Live Process Integration](docs/scenario/control_tower_live_integration.md)을 참고합니다.
+
 ## 실행 (전체 통합 미션: AMR + P3020 Pick&Place)
 
 저장소를 클론한 경로에서, 터미널 5개로 순서대로 실행합니다.

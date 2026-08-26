@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import psycopg
 
@@ -18,3 +19,18 @@ def get_db_connection():
         password=os.getenv("POSTGRES_PASSWORD"),
         connect_timeout=5,
     )
+
+
+def apply_migrations():
+    """Apply idempotent SQL migrations on every backend startup."""
+
+    migrations_dir = Path(__file__).resolve().parents[1] / "db" / "migrations"
+    if not migrations_dir.is_dir():
+        raise RuntimeError(f"Migration directory not found: {migrations_dir}")
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            for migration_path in sorted(migrations_dir.glob("*.sql")):
+                cursor.execute(migration_path.read_text(encoding="utf-8"))
+                print(f"[DB] Applied migration: {migration_path.name}", flush=True)
+        conn.commit()

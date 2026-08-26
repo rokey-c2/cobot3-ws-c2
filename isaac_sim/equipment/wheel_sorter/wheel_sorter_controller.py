@@ -9,6 +9,7 @@ SWITCH_NODE_CANDIDATES = ("reroute", "binary_switch")
 # 소터 자체 벨트 속도 노드 이름 후보 (지금 맵의 "SorterSpeed", 또는 표준
 # 예제의 컨베이어 그래프 변수 "Velocity"에 대응하는 상수 노드).
 SPEED_NODE_CANDIDATES = ("SorterSpeed", "Velocity")
+ROUTE_COMPLETE_SECONDS = 6.0
 
 
 def _resolve_attr_path(action_graph_path: str, node_candidates):
@@ -76,6 +77,10 @@ class WheelSorterController:
         self.sorter_speed = float(sorter_speed)
         self.units_by_region = {}
         self.all_units = []
+        self.enabled_by_region = {region: True for region in self.regions}
+        self.active_destination = None
+        self.active_elapsed = 0.0
+        self._process_events = []
 
     def setup(self):
         """Discover sorter units and set a known initial (pass-through)
@@ -116,6 +121,10 @@ class WheelSorterController:
             unit.set_reroute(False)
             unit.set_speed(self.sorter_speed)
 
+        self.enabled_by_region = {
+            region: True for region in self.units_by_region
+        }
+
         extra = self.all_units[len(self.units_by_region):]
         for unit in extra:
             # Role not confirmed yet (e.g. ConveyorTrack_05) -- leave the
@@ -136,8 +145,13 @@ class WheelSorterController:
         is no concurrent-box queueing to resolve here yet -- call this once
         per box, right as it is placed."""
 
+        destination = str(destination).strip().upper()
         target_unit = self.units_by_region.get(destination)
-        for unit in self.units_by_region.values():
+        target_enabled = self.enabled_by_region.get(destination, False)
+        if not target_enabled:
+            target_unit = None
+
+        for region, unit in self.units_by_region.items():
             unit.set_reroute(unit is target_unit)
 
         if target_unit is not None:
@@ -150,4 +164,42 @@ class WheelSorterController:
                 f"[SORTER] destination '{destination}' matches no region "
                 "sorter -- box continues to the end-of-line 배송지 오류 section"
             )
+        self.active_destination = destination if target_unit is not None else "UNKNOWN"
+        self.active_elapsed = 0.0
+        self._process_events.append(
+            {"state": f"ROUTING:{destination if target_unit is not None else 'UNKNOWN'}"}
+        )
         return destination
+
+    def set_region_enabled(self, region: str, enabled: bool):
+        region = str(region).strip().upper()
+        unit = self.units_by_region.get(region)
+        if unit is None:
+            return False
+        enabled = bool(enabled)
+        self.enabled_by_region[region] = enabled
+        unit.set_reroute(False)
+        unit.set_speed(self.sorter_speed if enabled else 0.0)
+        return True
+
+    def get_region_status(self, region: str):
+        region = str(region).strip().upper()
+        if not self.enabled_by_region.get(region, False):
+            return "STOPPED"
+        return "RUNNING"
+
+    def on_physics_step(self, dt: float):
+        if self.active_destination is None:
+            return
+        self.active_elapsed += float(dt)
+        if self.active_elapsed < ROUTE_COMPLETE_SECONDS:
+            return
+        destination = self.active_destination
+        self.active_destination = None
+        self.active_elapsed = 0.0
+        self._process_events.append({"state": f"ARRIVED:{destination}"})
+
+    def take_process_events(self):
+        events = list(self._process_events)
+        self._process_events.clear()
+        return events

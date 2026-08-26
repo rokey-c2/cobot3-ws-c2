@@ -13,6 +13,39 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 SUBSCRIBE_TOPIC = "controltower/#"
 
 
+def update_equipment_status(equipment_code: str, payload: dict):
+    """Update a non-AMR equipment snapshot from its ROS2 bridge."""
+
+    status = str(payload.get("status", "")).strip().upper()
+    mode = payload.get("mode")
+    if not status:
+        print(f"[MQTT][DB] Invalid equipment status: {payload}", flush=True)
+        return
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE equipment_state es
+                    SET status = %s,
+                        mode = COALESCE(%s, es.mode),
+                        last_seen_at = NOW(),
+                        updated_at = NOW()
+                    FROM equipment e
+                    WHERE es.equipment_id = e.id AND e.code = %s;
+                    """,
+                    (status, mode, equipment_code),
+                )
+                if cursor.rowcount == 0:
+                    print(f"[MQTT][DB] Equipment not found: {equipment_code}", flush=True)
+                    return
+                conn.commit()
+        print(f"[MQTT][DB] Equipment status: {equipment_code} -> {status}", flush=True)
+    except Exception as error:
+        print(f"[MQTT][DB] Failed to update equipment status: {error}", flush=True)
+
+
 def update_amr_status(equipment_code: str, payload: dict):
     status = payload.get("status")
     mode = payload.get("mode")
@@ -307,6 +340,16 @@ def handle_message(topic: str, payload: dict):
         update_command_result(payload)
         return
 
+    if topic == "controltower/process/event":
+        try:
+            from app.process_events import handle_process_event
+
+            result = handle_process_event(payload)
+            print(f"[MQTT][PROCESS] applied: {result}", flush=True)
+        except Exception as error:
+            print(f"[MQTT][PROCESS] failed: {error}", flush=True)
+        return
+
     parts = topic.split("/")
 
     if len(parts) != 4 or parts[0] != "controltower":
@@ -315,6 +358,10 @@ def handle_message(topic: str, payload: dict):
     resource_type = parts[1]
     equipment_code = parts[2]
     message_type = parts[3]
+
+    if resource_type == "equipment" and message_type == "status":
+        update_equipment_status(equipment_code, payload)
+        return
 
     if resource_type != "amr":
         return
