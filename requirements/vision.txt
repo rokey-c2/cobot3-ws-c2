@@ -1,0 +1,3 @@
+# Extra package required by the P3020 box detector.
+# ROS2 packages such as rclpy/cv_bridge remain provided by the Ubuntu/ROS installation.
+onnxruntime

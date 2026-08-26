@@ -1,17 +1,33 @@
 #!/usr/bin/env bash
-# vision_node(LocateBox/ConfirmGrasp)가 필요로 하는 onnxruntime을
-# 시스템 python을 건드리지 않고 venv에만 설치한다.
-# --system-site-packages 로 만들어서 rclpy/cv_bridge/message_filters 등
-# apt로 깔린 ROS2 파이썬 패키지는 그대로 보인다.
-set -e
+# P3020 vision dependencies are installed in a project venv without modifying
+# the system Python. --system-site-packages keeps ROS2 apt packages visible.
+set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="$ROOT_DIR/.venv"
+REQUIREMENTS="$ROOT_DIR/requirements/vision.txt"
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "[ERROR] python3 is not installed"
+    exit 1
+fi
+
+if ! python3 -c 'import venv' >/dev/null 2>&1; then
+    echo "[ERROR] Python venv module is not available"
+    echo "Ubuntu 24.04 example: sudo apt install -y python3.12-venv"
+    exit 1
+fi
+
+if [ -d "$VENV_DIR" ] && [ ! -x "$VENV_DIR/bin/python3" ]; then
+    echo "[ERROR] Existing .venv is incomplete: $VENV_DIR"
+    echo "Remove the broken .venv and run this script again."
+    exit 1
+fi
 
 python3 -m venv --system-site-packages "$VENV_DIR"
 "$VENV_DIR/bin/python3" -m pip install --upgrade pip
-"$VENV_DIR/bin/python3" -m pip install onnxruntime
+"$VENV_DIR/bin/python3" -m pip install -r "$REQUIREMENTS"
 
 echo ""
-echo "설치 완료. 사용 전에:"
-echo "  source $VENV_DIR/bin/activate"
+echo "[Vision] setup complete"
+echo "Activate with: source $VENV_DIR/bin/activate"
