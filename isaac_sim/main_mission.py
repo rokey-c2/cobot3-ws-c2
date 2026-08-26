@@ -93,8 +93,6 @@ def _spawn_parcels(parcel_configs):
         return
 
     stage = omni.usd.get_context().get_stage()
-    # Keep parcel rigid bodies outside the cargo rigid body hierarchy, but group
-    # them under /World/Cargo so Stage clearly shows they belong to this load.
     UsdGeom.Xform.Define(stage, "/World/Cargo/Parcels")
 
     box_ids = random.sample([1, 2, 3, 4], len(parcel_configs))
@@ -193,7 +191,6 @@ class AmrMissionBridge(Node):
 
     def _lift_command_callback(self, message):
         action = message.data.strip().upper()
-
         accepted = self.agent.request_manual_lift(action)
 
         if accepted:
@@ -283,7 +280,6 @@ class AmrMissionBridge(Node):
             self.last_lift_state = lift_state
 
     def _publish_map_pose(self):
-        """Publish the actual Isaac World pose as the canonical ROS map pose."""
         if self.agent.robot is None:
             return
 
@@ -386,9 +382,6 @@ def main():
     conveyor.setup()
     sorter.setup()
 
-    # The cargo pod is baked into the map now (not code-spawned) --
-    # iw_hub_mission_agent.CARGO_PRIM_PATH already defaults to the real
-    # baked-in pod's path. Only the 4 parcel boxes are still spawned here.
     _spawn_parcels(PARCEL_REGISTRY)
 
     agents = []
@@ -411,12 +404,10 @@ def main():
         agent.post_reset()
     p3020_agent.post_reset()
 
-    # Re-apply equipment state after reset so the run starts deterministically.
     conveyor.setup()
     sorter.setup()
 
     world.play()
-
     conveyor.start()
 
     for _ in range(30):
@@ -448,6 +439,7 @@ def main():
     print("[ROS2] /amr_a/map_pose (frame=map, source=Isaac World)")
     print("[ROS2] /amr_a/pose_source_session")
     print("[ROS2] /amr_a/restore_pose")
+    print("[P3020] one command = one Pick & Place cycle")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
@@ -466,23 +458,35 @@ def main():
 
             command = p3020_bridge.take_command()
             if command is not None:
-                place_xy = (float(command["place_x"]), float(command["place_y"]))
+                place_xy = (
+                    float(command["place_x"]),
+                    float(command["place_y"]),
+                )
                 scan_hint = None
                 if "scan_hint_x" in command and "scan_hint_y" in command:
-                    scan_hint = (float(command["scan_hint_x"]), float(command["scan_hint_y"]))
+                    scan_hint = (
+                        float(command["scan_hint_x"]),
+                        float(command["scan_hint_y"]),
+                    )
+
                 print(
                     "\n[P3020] pick_place command received: "
-                    f"place={place_xy} scan_hint={scan_hint} "
-                    "-- emptying cargo pod"
+                    f"place={place_xy} scan_hint={scan_hint}"
                 )
-                p3020_agent.run_until_cargo_empty(
+
+                # FigJam / backup-main-20260824 기준:
+                # 한 액션 명령은 박스 한 개의 Vision -> Pick -> Place -> Result
+                # 사이클만 수행한다. Cargo 전체를 자동으로 비우거나 Sorter를
+                # P3020 내부에서 직접 제어하지 않는다.
+                success, message = p3020_agent.run_pick_place(
                     p3020_bridge,
                     place_xy_world=place_xy,
-                    amr_agent=agents[0],
                     scan_xy_world=scan_hint,
                     tick_others=tick_iw_hub_agents,
                     dt=dt,
-                    sorter=sorter,
+                )
+                print(
+                    f"[P3020] result: success={success} message={message}"
                 )
 
             world.step(render=True)
