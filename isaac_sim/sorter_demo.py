@@ -42,7 +42,7 @@ WORLD_USD = (
 BOX_SPAWN_POSITION = (-0.5, 0.0, 1.2)
 BOX_SCALE_XYZ = (0.75, 0.75, 0.5)
 BOX_MASS_KG = 15.0
-BOX_SPAWN_INTERVAL_SECONDS = 1.0
+BOX_SPAWN_INTERVAL_SECONDS = 2.0
 
 # Demo routing policy confirmed for the sorter-only presentation.
 BOX_ID_TO_TRACK = {
