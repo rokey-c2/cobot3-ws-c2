@@ -1,10 +1,10 @@
 """IW Hub local cargo handling around a Nav2 mission.
 
-Movement is split into three phases:
+Movement is split into phases:
 1. AMR (local) precision control while docking at the cargo pod and lifting
-   it -- start -> rotate +90 -> drive to cargo dock -> lift -> PICKUP_DONE.
-   Precision matters here because the lift is a fixed vertical actuator
-   that must be centered under the cargo pod to engage it.
+   it -- start -> rotate to face the pod -> drive to cargo dock -> lift ->
+   PICKUP_DONE. Precision matters here because the lift is a fixed vertical
+   actuator that must be centered under the cargo pod to engage it.
 2. AGV (Nav2) autonomous navigation from the cargo dock to near the conveyor
    front. This class does not drive the wheels during this phase -- it only
    holds the lift up while Nav2 owns /cmd_vel.
@@ -15,10 +15,18 @@ Movement is split into three phases:
    earlier version added a local rotate+align step here; it kept drifting
    because the creep helpers assume the robot faces the Y axis, and the
    chosen dock yaw didn't -- removed rather than special-cased.)
+4. Set the pod down at the delivery point (request_lower_at_delivery() ->
+   LOWERED_AT_DELIVERY) before the arm starts picking, and pick the empty
+   pod back up once it's done (request_raise_at_delivery() ->
+   RAISED_AT_DELIVERY_DONE). Added because holding the pod up on the lift
+   while boxes were removed one at a time shifted its weight and rocked
+   both the pod and the AMR -- setting it down removes the AMR from that
+   loop while the arm works.
 
-After delivery/P3020, Nav2 returns near the cargo area. The local controller
-first corrects X, restores the dock pose, lowers the lift, then returns the
-IW Hub to its original spawn pose.
+After delivery/P3020 (pod raised again), Nav2 returns near the cargo area.
+The local controller first corrects X, restores the dock pose, lowers the
+lift (this time verifying the pod landed back at its real home pose), then
+returns the IW Hub to its original spawn pose.
 """
 
 import math
@@ -43,9 +51,9 @@ LIFT_KD = 1_000.0
 LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 
-# Real values measured headlessly off Parcel_Sorting_Map_real_real_final_final
+# Real values measured headlessly off Parcel_Sorting_Map
 # (both AMR and cargo pod are baked into the map, not code-spawned):
-#   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=-90 deg
+#   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=+90 deg
 #   /World/cargo_box_gaurd_size_200_fix_02        -> (9, -3), yaw=0 deg
 # AMR spawn and cargo pod share X=9, so the local dock drive is a straight
 # +Y move -- matching this file's existing "rotate then drive Y" logic.
@@ -58,12 +66,22 @@ CARGO_HOME_YAW = 0.0
 
 SPAWN_X = 9.0
 SPAWN_Y = -6.0
-# Real measured spawn yaw is -90 deg (matches the AMR's actual authored
-# orientation in the map), not 0 -- see CARGO_PRIM_PATH comment above.
-SPAWN_YAW = math.radians(-90.0)
+# Real measured spawn yaw is +90 deg (matches the AMR's actual authored
+# orientation in the map after the user's map edit; was -90 deg before),
+# not 0 -- see CARGO_PRIM_PATH comment above.
+SPAWN_YAW = math.radians(90.0)
 
+# TARGET_ROOT is where the AMR's own origin (base_link) stops, NOT where
+# the cargo pod is -- the lift mechanism itself sits offset from base_link
+# by (-0.2563, 0.0005) in the robot's local frame (measured headlessly:
+# "lift" prim center relative to /iw_hub_ROS). At TARGET_YAW=90 deg that
+# local offset maps to world (-0.0005, -0.2563), so if TARGET_ROOT_Y were
+# the pod's own Y (-3.0), the lift itself would end up 0.256 m short of
+# the pod center -- lifting from one side instead of the middle, which
+# made the pod tip when a box was removed. Shifting TARGET_ROOT_Y by
+# +0.2563 puts the *lift* at the pod's real center instead.
 TARGET_ROOT_X = 9.0
-TARGET_ROOT_Y = -3.0
+TARGET_ROOT_Y = -3.0 + 0.2563
 TARGET_YAW = math.radians(90.0)
 RETURN_X_YAW = 0.0
 
@@ -229,10 +247,35 @@ class MissionIwHubAgent(IwHubAgent):
         self._set_state("CONVEYOR_DOCK_DONE")
         return True
 
+    def request_lower_at_delivery(self):
+        """Set the cargo pod down at the delivery point before the arm
+        starts picking. Holding the pod up on the lift while boxes are
+        removed one at a time shifted its weight around and rocked both
+        the pod and the AMR -- setting it down on the ground removes the
+        AMR from that loop entirely while the arm works."""
+        if self.mission_state == "LOWERED_AT_DELIVERY":
+            return True
+        if self.mission_state != "CONVEYOR_DOCK_DONE":
+            return False
+        self._set_state("LOWERING_AT_DELIVERY")
+        return True
+
+    def request_raise_at_delivery(self):
+        """Pick the (now empty) pod back up after the arm finishes, so Nav2
+        can carry it back to the cargo dock."""
+        if self.mission_state == "RAISED_AT_DELIVERY_DONE":
+            return True
+        if self.mission_state != "LOWERED_AT_DELIVERY":
+            return False
+        pose = self._world_pose(CARGO_PRIM_PATH)
+        self._cargo_before_z = None if pose is None else pose[2]
+        self._set_state("RAISING_AT_DELIVERY")
+        return True
+
     def request_return_dock(self):
         if self.mission_state == "RETURN_DOCK_DONE":
             return True
-        if self.mission_state != "CONVEYOR_DOCK_DONE":
+        if self.mission_state != "RAISED_AT_DELIVERY_DONE":
             return False
         self._set_state("RETURN_ALIGN_X_YAW")
         return True
@@ -478,8 +521,16 @@ class MissionIwHubAgent(IwHubAgent):
     def on_physics_step(self, dt):
         self._state_elapsed += float(dt)
 
-        if self.mission_state in {"PICKUP_DONE", "CONVEYOR_DOCK_DONE"}:
+        if self.mission_state in {
+            "PICKUP_DONE",
+            "CONVEYOR_DOCK_DONE",
+            "RAISED_AT_DELIVERY_DONE",
+        }:
             self._hold_lift(LIFT_TARGET)
+            return
+
+        if self.mission_state == "LOWERED_AT_DELIVERY":
+            self._hold_lift(0.0)
             return
 
         if self.mission_state == "IDLE":
@@ -543,6 +594,42 @@ class MissionIwHubAgent(IwHubAgent):
 
             if self._state_elapsed >= PICKUP_TIMEOUT:
                 self._fail("lift timeout before cargo rise was confirmed")
+            return
+
+        if self.mission_state == "LOWERING_AT_DELIVERY":
+            self._stop()
+            self._hold_lift(0.0)
+
+            if self._joint_position() <= 0.005:
+                print("[MISSION IW HUB] cargo pod set down at delivery point")
+                self._set_state("LOWERED_AT_DELIVERY")
+            return
+
+        if self.mission_state == "RAISING_AT_DELIVERY":
+            self._stop()
+            self._hold_lift(LIFT_TARGET)
+
+            joint_position = self._joint_position()
+            pose = self._world_pose(CARGO_PRIM_PATH)
+            cargo_z = None if pose is None else pose[2]
+
+            cargo_lifted = False
+            if cargo_z is not None and self._cargo_before_z is not None:
+                cargo_lifted = (
+                    cargo_z - self._cargo_before_z >= MIN_CARGO_LIFT
+                )
+
+            if joint_position >= 0.035 and cargo_lifted:
+                print(
+                    "[MISSION IW HUB] empty pod picked back up: "
+                    f"lift={joint_position:.4f} m, "
+                    f"cargo dz={cargo_z - self._cargo_before_z:.4f} m"
+                )
+                self._set_state("RAISED_AT_DELIVERY_DONE")
+                return
+
+            if self._state_elapsed >= PICKUP_TIMEOUT:
+                self._fail("lift timeout before empty pod rise was confirmed")
             return
 
         if self.mission_state == "RETURN_ALIGN_X_YAW":

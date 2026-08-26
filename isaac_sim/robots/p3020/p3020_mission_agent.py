@@ -100,12 +100,15 @@ SAFE_JOINT_LIMITS = {
 # state:angular:physics:position on /World/p3020_in's joints in the saved
 # map exactly, confirmed via headless inspection. This is what post_reset()
 # now sets directly instead of overwriting it with an IK-computed scan pose.
+# Re-measured after the user re-tuned the arm's resting pose again in the
+# latest Parcel_Sorting_Map rebuild (joint_3/5/6 moved substantially this
+# time, not just a small tweak; joint_1/2 unchanged).
 HOME_JOINT_DEG = {
-    "joint_1": 0.0,
-    "joint_2": 0.0,
-    "joint_3": 90.0,
-    "joint_5": 76.8,
-    "joint_6": 56.8,
+    "joint_1": 0.09999999922536333,
+    "joint_2": 3.500000026248569,
+    "joint_3": 42.99999891985429,
+    "joint_5": 126.80000307318552,
+    "joint_6": 36.80000056870735,
 }
 
 DRIVE_STIFFNESS = 1e8
@@ -132,17 +135,14 @@ SPEC_REACH = 2.0
 
 TCP_OFFSET = np.array([0.0049, 0.0321, 0.0942])
 
-# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 재측정함 --
-# add_parcel_asset_scaled()가 scale_xyz=PARCEL_SCALE_XYZ=(0.75,0.75,0.5)를
-# 적용한 이후로는 더 이상 정육면체가 아니라 0.375 x 0.375 x 0.25 m 납작한
-# 상자다 (world bbox size=(0.375,0.375,0.25) 확인됨). 반높이는 0.125m --
-# 이전에 남아있던 0.15m는 scale 적용 전(0.3m 정육면체 시절) 값이 그대로
-# 남아있던 것으로, 흡착 접촉 판정을 2.5cm 어긋나게 만들어 AMR이 튕겨나갈
-# 정도로 과하게 눌리는 원인이었다. 박스 프림 원점은 add_parcel_asset_scaled()가
-# "기하학적 중심"에 맞춰서 만들기 때문에(예전 p3020_pick_place_poc.py의 박스
-# 애셋처럼 바닥면 원점이 아님), ContactGripper의 snap_distance/contact_threshold
-# 도 전체 높이가 아니라 반높이 기준으로 잡는다.
-PARCEL_HALF_HEIGHT = 0.125
+# 파라셀(NVIDIA CardBox) 크기 -- add_parcel_asset_scaled()가
+# scale_xyz=PARCEL_SCALE_XYZ=(0.7,0.7,0.7)를 균일 적용하므로 0.5m 정육면체
+# 원본이 0.35 x 0.35 x 0.35 m 정육면체가 된다. 반높이는 0.175m. 박스
+# 프림 원점은 add_parcel_asset_scaled()가 "기하학적 중심"에 맞춰서 만들기
+# 때문에(예전 p3020_pick_place_poc.py의 박스 애셋처럼 바닥면 원점이 아님),
+# ContactGripper의 snap_distance/contact_threshold도 전체 높이가 아니라
+# 반높이 기준으로 잡는다.
+PARCEL_HALF_HEIGHT = 0.175
 PARCEL_SNAP_DISTANCE = PARCEL_HALF_HEIGHT + 0.01
 
 # 픽업 쪽(카고 포드 위)과 플레이스 쪽(컨베이어) 높이가 서로 많이 달라서
@@ -183,14 +183,19 @@ APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여�
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
-# rviz2 Publish Point로 실측한 컨베이어 앞 AMR 도착 지점 (map 좌표 = world
-# 좌표와 1:1 확인됨). base(0.2,-1.5)에서 거리 약 1.51m -- 2.0m 사거리 안.
-# 액션 goal에 pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR
-# 도착 지점 방향)을 쓴다.
+# AMR이 적재함을 내려놓는 실제 배달 지점 (사용자 지정). base(0.2,-1.5)에서
+# 거리 약 1.51m -- 2.0m 사거리 안. 액션 goal에 pickup_pose가 오면 그쪽을
+# 우선 쓰고, 없으면 이 기본값(AMR 도착 지점 방향)을 쓴다.
 AMR_DELIVERY_POSE_WORLD = np.array([1.7009891271591187, -1.369241714477539])
 DEFAULT_SCAN_XY = AMR_DELIVERY_POSE_WORLD - ROBOT_BASE_POS[:2]
 
 MIN_VALID_SCAN_DEPTH = 0.4
+# AMR 몸체(섀시)의 실측 world Z는 약 0.03~0.23m, 적재함 위에 놓인 박스는
+# 약 0.30m 이상(실측 드롭테스트 기준, 박스 바닥=포드 표면=0.2768m)이라 이
+# 둘 사이에 확실한 간격이 있다 -- 노란 AMR 몸체를 박스로 오탐지하는 문제를
+# 색상 대신 높이로 걸러낸다(색상 체크는 "R>B"만 보는데 노란색도 이 조건을
+# 만족해서 갈색 박스랑 구분이 안 됐었다).
+MIN_BOX_WORLD_Z = 0.30
 SCAN_DESCEND_STEPS = 150
 SCAN_MID_HEIGHT = (SCAN_HEIGHT + APPROACH_HEIGHT) / 2.0
 VISION_WAIT_TIMEOUT_STEPS = 300
@@ -568,6 +573,10 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
         print("   scanning     [warn] 색이 박스 같지 않습니다 -- 그림자로 보고 무시.")
         return None
     world_pos = camera.pixel_to_world(cx, cy, depth_val)
+    if world_pos[2] < MIN_BOX_WORLD_Z:
+        print(f"   scanning     [warn] 실측 높이가 너무 낮습니다"
+              f"(z={world_pos[2]:.3f}m) -- AMR 몸체(노란색)를 오탐지, 무시.")
+        return None
     print(f"   scanning     detected box conf={conf:.3f} "
           f"pixel=({cx:.1f},{cy:.1f}) -> world=({world_pos[0]:.3f}, {world_pos[1]:.3f}, {world_pos[2]:.3f})")
     # z도 그대로 반환한다 -- depth 역투영은 원래 3D 점을 주는데, 예전 코드가
@@ -790,7 +799,13 @@ class P3020PickPlaceAgent:
         box_xy = self._wait_for_detection(ros_node, VISION_WAIT_TIMEOUT_STEPS, tick_others, dt)
         if box_xy is None:
             return None
-        self._move_to(box_xy, SCAN_HEIGHT, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
+        # 탐지되기 전까진(_wait_for_detection) 팔이 안 움직이고 기본자세
+        # 그대로 유지한다 -- 사용자가 그 기본자세를 AMR 도착 지점이 카메라에
+        # 잘 보이도록 직접 잡아놓은 거라, 실제 위치가 아니라 고정된
+        # SCAN_HEIGHT에서 시작한다고 가정하면 첫 이동에서 그 높이로 확
+        # 점프해버린다. 실제 현재 TCP 높이에서부터 부드럽게 시작한다.
+        current_height = float(get_tcp_pose(self.ee_frame)[2])
+        self._move_to(box_xy, current_height, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         refined = self._wait_for_detection(ros_node, REFINE_WAIT_TIMEOUT_STEPS, tick_others, dt)
         if refined is not None:
             box_xy = refined

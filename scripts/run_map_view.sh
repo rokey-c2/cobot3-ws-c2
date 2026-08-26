@@ -9,7 +9,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map_real_real_final_final/navigation/maps/Parcel_Sorting_Map.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/Parcel_Sorting_Map/navigation/maps/Parcel_Sorting_Map.yaml"
 RVIZ_CONFIG="$ROOT_DIR/rviz/map_view.rviz"
 
 source /opt/ros/jazzy/setup.bash

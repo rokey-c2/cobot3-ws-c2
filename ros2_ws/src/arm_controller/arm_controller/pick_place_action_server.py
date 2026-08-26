@@ -14,7 +14,15 @@ p3020_mission_agent.py)과 표준 타입(std_msgs/String)만 쓰는 토픽 두
         {"place_x": .., "place_y": .., "scan_hint_x": .., "scan_hint_y": ..}
     /arm_a/pick_place_status  (String)        -- Isaac Sim -> 이 서버
         "SCANNING" | "APPROACHING" | "GRASPING" | "MOVING" | "PLACING"
-        | "DONE_SUCCESS" | "DONE_FAIL:<사유>"
+        | "DONE_SUCCESS" | "DONE_FAIL:<사유>" | "CHECKING_EMPTY" | "CARGO_EMPTY"
+
+    한 번의 PickPlace 골(goal)은 박스 한 개가 아니라 "적재함이 빌 때까지"를
+    뜻한다 (p3020_mission_agent.py의 run_until_cargo_empty 참고 -- 박스를
+    하나 찾을 때마다 DONE_SUCCESS/DONE_FAIL을 찍고 다음 박스로 넘어가고,
+    5초간 더 이상 안 보이면 그때만 CARGO_EMPTY를 찍는다). 그래서
+    DONE_SUCCESS/DONE_FAIL은 박스 1개짜리 중간 피드백일 뿐이고, 이 액션의
+    진짜 종료 신호는 CARGO_EMPTY뿐이다 -- 예전엔 DONE_SUCCESS를 종료
+    신호로 잘못 쓰고 있어서, 박스 1개만 옮겨도 AMR이 곧바로 복귀했었다.
 
 실행:
     ros2 run arm_controller pick_place_action_server
@@ -35,8 +43,9 @@ from logistics_interfaces.action import PickPlace
 COMMAND_TOPIC = "/arm_a/pick_place_command"
 STATUS_TOPIC = "/arm_a/pick_place_status"
 
-# Isaac Sim 쪽 스캔/흡착/이동에 걸리는 시간을 감안한 넉넉한 타임아웃.
-RESULT_TIMEOUT_SEC = 180.0
+# 박스 여러 개를 순차로 처리하는 시간(각 박스 스캔/흡착/이동 + 마지막
+# 5초 재확인)을 감안한 넉넉한 타임아웃.
+RESULT_TIMEOUT_SEC = 600.0
 
 _PROGRESS_BY_STATE = {
     "SCANNING": 10.0,
@@ -44,6 +53,8 @@ _PROGRESS_BY_STATE = {
     "GRASPING": 50.0,
     "MOVING": 70.0,
     "PLACING": 90.0,
+    "DONE_SUCCESS": 95.0,
+    "CHECKING_EMPTY": 97.0,
 }
 
 
@@ -113,16 +124,15 @@ class PickPlaceActionServer(Node):
             if status is None:
                 continue
 
-            if status.startswith("DONE_SUCCESS"):
+            # CARGO_EMPTY is the only real terminal signal for this action
+            # (see module docstring) -- run_until_cargo_empty keeps looping
+            # through DONE_SUCCESS/DONE_FAIL per box until it publishes
+            # this. Treating DONE_SUCCESS itself as terminal was the bug
+            # that made the AMR return after just one box.
+            if status.startswith("CARGO_EMPTY"):
                 goal_handle.succeed()
                 result.success = True
-                result.message = "PickPlace complete"
-                return result
-
-            if status.startswith("DONE_FAIL"):
-                goal_handle.succeed()
-                result.success = False
-                result.message = status.partition(":")[2] or "PickPlace failed"
+                result.message = "cargo pod emptied"
                 return result
 
             feedback.state = status
