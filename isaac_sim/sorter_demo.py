@@ -29,7 +29,7 @@ BOX_ID_TO_TRACK = {
     4: None,
 }
 
-SORTER_APPROACH_THRESHOLD_M = 0.25
+SORTER_APPROACH_THRESHOLD_M = 0.35
 SORTER_RESET_THRESHOLD_M = 0.70
 
 enable_extension("isaacsim.asset.gen.conveyor")
