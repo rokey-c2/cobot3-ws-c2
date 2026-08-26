@@ -31,6 +31,14 @@ WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map" / "Parcel_Sorting_Map.u
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
+
+# Without these, the Property panel's "Add" button has no Physics/Collider
+# entries at all (not related to whether an asset is a custom USD file --
+# this is purely a UI extension gate). Matches main.py's setup.
+enable_extension("omni.kit.property.physx")
+enable_extension("omni.physx.ui")
+enable_extension("omni.physx.supportui")
+enable_extension("omni.usdphysics.ui")
 simulation_app.update()
 
 

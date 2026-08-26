@@ -133,16 +133,16 @@ CONVEYOR_SURFACE_Z = 0.8
 PLACE_CLEARANCE = 0.01
 PLACE_Z = CONVEYOR_SURFACE_Z + PARCEL_HALF_HEIGHT + PARCEL_SNAP_DISTANCE + PLACE_CLEARANCE
 
-# 카고 포드(적재함) 벽 상단을 헤드리스로 직접 측정한 값 (World0.usd의
-# /World/Cargo/cargo_pod 바운딩박스: min z=0.0, max z=1.0). 이동(LIFT/MOVE)
-# 높이를 정할 때 지금까지 이 값을 전혀 안 쓰고 있었다 -- transit_z를
-# max(pick_z, place_z)+0.20으로만 계산했었는데, 이건 "그리퍼(컵)" 높이지
-# "박스" 높이가 아니다. 박스는 컵보다 PARCEL_SNAP_DISTANCE+PARCEL_HALF_HEIGHT
-# (0.31m) 아래에 매달려 있어서, 컵이 적재함보다 충분히 높아도 박스 바닥은
-# 적재함 벽에 닿을 수 있다. PLACE_Z가 높았을 때(컨베이어가 더 높다고 가정했을
-# 때)는 우연히 여유가 넉넉해서 안 걸렸는데, PLACE_Z를 낮추자마자(테스트에서
-# CONVEYOR_SURFACE_Z를 낮췄더니) 여유가 1cm로 줄어들어서 실제로 걸렸다.
-CARGO_POD_TOP_Z = 1.0
+# 카고 포드(적재함) 벽 상단 world Z = spawn_xyz z(0.5) + wall_top_local(-0.10).
+# 다리 높이는 원래(실증된) 0.25m 그대로, 벽 높이만 0.10m로 의도적으로 낮춰서
+# (BASELINE_WALL_Z=-0.15, BASELINE_WALL_HEIGHT=0.10) 벽 상단이 0.40으로
+# 낮아졌다 -- 박스(약 0.25~0.3m)가 벽보다 커서 위로 튀어나오는 게 의도된
+# 설계다(팔 동작 최소화 목적). 이동(LIFT/MOVE) 높이를 정할 때 지금까지 이
+# 값을 전혀 안 쓰고 있었다 -- transit_z를 max(pick_z, place_z)+0.20으로만
+# 계산했었는데, 이건 "그리퍼(컵)" 높이지 "박스" 높이가 아니다. 박스는 컵보다
+# PARCEL_SNAP_DISTANCE+PARCEL_HALF_HEIGHT(0.31m) 아래에 매달려 있어서, 컵이
+# 적재함보다 충분히 높아도 박스 바닥은 적재함 벽에 닿을 수 있다.
+CARGO_POD_TOP_Z = 0.40
 TRANSIT_CLEARANCE = 0.10
 # "박스 바닥이 적재함 위로 TRANSIT_CLEARANCE만큼 뜨도록" 컵이 있어야 하는 높이.
 MIN_TRANSIT_Z_FOR_POD = (

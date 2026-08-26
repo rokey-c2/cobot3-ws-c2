@@ -28,7 +28,22 @@ SOURCE_GUARD_NAME = "cargo_box_gaurd_size_200_fix"
 POSE_TOLERANCE_M = 1.0e-6
 SIZE_TOLERANCE_M = 1.0e-3
 
-# Exact cargo_pod geometry from commit 8f084b... .
+# Cargo_pod geometry, original proven baseline (commit 8f084b...). Leg
+# height 0.25 m is empirically validated -- test_full_pipeline.py's
+# automated pickup test with this exact value showed the AMR's lift
+# actually engaging and raising the cargo ("lift=0.0400 m, cargo
+# dz=0.0189 m"). A later attempt to derive leg height by measuring the
+# IW Hub source asset's raw world-space bounding box gave 0.27 m, but that
+# measurement was wrong: the source file's /World/iw_hub_ROS is not at
+# that file's origin, so its "world" bounds included an uncorrected
+# offset. Trust the empirical value over the flawed measurement.
+# Leg bottom is pinned at local Z=-0.5 (rests on the ground when
+# spawn_xyz z=0.5); floor/wall Z all stack directly on top of the legs
+# with no gap/overlap. Wall height (BASELINE_WALL_HEIGHT) is the free
+# parameter for making the pod look shorter/taller overall -- leg height
+# is not, since it's tied to the AMR's own lift geometry.
+# NOTE: p3020_mission_agent.py's CARGO_POD_TOP_Z must match wall top +
+# spawn_z if this ever changes again.
 BASELINE_LEG_SIZE = (0.10, 0.10, 0.25)
 BASELINE_LEG_Z = -0.375
 BASELINE_LEG_XY = 0.45
@@ -36,8 +51,13 @@ BASELINE_FLOOR_SIZE = (1.0, 1.0, 0.05)
 BASELINE_FLOOR_CENTER_Z = -0.225
 BASELINE_FLOOR_BOTTOM_Z = -0.25
 BASELINE_FLOOR_TOP_Z = -0.20
-BASELINE_WALL_HEIGHT = 0.70
-BASELINE_WALL_Z = 0.15
+# Wall height cut to 0.10 m (deliberately shorter than a parcel box, ~0.25-
+# 0.3 m tall) so the arm's reach/motion into the pod stays minimal -- boxes
+# are expected to stick up above the wall rim. Wall still sits directly on
+# the floor top (-0.20): WALL_Z keeps wall_bottom = WALL_Z - height/2 equal
+# to BASELINE_FLOOR_TOP_Z.
+BASELINE_WALL_HEIGHT = 0.10
+BASELINE_WALL_Z = -0.15
 BASELINE_WALL_THICKNESS = 0.02
 BASELINE_WALL_XY = 0.49
 
@@ -206,6 +226,25 @@ def _align_visual_to_baseline_floor(
     return aligned
 
 
+def _uninstance_subtree(root_prim):
+    """Break instanceable composition under root_prim so its descendants
+    stop being instance proxies. Source assets authored with USD scenegraph
+    instancing (a "Prototypes" scope + instanceable=true) carry this into
+    duplicates made via omni.usd.duplicate_prim -- USD refuses to add/remove
+    API schemas on an instance proxy path, which is why
+    _disable_nested_physics silently could not turn off the source mesh's
+    own collider on some cargo guard assets."""
+
+    changed = True
+    while changed:
+        changed = False
+        for prim in Usd.PrimRange(root_prim):
+            if prim.IsInstance():
+                prim.SetInstanceable(False)
+                changed = True
+                break  # composition just changed; restart the traversal
+
+
 def _disable_nested_physics(root_prim):
     for prim in Usd.PrimRange(root_prim):
         if prim == root_prim or prim.IsInstanceProxy():
@@ -322,8 +361,9 @@ def _add_baseline_cargo_pod_physics(stage, root_prim):
 
     print(
         "[CARGO GUARD] baseline cargo_pod clearance restored: "
-        "leg_height=0.250 m, floor_underside=0.250 m world Z, "
-        "floor_top=0.300 m world Z"
+        f"leg_height={BASELINE_LEG_SIZE[2]:.3f} m, "
+        f"floor_underside_local_z={BASELINE_FLOOR_BOTTOM_Z:.3f} m, "
+        f"floor_top_local_z={BASELINE_FLOOR_TOP_Z:.3f} m"
     )
     return 9
 
@@ -412,6 +452,7 @@ def spawn_cargo_guard_clone(
     )
 
     _verify_exact_root_pose(stage, destination_path, spawn_xyz)
+    _uninstance_subtree(visual)
     _disable_nested_physics(visual)
 
     collision_count = _add_baseline_cargo_pod_physics(stage, root)
