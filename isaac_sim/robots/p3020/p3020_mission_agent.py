@@ -80,9 +80,11 @@ CAMERA_PRIM_PATH = "/World/p3020_in/vgp20/rsd455/RSD455/Camera_Pseudo_Depth"
 EE_LINK_NAME = "link_6"
 
 # 팀원이 project_config/robot_config.py의 PARCEL_REGISTRY + main_mission.py의
-# _spawn_parcels()로 런타임에 스폰하는 실제 파라셀(NVIDIA CardBox) 프림.
-# ContactGripper.try_attach()와 흡착 후 거리 로깅에 쓰인다.
-BOX_PRIM_PATH = "/World/Parcels/parcel_box_01"
+# _spawn_parcels()로 런타임에 스폰하는 실제 파라셀(NVIDIA CardBox) 프림들의
+# 부모 경로 (PARCEL_REGISTRY 항목마다 하나씩, "/World/Cargo/Parcels/<name>").
+# 개수를 가정하지 않는다 -- 매 사이클, 이 밑의 자식 프림들 중 방금 카메라로
+# 찾은 위치에 가장 가까운 것을 그 사이클의 픽업 대상으로 고른다.
+PARCEL_PARENT_PATH = "/World/Cargo/Parcels"
 
 ARM_JOINTS = ["joint_1", "joint_2", "joint_3", "joint_5", "joint_6"]
 
@@ -94,25 +96,53 @@ SAFE_JOINT_LIMITS = {
     "joint_6": (-3.14, 3.14),
 }
 
+# p3020_in's authored home pose (degrees) -- matches
+# state:angular:physics:position on /World/p3020_in's joints in the saved
+# map exactly, confirmed via headless inspection. This is what post_reset()
+# now sets directly instead of overwriting it with an IK-computed scan pose.
+HOME_JOINT_DEG = {
+    "joint_1": 0.0,
+    "joint_2": 0.0,
+    "joint_3": 90.0,
+    "joint_5": 76.8,
+    "joint_6": 56.8,
+}
+
 DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
 
-# 통합 맵에서 직접 확인한 P3020 베이스 월드 좌표 (회전 없음).
-ROBOT_BASE_POS = np.array([0.5, -1.0, 0.4])
-ROBOT_BASE_QUAT = np.array([1.0, 0.0, 0.0, 0.0])
+# Parcel_Sorting_Map에서 직접 확인한 P3020(arm #1, /World/p3020_in) 베이스
+# 월드 좌표/방향. 헤드리스로 직접 측정함 -- 맵 재구성 후 p3020_in 자체가
+# Z축 53.5도 회전된 채로 배치되어 있어서(스탠드가 아니라 팔 프림 본인의
+# 정적 orient), 회전이 없다고 가정하면 IK 타겟이 그만큼 어긋난다.
+ROBOT_BASE_POS = np.array([0.2, -1.5, 0.4])
+ROBOT_BASE_QUAT = np.array([0.8929789662361145, 0.0, 0.0, 0.45009845495224])
+
+# p3020_out(불량품 쪽, /World/p3020_out) 베이스 -- 헤드리스로 함께 측정함.
+# 이 파일이 구동하는 건 여전히 arm #1(p3020_in)뿐이라 아직 어디서도 안 쓰이지만,
+# p3020_out용 에이전트를 만들 때 ROBOT_BASE_POS/ROBOT_BASE_QUAT 자리에
+# 이 값으로 바꿔 끼우면 된다.
+P3020_OUT_BASE_POS = np.array([-14.2, -2.6, 0.4])
+P3020_OUT_BASE_QUAT = np.array(
+    [-0.4226182699203491, 0.0, 0.0, -0.9063078165054321]
+)
 
 SPEC_REACH = 2.0
 
 TCP_OFFSET = np.array([0.0049, 0.0321, 0.0942])
 
-# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 측정해서 확인함
-# (min=(10.35,-1.65,0.3), max=(10.65,-1.35,0.6), 즉 0.3m 정육면체) -- 반높이
-# 0.15m가 실측치와 정확히 일치한다. 박스 프림 원점은 add_parcel_asset()이
+# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 재측정함 --
+# add_parcel_asset_scaled()가 scale_xyz=PARCEL_SCALE_XYZ=(0.75,0.75,0.5)를
+# 적용한 이후로는 더 이상 정육면체가 아니라 0.375 x 0.375 x 0.25 m 납작한
+# 상자다 (world bbox size=(0.375,0.375,0.25) 확인됨). 반높이는 0.125m --
+# 이전에 남아있던 0.15m는 scale 적용 전(0.3m 정육면체 시절) 값이 그대로
+# 남아있던 것으로, 흡착 접촉 판정을 2.5cm 어긋나게 만들어 AMR이 튕겨나갈
+# 정도로 과하게 눌리는 원인이었다. 박스 프림 원점은 add_parcel_asset_scaled()가
 # "기하학적 중심"에 맞춰서 만들기 때문에(예전 p3020_pick_place_poc.py의 박스
 # 애셋처럼 바닥면 원점이 아님), ContactGripper의 snap_distance/contact_threshold
 # 도 전체 높이가 아니라 반높이 기준으로 잡는다.
-PARCEL_HALF_HEIGHT = 0.15
+PARCEL_HALF_HEIGHT = 0.125
 PARCEL_SNAP_DISTANCE = PARCEL_HALF_HEIGHT + 0.01
 
 # 픽업 쪽(카고 포드 위)과 플레이스 쪽(컨베이어) 높이가 서로 많이 달라서
@@ -130,16 +160,16 @@ CONVEYOR_SURFACE_Z = 0.8
 PLACE_CLEARANCE = 0.01
 PLACE_Z = CONVEYOR_SURFACE_Z + PARCEL_HALF_HEIGHT + PARCEL_SNAP_DISTANCE + PLACE_CLEARANCE
 
-# 카고 포드(적재함) 벽 상단을 헤드리스로 직접 측정한 값 (World0.usd의
-# /World/Cargo/cargo_pod 바운딩박스: min z=0.0, max z=1.0). 이동(LIFT/MOVE)
-# 높이를 정할 때 지금까지 이 값을 전혀 안 쓰고 있었다 -- transit_z를
-# max(pick_z, place_z)+0.20으로만 계산했었는데, 이건 "그리퍼(컵)" 높이지
-# "박스" 높이가 아니다. 박스는 컵보다 PARCEL_SNAP_DISTANCE+PARCEL_HALF_HEIGHT
-# (0.31m) 아래에 매달려 있어서, 컵이 적재함보다 충분히 높아도 박스 바닥은
-# 적재함 벽에 닿을 수 있다. PLACE_Z가 높았을 때(컨베이어가 더 높다고 가정했을
-# 때)는 우연히 여유가 넉넉해서 안 걸렸는데, PLACE_Z를 낮추자마자(테스트에서
-# CONVEYOR_SURFACE_Z를 낮췄더니) 여유가 1cm로 줄어들어서 실제로 걸렸다.
-CARGO_POD_TOP_Z = 1.0
+# 카고 포드(적재함) 벽 상단 world Z = spawn_xyz z(0.5) + wall_top_local(-0.10).
+# 다리 높이는 원래(실증된) 0.25m 그대로, 벽 높이만 0.10m로 의도적으로 낮춰서
+# (BASELINE_WALL_Z=-0.15, BASELINE_WALL_HEIGHT=0.10) 벽 상단이 0.40으로
+# 낮아졌다 -- 박스(약 0.25~0.3m)가 벽보다 커서 위로 튀어나오는 게 의도된
+# 설계다(팔 동작 최소화 목적). 이동(LIFT/MOVE) 높이를 정할 때 지금까지 이
+# 값을 전혀 안 쓰고 있었다 -- transit_z를 max(pick_z, place_z)+0.20으로만
+# 계산했었는데, 이건 "그리퍼(컵)" 높이지 "박스" 높이가 아니다. 박스는 컵보다
+# PARCEL_SNAP_DISTANCE+PARCEL_HALF_HEIGHT(0.31m) 아래에 매달려 있어서, 컵이
+# 적재함보다 충분히 높아도 박스 바닥은 적재함 벽에 닿을 수 있다.
+CARGO_POD_TOP_Z = 0.40
 TRANSIT_CLEARANCE = 0.10
 # "박스 바닥이 적재함 위로 TRANSIT_CLEARANCE만큼 뜨도록" 컵이 있어야 하는 높이.
 MIN_TRANSIT_Z_FOR_POD = (
@@ -153,12 +183,11 @@ APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여�
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
-# amr_p3020_mission.py의 delivery_x/y 기본값과 동일 (AMR이 화물을 내려놓고
-# 서는 월드 좌표) -- 준비 자세가 엉뚱한 방향(컨베이어 반대쪽)을 보고 있던
-# 버그의 원인이 바로 이 값이 AMR 도착 지점과 안 맞았던 것이었다. 액션 goal에
-# pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR 도착 지점 방향)을
-# 쓴다.
-AMR_DELIVERY_POSE_WORLD = np.array([1.30104, -0.06065])
+# rviz2 Publish Point로 실측한 컨베이어 앞 AMR 도착 지점 (map 좌표 = world
+# 좌표와 1:1 확인됨). base(0.2,-1.5)에서 거리 약 1.51m -- 2.0m 사거리 안.
+# 액션 goal에 pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR
+# 도착 지점 방향)을 쓴다.
+AMR_DELIVERY_POSE_WORLD = np.array([1.7009891271591187, -1.369241714477539])
 DEFAULT_SCAN_XY = AMR_DELIVERY_POSE_WORLD - ROBOT_BASE_POS[:2]
 
 MIN_VALID_SCAN_DEPTH = 0.4
@@ -177,6 +206,11 @@ GRIPPER_WAIT = 90
 TCP_SPEED = 0.006
 MIN_STEPS = 60
 MAX_STEPS = 600
+
+# 적재함이 완전히 비었다고 확정하기 전, 기본(스캔) 자세에서 박스 미인식
+# 상태를 얼마나 기다릴지. 박스 개수를 고정하지 않고(지금 4개, 나중에
+# 늘어나도 됨) "더 이상 안 보인다"로만 판단한다.
+NO_BOX_CONFIRM_TIMEOUT_S = 5.0
 
 APPROACH_ROLL_DEG = 180.0
 APPROACH_PITCH_DEG = 0.0
@@ -267,6 +301,46 @@ def base_relative(xy_world: np.ndarray) -> np.ndarray:
 def is_within_reach(xy_world: np.ndarray) -> bool:
     dist = float(np.linalg.norm(base_relative(xy_world)))
     return dist <= SPEC_REACH
+
+
+def find_nearest_parcel(stage, pick_xy: np.ndarray, parent_path: str = PARCEL_PARENT_PATH):
+    """PARCEL_REGISTRY 항목 개수만큼 스폰된 파라셀 프림들(parent_path의 자식)
+    중, 방금 카메라/depth로 찾은 pick_xy에 가장 가까운 것의 prim path를
+    돌려준다. 개수를 가정하지 않아서 나중에 박스가 늘어나도 그대로 동작한다."""
+    parent = stage.GetPrimAtPath(parent_path)
+    if not parent.IsValid():
+        return None
+
+    best_path = None
+    best_dist = None
+    for child in parent.GetChildren():
+        xf = UsdGeom.Xformable(child).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        pos = xf.Transform(Gf.Vec3d(0, 0, 0))
+        dist = float(np.hypot(pos[0] - pick_xy[0], pos[1] - pick_xy[1]))
+        if best_dist is None or dist < best_dist:
+            best_dist = dist
+            best_path = str(child.GetPath())
+
+    return best_path
+
+
+# TODO: 목적지(A/B/C/D)를 박스에 어떻게 표시할지 아직 정해지지 않았다 --
+# 사용자가 "박스에 목적지에 따른 속성을 달리할 것"이라고만 밝혔다. 일단은
+# 파라셀 프림의 커스텀 USD 속성 하나(이름은 PARCEL_DESTINATION_ATTR)를
+# 읽는 것으로 가정해뒀다. 실제 표기 방식(속성 이름/타입, 또는 비전 인식
+# 결과로 대체 등)이 정해지면 이 함수만 바꾸면 된다.
+PARCEL_DESTINATION_ATTR = "destination"
+
+
+def read_parcel_destination(stage, box_prim_path):
+    prim = stage.GetPrimAtPath(box_prim_path)
+    if not prim.IsValid():
+        return None
+    attr = prim.GetAttribute(PARCEL_DESTINATION_ATTR)
+    if not attr or not attr.IsValid():
+        return None
+    value = attr.Get()
+    return None if value is None else str(value)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -554,10 +628,7 @@ class P3020PickPlaceAgent:
         self.camera = None
         self.home_q = None
 
-    def setup(self):
-        _disable_baked_camera_graph(self.stage)
-
-        self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
+    def _configure_arm_drives(self):
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)):
             if prim.GetName() not in ARM_JOINTS:
                 continue
@@ -567,6 +638,12 @@ class P3020PickPlaceAgent:
                     drive.GetStiffnessAttr().Set(DRIVE_STIFFNESS)
                     drive.GetDampingAttr().Set(DRIVE_DAMPING)
                     drive.GetMaxForceAttr().Set(DRIVE_MAX_FORCE)
+
+    def setup(self):
+        _disable_baked_camera_graph(self.stage)
+
+        self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
+        self._configure_arm_drives()
 
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(GRIPPER_BODY_PATH)):
             attr = prim.GetAttribute("physics:collisionEnabled")
@@ -615,27 +692,34 @@ class P3020PickPlaceAgent:
         self.camera.initialize()
 
     def post_reset(self):
+        # world.reset() re-parses the physics scene, and drive stiffness/
+        # damping/maxForce authored in setup() (before that reset) doesn't
+        # always stick through it -- same class of issue this file's
+        # caller already works around for the conveyor/sorter by calling
+        # their setup() again after world.reset(). Re-authoring here, right
+        # before initialize()/_set_home_pose(), makes sure the home pose is
+        # actually reached with the intended stiff drives on the very first
+        # Play, not only after a manual Stop+Play.
+        self._configure_arm_drives()
         self.robot.initialize()
-        self._compute_ready_pose()
+        self._set_home_pose()
 
-    def _compute_ready_pose(self, steps=200):
-        scan_xy_world = ROBOT_BASE_POS[:2] + DEFAULT_SCAN_XY
-        target_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG,
-                                        yaw_toward(DEFAULT_SCAN_XY))
-        tcp_target = np.array([scan_xy_world[0], scan_xy_world[1], SCAN_HEIGHT])
-        flange_target = tcp_to_flange(tcp_target, target_quat)
-        for _ in range(steps):
-            action, solved = self.ik_solver.compute_inverse_kinematics(
-                target_position=flange_target,
-                target_orientation=target_quat,
-                orientation_tolerance=0.15,
-            )
-            if solved:
-                action = clamp_to_safe_limits(action, self.robot.dof_names)
-                self.robot.apply_action(action)
-            self.world.step(render=True)
-        self.home_q = np.array(self.robot.get_joint_positions(), dtype=float)
-        self.robot.set_joint_positions(self.home_q)
+    def _set_home_pose(self):
+        """Set the arm to its authored home pose (HOME_JOINT_DEG).
+
+        Previously this computed a camera-scan pose via 200 IK steps and
+        used whatever that converged to as home -- which silently
+        overwrote the pose the user had deliberately saved into the map,
+        every time main_mission.py started. Now it just sets that saved
+        pose directly.
+        """
+
+        home_q = np.array(
+            [np.radians(HOME_JOINT_DEG[name]) for name in self.robot.dof_names],
+            dtype=float,
+        )
+        self.robot.set_joint_positions(home_q)
+        self.home_q = home_q
 
     def set_ready_pose(self):
         self.robot.set_joint_positions(self.home_q)
@@ -714,7 +798,7 @@ class P3020PickPlaceAgent:
         return box_xy
 
     def run_pick_place(self, ros_node, place_xy_world, scan_xy_world=None,
-                        tick_others=None, dt=1 / 60.0):
+                        tick_others=None, dt=1 / 60.0, sorter=None):
         """스캔(인식) -> 흡착 -> 컨베이어 위로 이동 -> 놓기, 한 사이클 전체.
         (success: bool, message: str) 을 반환한다. 블로킹 함수라서, 실행되는
         동안 매 스텝 tick_others(dt)를 호출해 다른 에이전트(IW Hub)도 계속
@@ -752,6 +836,14 @@ class P3020PickPlaceAgent:
             ros_node.publish_status(f"DONE_FAIL:{message}")
             return False, message
 
+        target_box_path = find_nearest_parcel(self.stage, pick_xy)
+        if target_box_path is None:
+            self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+            message = f"{PARCEL_PARENT_PATH} 밑에서 파라셀 프림을 찾지 못했습니다."
+            ros_node.publish_status(f"DONE_FAIL:{message}")
+            return False, message
+        print(f"   scanning     target parcel prim: {target_box_path}")
+
         pick_xy_rel = base_relative(pick_xy)
         place_xy_rel = base_relative(place_xy_world)
         pick_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(pick_xy_rel))
@@ -783,7 +875,7 @@ class P3020PickPlaceAgent:
                 self.robot.apply_action(action)
 
             if fsm.gripper == "close":
-                just_attached = self.gripper.try_attach(BOX_PRIM_PATH) and not gripper_was_attached
+                just_attached = self.gripper.try_attach(target_box_path) and not gripper_was_attached
                 if just_attached:
                     print(f"      [gripper] 접촉 감지 -> 부착 (step={step})")
             if self.gripper.is_attached():
@@ -810,6 +902,17 @@ class P3020PickPlaceAgent:
             self.world.step(render=True)
             step += 1
 
+        if ever_attached and sorter is not None:
+            destination = read_parcel_destination(self.stage, target_box_path)
+            if destination is None:
+                print(
+                    f"[P3020][WARN] {target_box_path} has no "
+                    f"'{PARCEL_DESTINATION_ATTR}' attribute -- sorter not "
+                    "routed for this box"
+                )
+            else:
+                sorter.route_box(destination)
+
         self._return_to_ready_pose(tick_others=tick_others, dt=dt)
 
         if ever_attached:
@@ -820,3 +923,41 @@ class P3020PickPlaceAgent:
         message = f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다."
         ros_node.publish_status(f"DONE_FAIL:{message}")
         return False, message
+
+    def run_until_cargo_empty(self, ros_node, place_xy_world, amr_agent,
+                               scan_xy_world=None, tick_others=None, dt=1 / 60.0,
+                               sorter=None):
+        """적재함의 박스를 하나씩 찾아서 컨베이어 위로 옮기고, 기본(스캔)
+        자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 박스가 안 보이면 적재함이
+        빈 것으로 확정하고 amr_agent에 복귀 신호를 보낸다. 박스 개수는
+        가정하지 않는다 -- run_pick_place가 실패할 때마다(=기본 자세에서
+        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다."""
+        while True:
+            success, message = self.run_pick_place(
+                ros_node, place_xy_world, scan_xy_world=scan_xy_world,
+                tick_others=tick_others, dt=dt, sorter=sorter,
+            )
+            if success:
+                print(f"[P3020] {message} -- 다음 박스 확인")
+                continue
+
+            print(
+                f"[P3020] 기본 자세에서 박스 미인식 ({message}) -- "
+                f"{NO_BOX_CONFIRM_TIMEOUT_S:.0f}초 재확인 중"
+            )
+            ros_node.publish_status("CHECKING_EMPTY")
+            confirm_steps = max(1, int(NO_BOX_CONFIRM_TIMEOUT_S / dt))
+            still_there = self._wait_for_detection(
+                ros_node, confirm_steps, tick_others, dt
+            )
+            if still_there is not None:
+                print("[P3020] 재확인 중 박스 발견 -- 픽업 재시도")
+                continue
+
+            print(
+                f"[P3020] {NO_BOX_CONFIRM_TIMEOUT_S:.0f}초간 박스 미인식 -- "
+                "적재함 비움 확정, AMR 복귀 요청"
+            )
+            ros_node.publish_status("CARGO_EMPTY")
+            amr_agent.request_return_dock()
+            return

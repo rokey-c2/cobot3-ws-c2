@@ -2,12 +2,42 @@ import omni.graph.core as og
 import omni.usd
 
 
+CONVEYOR_NODE_TYPE = "isaacsim.asset.gen.conveyor.IsaacConveyor"
+
+
 class ConveyorController:
     """Control conveyor speed through the existing OmniGraph variables."""
 
     def __init__(self, speed: float = 1.0):
         self.speed = float(speed)
         self._graph_paths = []
+
+    def _enable_conveyor_nodes(self, graph_prim):
+        """Some plain ConveyorBeltGraph segments in Parcel_Sorting_Map ship
+        with their IsaacConveyor node's inputs:enabled left unauthored
+        (defaults to disabled) -- Velocity alone does nothing if the node
+        itself is off. Force it on for every IsaacConveyor node under this
+        graph (found by node:type so it doesn't depend on the node's given
+        name)."""
+
+        for prim in graph_prim.GetChildren():
+            node_type_attr = prim.GetAttribute("node:type")
+            if not node_type_attr or node_type_attr.Get() != CONVEYOR_NODE_TYPE:
+                continue
+            try:
+                # og.Controller.attribute() needs the graph to already be
+                # live in the OmniGraph runtime -- before world.reset() the
+                # node exists in USD but isn't instantiated yet, so this
+                # raises. setup() is called again after reset() (see
+                # main_mission.py/main.py), so the retry there succeeds;
+                # just skip quietly the first time.
+                attribute = og.Controller.attribute(
+                    f"{prim.GetPath()}.inputs:enabled"
+                )
+            except og.OmniGraphError:
+                continue
+            if attribute.is_valid():
+                attribute.set(True)
 
     def setup(self):
         """Find ConveyorBeltGraph prims and apply the initial speed."""
@@ -24,6 +54,8 @@ class ConveyorController:
 
             graph_path = str(prim.GetPath())
             self._graph_paths.append(graph_path)
+
+            self._enable_conveyor_nodes(prim)
 
             # Keep the USD-backed default value in sync as well.
             velocity_attr = prim.GetAttribute("Velocity")

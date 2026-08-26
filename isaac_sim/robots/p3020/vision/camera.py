@@ -39,3 +39,11 @@ class CameraInterface:
         depth = np.array([depth_value])
         world_points = self._camera.get_world_points_from_image_coords(points_2d, depth)
         return np.asarray(world_points[0])
+
+    def world_to_pixel(self, xyz) -> tuple:
+        """pixel_to_world의 역변환. 실제 YOLO 감지 노드 없이, 이미 알고 있는
+        3D 위치(테스트에서 직접 스폰한 박스 등)를 가짜 감지 픽셀로 만들 때
+        쓴다 (테스트 전용 -- 실제 인식 파이프라인에서는 쓰지 않음)."""
+        points_3d = np.array([[float(xyz[0]), float(xyz[1]), float(xyz[2])]])
+        pixel = self._camera.get_image_coords_from_world_points(points_3d)
+        return float(pixel[0][0]), float(pixel[0][1])

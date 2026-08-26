@@ -27,8 +27,6 @@ setup(
     entry_points={
         "console_scripts": [
             "container_mission = amr_controller.container_mission:main",
-            "static_map_publisher = amr_controller.static_map_publisher:main",
-            "velocity_mux = amr_controller.velocity_mux:main",
         ],
     },
 )
