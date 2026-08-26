@@ -12,10 +12,8 @@ import rclpy
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import Twist
 from nav2_msgs.action import NavigateToPose
-from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
 from std_msgs.msg import String
 
 
@@ -24,7 +22,6 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 
 EQUIPMENT_CODE = os.getenv("EQUIPMENT_CODE", "AMR_IN")
 
-ROS_ODOM_TOPIC = os.getenv("ROS_ODOM_TOPIC", "/chassis/odom")
 ROS_NAV_ACTION = os.getenv("ROS_NAV_ACTION", "/navigate_to_pose")
 ROS_CMD_VEL_TOPIC = os.getenv("ROS_CMD_VEL_TOPIC", "/cmd_vel")
 ROS_LIFT_COMMAND_TOPIC = os.getenv(
@@ -36,7 +33,6 @@ ROS_LIFT_STATE_TOPIC = os.getenv(
     "/amr_a/lift_state",
 )
 
-MQTT_ODOM_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/odom"
 MQTT_STATUS_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/status"
 MQTT_NAV_COMMAND_TOPIC = (
     f"controltower/command/amr/{EQUIPMENT_CODE}/navigate"
@@ -50,7 +46,6 @@ MQTT_CONTROL_COMMAND_TOPIC = (
 MQTT_LIFT_STATE_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/lift"
 MQTT_COMMAND_RESULT_TOPIC = "controltower/result/command"
 
-PUBLISH_INTERVAL = 0.5
 LIFT_COMMAND_TIMEOUT = 10.0
 
 
@@ -74,14 +69,6 @@ class Ros2MqttAdapter(Node):
             keepalive=60,
         )
         self.mqtt_client.loop_start()
-
-        self.odom_subscription = self.create_subscription(
-            Odometry,
-            ROS_ODOM_TOPIC,
-            self.odom_callback,
-            qos_profile_sensor_data,
-        )
-        self.last_publish_time = 0.0
 
         self.navigate_client = ActionClient(
             self,
@@ -131,8 +118,6 @@ class Ros2MqttAdapter(Node):
             self.enforce_control_stop,
         )
 
-        self.get_logger().info(f"ROS2 subscribe: {ROS_ODOM_TOPIC}")
-        self.get_logger().info(f"MQTT publish: {MQTT_ODOM_TOPIC}")
         self.get_logger().info(
             f"MQTT subscribe: {MQTT_NAV_COMMAND_TOPIC}"
         )
@@ -217,43 +202,6 @@ class Ros2MqttAdapter(Node):
 
         if message.topic == MQTT_LIFT_COMMAND_TOPIC:
             self.command_queue.put(("LIFT", payload))
-
-    @staticmethod
-    def quaternion_to_yaw(x, y, z, w):
-        siny_cosp = 2.0 * (w * z + x * y)
-        cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
-        return math.atan2(siny_cosp, cosy_cosp)
-
-    def odom_callback(self, message: Odometry):
-        current_time = time.monotonic()
-
-        if current_time - self.last_publish_time < PUBLISH_INTERVAL:
-            return
-
-        self.last_publish_time = current_time
-        position = message.pose.pose.position
-        orientation = message.pose.pose.orientation
-        yaw = self.quaternion_to_yaw(
-            orientation.x,
-            orientation.y,
-            orientation.z,
-            orientation.w,
-        )
-        payload = {
-            "x": float(position.x),
-            "y": float(position.y),
-            "yaw": float(yaw),
-        }
-        self.mqtt_client.publish(
-            MQTT_ODOM_TOPIC,
-            json.dumps(payload),
-        )
-        self.get_logger().info(
-            f"Published {EQUIPMENT_CODE} odom "
-            f"x={payload['x']:.3f} "
-            f"y={payload['y']:.3f} "
-            f"yaw={payload['yaw']:.3f}"
-        )
 
     def process_command_queue(self):
         self.check_lift_timeout()
