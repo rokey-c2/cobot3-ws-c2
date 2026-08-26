@@ -61,6 +61,16 @@ CREATE TABLE IF NOT EXISTS equipment_state (
     position_y NUMERIC(10, 3),
     yaw NUMERIC(10, 4),
 
+    -- Canonical AMR pose metadata.
+    -- position_x / position_y / yaw are official only when pose_frame='map'.
+    pose_frame VARCHAR(20),
+    pose_source VARCHAR(30),
+    pose_seq BIGINT NOT NULL DEFAULT 0,
+    pose_session_id VARCHAR(100),
+    pose_session_epoch_ms BIGINT NOT NULL DEFAULT 0,
+    pose_updated_at TIMESTAMPTZ,
+    sync_status VARCHAR(20) NOT NULL DEFAULT 'OFFLINE',
+
     lift_state VARCHAR(30),
 
     last_seen_at TIMESTAMPTZ,
@@ -71,6 +81,40 @@ CREATE TABLE IF NOT EXISTS equipment_state (
         REFERENCES equipment(id)
         ON DELETE CASCADE
 );
+
+
+-- Legacy /chassis/odom updates do not carry canonical pose metadata.
+-- Once a canonical map pose exists, protect it from any writer that changes
+-- x/y/yaw without advancing pose_seq/session_epoch.
+CREATE OR REPLACE FUNCTION protect_canonical_map_pose()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF
+        OLD.pose_frame = 'map'
+        AND NEW.pose_seq = OLD.pose_seq
+        AND NEW.pose_session_epoch_ms = OLD.pose_session_epoch_ms
+        AND (
+            NEW.position_x IS DISTINCT FROM OLD.position_x
+            OR NEW.position_y IS DISTINCT FROM OLD.position_y
+            OR NEW.yaw IS DISTINCT FROM OLD.yaw
+        )
+    THEN
+        NEW.position_x := OLD.position_x;
+        NEW.position_y := OLD.position_y;
+        NEW.yaw := OLD.yaw;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_protect_canonical_map_pose
+    ON equipment_state;
+
+CREATE TRIGGER trg_protect_canonical_map_pose
+BEFORE UPDATE ON equipment_state
+FOR EACH ROW
+EXECUTE FUNCTION protect_canonical_map_pose();
 
 
 -- ------------------------------------------------------------

@@ -5,6 +5,7 @@ local start -> cargo -> lift -> Nav2 delivery -> P3020 action
 -> Nav2 return -> local precision return -> lift down -> local spawn return.
 """
 
+import math
 import random
 from pathlib import Path
 
@@ -18,6 +19,7 @@ import omni.graph.core as og
 import omni.usd
 import rclpy
 
+from geometry_msgs.msg import PoseStamped
 from pxr import UsdGeom
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -137,8 +139,14 @@ class AmrMissionBridge(Node):
             "/amr_a/lift_state",
             10,
         )
+        self.map_pose_pub = self.create_publisher(
+            PoseStamped,
+            "/amr_a/map_pose",
+            10,
+        )
 
         self.create_timer(0.2, self._publish_state)
+        self.create_timer(0.2, self._publish_map_pose)
 
     def _command_callback(self, message):
         command = message.data.strip().upper()
@@ -194,6 +202,32 @@ class AmrMissionBridge(Node):
                 f"lift state: {lift_state}"
             )
             self.last_lift_state = lift_state
+
+    def _publish_map_pose(self):
+        """Publish the actual Isaac World pose as the canonical ROS map pose."""
+        if self.agent.robot is None:
+            return
+
+        position, quaternion = self.agent.robot.get_world_pose()
+        w, x, y, z = [float(value) for value in quaternion]
+
+        yaw = math.atan2(
+            2.0 * (w * z + x * y),
+            1.0 - 2.0 * (y * y + z * z),
+        )
+
+        msg = PoseStamped()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "map"
+        msg.pose.position.x = float(position[0])
+        msg.pose.position.y = float(position[1])
+        msg.pose.position.z = float(position[2])
+        msg.pose.orientation.x = 0.0
+        msg.pose.orientation.y = 0.0
+        msg.pose.orientation.z = math.sin(yaw / 2.0)
+        msg.pose.orientation.w = math.cos(yaw / 2.0)
+
+        self.map_pose_pub.publish(msg)
 
 
 class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
@@ -332,6 +366,7 @@ def main():
     print("[ROS2] /amr_a/pickup_state")
     print("[ROS2] /amr_a/lift_command")
     print("[ROS2] /amr_a/lift_state")
+    print("[ROS2] /amr_a/map_pose (frame=map, source=Isaac World)")
     print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
