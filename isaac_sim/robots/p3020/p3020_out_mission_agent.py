@@ -144,7 +144,7 @@ SPEC_REACH = 2.0
 # ══════════════════════════════════════════════════════════════
 REJECT_BIN_PRIM_PATH = "/World/Cargo/RejectBin"
 REJECT_BIN_SPAWN_Z = 0.5  # cargo_guard_clone.py 관례: 이 값일 때 다리가 바닥(z=0)에 닿는다.
-REJECT_BIN_SPAWN_XY = (-15.5, -3.5)
+REJECT_BIN_SPAWN_XY = (-15.50001, -3.5)  # 사용자가 직접 배치한 적재함 실측값
 REJECT_BIN_SPAWN_YAW_DEG = 0.0
 
 REJECT_BIN_POSE = CargoPose(

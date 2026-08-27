@@ -27,7 +27,7 @@ from isaacsim.core.utils.stage import open_stage
 
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "Final_Real_Map" / "Parcel_Sorting_Map.usd"
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")

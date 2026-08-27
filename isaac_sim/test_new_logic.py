@@ -39,11 +39,12 @@ from project_config.robot_config import (
 )
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "Final_Real_Map" / "Parcel_Sorting_Map.usd"
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
+enable_extension("isaacsim.asset.gen.conveyor")
 simulation_app.update()
 
 from cargo.cargo_pod_physics import add_parcel_asset_scaled

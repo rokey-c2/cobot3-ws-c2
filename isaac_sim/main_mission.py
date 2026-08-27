@@ -42,7 +42,7 @@ ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
     ISAAC_SIM_DIR
     / "usd"
-    / "Parcel_Sorting_Map"
+    / "Final_Real_Map"
     / "Parcel_Sorting_Map.usd"
 )
 
@@ -56,6 +56,12 @@ BOX_ID_TO_TRACK = {1: "01", 2: "02", 3: "03", 4: None}
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
+# Without this, the IsaacConveyor OmniGraph node type used by every
+# ConveyorBeltGraph in the map is unrecognized ("Could not find node type
+# interface for 'isaacsim.asset.gen.conveyor.IsaacConveyor'") -- Velocity
+# still gets set on the graph, but the node type itself doesn't do
+# anything, so the belt never actually moves.
+enable_extension("isaacsim.asset.gen.conveyor")
 simulation_app.update()
 
 from cargo.cargo_pod_physics import add_parcel_asset_scaled
@@ -71,12 +77,7 @@ from robots.p3020.p3020_mission_agent import (
 from robots.p3020.p3020_out_mission_agent import (
     P3020OutRosBridge,
     P3020UnloadToBinAgent,
-    REJECT_BIN_PRIM_PATH,
-    REJECT_BIN_SPAWN_XY,
-    REJECT_BIN_SPAWN_YAW_DEG,
-    REJECT_BIN_SPAWN_Z,
 )
-from cargo.cargo_guard_clone import spawn_cargo_guard_clone
 
 
 def _create_clock_graph():
@@ -354,6 +355,9 @@ class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
         not_before = ros_node.get_clock().now()
+        ros_node._node.get_logger().info(
+            f"[DIAG] _wait_for_detection start not_before={not_before.nanoseconds}"
+        )
         depth_map = None
         last_frame = None
 
@@ -536,12 +540,9 @@ def main():
 
     parcel_paths = _spawn_parcels(PARCEL_REGISTRY)
 
-    spawn_cargo_guard_clone(
-        omni.usd.get_context().get_stage(),
-        REJECT_BIN_PRIM_PATH,
-        (REJECT_BIN_SPAWN_XY[0], REJECT_BIN_SPAWN_XY[1], REJECT_BIN_SPAWN_Z),
-        spawn_yaw=REJECT_BIN_SPAWN_YAW_DEG,
-    )
+    # The reject bin used to be cloned here at REJECT_BIN_PRIM_PATH -- it's
+    # now placed by hand directly in the map, so spawning a second one here
+    # would just leave two overlapping bins in the scene.
 
     agents = []
     for config in ROBOT_REGISTRY:

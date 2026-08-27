@@ -472,6 +472,10 @@ class P3020RosBridge:
 
     def _on_pixel(self, msg: PointStamped):
         stamp = Time.from_msg(msg.header.stamp)
+        self._node.get_logger().info(
+            f"pixel received: x={msg.point.x:.1f} y={msg.point.y:.1f} "
+            f"stamp={stamp.nanoseconds}"
+        )
         self.latest_pixel = (msg.point.x, msg.point.y, msg.point.z, stamp)
 
     def take_pixel_after(self, not_before: Time):
@@ -480,6 +484,16 @@ class P3020RosBridge:
             return None
         cx, cy, conf, stamp = pixel
         if stamp < not_before:
+            # DIAGNOSTIC: detections are being rejected as stale despite
+            # box_detector_node.py actively publishing them -- print the
+            # raw nanosecond values so we can see whether this is a real
+            # timing gap or a cross-runtime (Isaac-embedded vs system
+            # rclpy) PointStamped stamp deserialization problem.
+            self._node.get_logger().warn(
+                "pixel rejected as stale: "
+                f"stamp={stamp.nanoseconds} not_before={not_before.nanoseconds} "
+                f"delta_s={(not_before.nanoseconds - stamp.nanoseconds) / 1e9:.3f}"
+            )
             return None
         self.latest_pixel = None
         return (cx, cy, conf)
