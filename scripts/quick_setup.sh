@@ -3,7 +3,8 @@
 # Large platform prerequisites (Ubuntu/ROS2/Isaac Sim/Docker) are intentionally
 # not installed here. This script installs project dependencies, builds ROS2,
 # prepares env files, and builds Docker images.
-set -euo pipefail
+# NOTE: ROS 2 setup.bash is not compatible with Bash nounset (`set -u`) during setup.
+set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_SYSTEM_DEPS=0
