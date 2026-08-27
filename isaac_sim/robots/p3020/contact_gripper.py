@@ -21,6 +21,8 @@ SurfaceGripper(레이캐스트 기반)는 방향/위치를 다 정확히 맞췄�
 VGP20 하드웨어(모델)는 그대로 쓰되, 흡착의 "판정/유지 로직"만 대체하는 것.
 """
 
+import math
+
 from pxr import Usd, UsdGeom, UsdPhysics, Gf
 
 
@@ -37,42 +39,104 @@ class ContactGripper:
         self._stage = stage
         self._gripper_body_path = gripper_body_path
         self._local_pos = local_pos
-        self._threshold = contact_threshold
+        self._threshold = float(contact_threshold)
         self._attached_to = None
         # 콜리전을 꺼놨기 때문에, 붙는 순간의 우연한(겹친) 위치 그대로 잡으면
         # 시각적으로 박스가 그리퍼를 뚫고 겹쳐 보인다. 그래서 잡는 순간 박스를
         # 흡착 컵 바로 아래(local_pos에서 local_down_dir 방향으로 snap_distance
         # 만큼 떨어진 지점)로 깔끔하게 스냅시킨다.
-        self._snap_distance = snap_distance
+        self._snap_distance = float(snap_distance)
         self._local_down_dir = Gf.Vec3d(local_down_dir).GetNormalized()
 
     def gripper_point_world(self) -> Gf.Vec3d:
-        xf = UsdGeom.Xformable(self._stage.GetPrimAtPath(self._gripper_body_path)).ComputeLocalToWorldTransform(
-            Usd.TimeCode.Default()
+        xf = UsdGeom.Xformable(
+            self._stage.GetPrimAtPath(self._gripper_body_path)
+        ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        return xf.Transform(
+            Gf.Vec3d(
+                self._local_pos[0],
+                self._local_pos[1],
+                self._local_pos[2],
+            )
         )
-        return xf.Transform(Gf.Vec3d(self._local_pos[0], self._local_pos[1], self._local_pos[2]))
+
+    def object_center_world(self, object_prim_path: str) -> Gf.Vec3d:
+        obj_xf = UsdGeom.Xformable(
+            self._stage.GetPrimAtPath(object_prim_path)
+        ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        return obj_xf.Transform(Gf.Vec3d(0, 0, 0))
 
     def distance_to(self, object_prim_path: str) -> float:
-        obj_xf = UsdGeom.Xformable(self._stage.GetPrimAtPath(object_prim_path)).ComputeLocalToWorldTransform(
-            Usd.TimeCode.Default()
-        )
-        obj_pos = obj_xf.Transform(Gf.Vec3d(0, 0, 0))
-        return (self.gripper_point_world() - obj_pos).GetLength()
+        return (
+            self.gripper_point_world()
+            - self.object_center_world(object_prim_path)
+        ).GetLength()
+
+    def contact_offsets(self, object_prim_path: str):
+        """Return horizontal XY offset and signed vertical gap to box center.
+
+        The old grasp test used one 3-D center-to-center distance. For a
+        0.35 m parcel, the cup naturally sits about one half-height above the
+        parcel center even when it is correctly touching the top surface.
+        That consumed almost the whole radial threshold, leaving only about
+        10 cm of allowed XY error. A YOLO point near the edge of a valid box
+        could therefore fail grasp even though the suction cup was still
+        physically over that same box.
+
+        Treat horizontal placement and vertical contact separately instead:
+        horizontal tolerance follows the configured snap distance (roughly
+        the parcel half-width in this project), while vertical tolerance
+        continues to use contact_threshold.
+        """
+
+        gripper = self.gripper_point_world()
+        center = self.object_center_world(object_prim_path)
+        dx = float(gripper[0] - center[0])
+        dy = float(gripper[1] - center[1])
+        dz = float(gripper[2] - center[2])
+        horizontal = math.hypot(dx, dy)
+        return horizontal, dz
 
     def try_attach(self, object_prim_path: str) -> bool:
-        """매 스텝 호출. 이미 붙어 있으면 그대로 유지, threshold 안에 들어오면
-        그 순간 잡는다. 붙었는지 여부를 반환한다."""
+        """Attach when the cup is over the selected parcel's top surface.
+
+        target_box_path is already selected from the YOLO/depth detection,
+        so this does not search neighbouring parcels or enlarge the target
+        set. It only stops rejecting a valid selected parcel because the
+        detected pixel was off-centre on its top face.
+        """
+
         if self._attached_to is not None:
             return True
-        if self.distance_to(object_prim_path) <= self._threshold:
+
+        horizontal, vertical_gap = self.contact_offsets(object_prim_path)
+
+        horizontal_limit = self._snap_distance
+        vertical_min = -0.02
+        vertical_max = self._threshold
+
+        if (
+            horizontal <= horizontal_limit
+            and vertical_min <= vertical_gap <= vertical_max
+        ):
+            print(
+                "      [gripper] attach window matched: "
+                f"xy_offset={horizontal:.3f} m, "
+                f"z_gap={vertical_gap:.3f} m"
+            )
             self._attach(object_prim_path)
             return True
+
         return False
 
     def _local_snap_target(self) -> Gf.Vec3d:
         """vgp20 로컬 좌표계 기준, 흡착 컵 바로 아래(박스 원점이 있어야 할) 지점."""
         return (
-            Gf.Vec3d(self._local_pos[0], self._local_pos[1], self._local_pos[2])
+            Gf.Vec3d(
+                self._local_pos[0],
+                self._local_pos[1],
+                self._local_pos[2],
+            )
             + self._local_down_dir * self._snap_distance
         )
 
@@ -97,17 +161,23 @@ class ContactGripper:
         박스는 항상 원래 자세를 유지한 채 위치만 따라간다."""
         if self._attached_to is None:
             return
-        gripper_xf = UsdGeom.Xformable(self._stage.GetPrimAtPath(self._gripper_body_path)).ComputeLocalToWorldTransform(
-            Usd.TimeCode.Default()
-        )
+        gripper_xf = UsdGeom.Xformable(
+            self._stage.GetPrimAtPath(self._gripper_body_path)
+        ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
         world_pos = gripper_xf.Transform(self._local_snap_target())
         self._set_object_translate(self._attached_to, world_pos)
 
-    def _set_object_translate(self, object_prim_path: str, world_pos: Gf.Vec3d):
+    def _set_object_translate(
+        self,
+        object_prim_path: str,
+        world_pos: Gf.Vec3d,
+    ):
         """object의 부모가 /World(단위 트랜스폼)라고 가정하고, world 위치를 그대로
         local translate 로 authoring 한다 (이 프로젝트의 TargetBox는 항상 /World
         바로 아래라 이 가정이 성립한다)."""
-        xformable = UsdGeom.Xformable(self._stage.GetPrimAtPath(object_prim_path))
+        xformable = UsdGeom.Xformable(
+            self._stage.GetPrimAtPath(object_prim_path)
+        )
         for op in xformable.GetOrderedXformOps():
             if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
                 op.Set(world_pos)
