@@ -3,7 +3,7 @@
 Sequence:
 1) local IW Hub control rotates +90, drives to cargo, and lifts it.
 2) Nav2 starts only after PICKUP_DONE.
-3) delivery Nav2 success triggers P3020 PickPlace action.
+3) delivery Nav2 success confirms CONVEYOR_DOCK_DONE before P3020 action.
 4) P3020 success triggers Nav2 return to cargo area.
 5) local controller restores IW Hub to the cargo dock pose and lowers lift.
 6) after cargo pose verification, local controller returns IW Hub to spawn.
@@ -242,9 +242,9 @@ class AmrP3020Mission(Node):
 
         if purpose == "DELIVERY":
             self.get_logger().info(
-                "IW Hub destination arrived: sending P3020 action"
+                "IW Hub destination arrived: confirming conveyor dock"
             )
-            self._set_state("P3020_START")
+            self._set_state("REQUEST_CONVEYOR_DOCK")
         elif purpose == "RETURN_APPROACH":
             self._set_state("REQUEST_RETURN_DOCK")
         else:
@@ -350,6 +350,20 @@ class AmrP3020Mission(Node):
                 float(self.get_parameter("delivery_y").value),
                 float(self.get_parameter("delivery_yaw").value),
             )
+            return
+
+        if self.state == "REQUEST_CONVEYOR_DOCK":
+            self._publish_pickup_command("CONVEYOR_DOCK")
+
+            if self.pickup_state == "CONVEYOR_DOCK_DONE":
+                self.get_logger().info(
+                    "IW Hub conveyor arrival confirmed; starting P3020 action"
+                )
+                self._set_state("P3020_START")
+            elif self.pickup_state == "ERROR":
+                self._fail(
+                    "Isaac conveyor arrival controller reported ERROR"
+                )
             return
 
         if self.state == "P3020_START":
