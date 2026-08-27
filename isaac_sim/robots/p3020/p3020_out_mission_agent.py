@@ -479,7 +479,15 @@ class P3020UnloadToBinAgent:
 
         plan = self.planner.plan_next(self.bin_pose, arm_xy=(float(ROBOT_BASE_POS[0]), float(ROBOT_BASE_POS[1])))
         place_xy_world = (plan.place_position[0], plan.place_position[1])
-        place_z = plan.place_position[2]
+        # plan.place_position[2] is where the BOX should end up (the
+        # planner is Isaac/gripper-agnostic and knows nothing about our
+        # gripper). PickPlaceFSM's place_z is the TCP/cup target, and the
+        # box hangs PARCEL_SNAP_DISTANCE below the cup once attached (see
+        # p3020_mission_agent.py's PLACE_Z, which adds this same term for
+        # the inbound arm) -- without it, the cup only descends to the
+        # box's target height and the box itself ends up driven that much
+        # further down, into the bin floor.
+        place_z = plan.place_position[2] + PARCEL_SNAP_DISTANCE
         print(
             f"   [p3020_out] planner      slot={plan.slot_id} "
             f"row={plan.row} col={plan.column} place={plan.place_position}"
