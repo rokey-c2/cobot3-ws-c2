@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Start the real AMR -> P3020 integrated mission with simulation fallback off.
-set -euo pipefail
+# NOTE: ROS 2 setup.bash is not compatible with Bash nounset (`set -u`) during setup.
+set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
