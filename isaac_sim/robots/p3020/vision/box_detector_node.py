@@ -56,6 +56,7 @@ BOX_VIZ_TOPIC = "/box_detection_viz"
 _ENCODING_CHANNELS = {"rgb8": 3, "bgr8": 3}
 _BOX_COLOR = (0, 255, 0)      # RGB: 초록 사각형
 _CENTER_COLOR = (255, 0, 0)   # RGB: 빨강 중심점 + 텍스트
+_CLASS_NAME = "box"           # 단일 클래스 모델(models/parcel_box_yolo_model/data.yaml)
 
 
 class BoxDetectorNode(Node):
@@ -126,10 +127,16 @@ class BoxDetectorNode(Node):
         cv2.rectangle(viz, (x1, y1), (x2, y2), _BOX_COLOR, 2)
         cv2.circle(viz, (int(cx), int(cy)), 4, _CENTER_COLOR, -1)
 
-        label = f"({cx:.0f}, {cy:.0f})  {conf:.2f}"
-        label_y = max(y1 - 8, 12)
+        # 객체명 + 신뢰도(윗줄), 중심점 픽셀 좌표(아랫줄)
+        label = f"{_CLASS_NAME} {conf:.2f}"
+        coord = f"({cx:.0f}, {cy:.0f})"
+        label_y = max(y1 - 24, 14)
         cv2.putText(
             viz, label, (x1, label_y),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, _CENTER_COLOR, 1, cv2.LINE_AA,
+        )
+        cv2.putText(
+            viz, coord, (x1, label_y + 16),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, _CENTER_COLOR, 1, cv2.LINE_AA,
         )
         return viz
