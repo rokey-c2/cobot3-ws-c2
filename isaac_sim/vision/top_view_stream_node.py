@@ -1,14 +1,25 @@
-"""ROS 2 Image -> lightweight MJPEG stream for the Control Tower top view."""
+"""Rate-limited ROS 2 Image -> lightweight MJPEG stream.
+
+Only the newest frames are encoded. Encoding is capped by ``max_fps`` and large
+sources can be downscaled before JPEG compression to avoid wasting CPU/network
+bandwidth on browser monitoring.
+"""
 
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import (
+    DurabilityPolicy,
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+)
 from sensor_msgs.msg import Image
 
 IMAGE_TOPIC = "/top_view/rgb"
@@ -23,6 +34,13 @@ _ENCODING_CHANNELS = {
     "bgra8": 4,
 }
 
+_IMAGE_QOS = QoSProfile(
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+    reliability=ReliabilityPolicy.BEST_EFFORT,
+    durability=DurabilityPolicy.VOLATILE,
+)
+
 
 class _MjpegServer(ThreadingHTTPServer):
     daemon_threads = True
@@ -30,7 +48,7 @@ class _MjpegServer(ThreadingHTTPServer):
 
 
 class _MjpegHandler(BaseHTTPRequestHandler):
-    server_version = "ControlTowerTopView/1.0"
+    server_version = "ControlTowerStream/2.0"
 
     def do_GET(self):
         source = self.server.frame_source
@@ -43,6 +61,8 @@ class _MjpegHandler(BaseHTTPRequestHandler):
                     "image_topic": source.image_topic,
                     "stream": source.stream_path,
                     "frame_ready": source.has_stream_frame,
+                    "max_fps": source.max_fps,
+                    "max_width": source.max_width,
                 }
             ).encode("utf-8")
             self.send_response(200)
@@ -54,7 +74,7 @@ class _MjpegHandler(BaseHTTPRequestHandler):
             return
 
         if request_path != source.stream_path:
-            self.send_error(404, "top-view stream not found")
+            self.send_error(404, "stream not found")
             return
 
         self.send_response(200)
@@ -69,18 +89,13 @@ class _MjpegHandler(BaseHTTPRequestHandler):
         last_sequence = -1
         try:
             while rclpy.ok():
-                jpeg, sequence = source.wait_for_stream_frame(
-                    last_sequence,
-                    timeout=2.0,
-                )
+                jpeg, sequence = source.wait_for_stream_frame(last_sequence, timeout=2.0)
                 if jpeg is None or sequence == last_sequence:
                     continue
                 last_sequence = sequence
                 self.wfile.write(b"--frame\r\n")
                 self.wfile.write(b"Content-Type: image/jpeg\r\n")
-                self.wfile.write(
-                    f"Content-Length: {len(jpeg)}\r\n\r\n".encode("ascii")
-                )
+                self.wfile.write(f"Content-Length: {len(jpeg)}\r\n\r\n".encode("ascii"))
                 self.wfile.write(jpeg)
                 self.wfile.write(b"\r\n")
         except (BrokenPipeError, ConnectionResetError, TimeoutError):
@@ -92,13 +107,15 @@ class _MjpegHandler(BaseHTTPRequestHandler):
 
 class TopViewStreamNode(Node):
     def __init__(self):
-        super().__init__("control_tower_top_view_stream")
+        super().__init__("control_tower_image_stream")
 
         self.declare_parameter("image_topic", IMAGE_TOPIC)
         self.declare_parameter("stream_host", STREAM_HOST)
         self.declare_parameter("stream_port", STREAM_PORT)
         self.declare_parameter("stream_path", STREAM_PATH)
-        self.declare_parameter("jpeg_quality", 78)
+        self.declare_parameter("jpeg_quality", 68)
+        self.declare_parameter("max_fps", 8.0)
+        self.declare_parameter("max_width", 960)
 
         self.image_topic = str(self.get_parameter("image_topic").value)
         self.stream_host = str(self.get_parameter("stream_host").value)
@@ -106,9 +123,11 @@ class TopViewStreamNode(Node):
         self.stream_path = self._normalise_stream_path(
             str(self.get_parameter("stream_path").value)
         )
-        self.jpeg_quality = int(
-            np.clip(self.get_parameter("jpeg_quality").value, 40, 95)
-        )
+        self.jpeg_quality = int(np.clip(self.get_parameter("jpeg_quality").value, 40, 95))
+        self.max_fps = max(0.5, float(self.get_parameter("max_fps").value))
+        self.max_width = max(0, int(self.get_parameter("max_width").value))
+        self._encode_interval = 1.0 / self.max_fps
+        self._last_encode_at = 0.0
 
         self._frame_condition = threading.Condition()
         self._latest_jpeg = None
@@ -120,13 +139,15 @@ class TopViewStreamNode(Node):
             Image,
             self.image_topic,
             self._image_callback,
-            qos_profile_sensor_data,
+            _IMAGE_QOS,
         )
         self._start_stream_server()
 
         self.get_logger().info(
-            f"top view: {self.image_topic} -> "
-            f"http://{self.stream_host}:{self.stream_port}{self.stream_path}"
+            f"stream: {self.image_topic} -> "
+            f"http://{self.stream_host}:{self.stream_port}{self.stream_path} | "
+            f"<= {self.max_fps:.1f} Hz | "
+            f"max_width={self.max_width or 'source'} | jpeg={self.jpeg_quality}"
         )
 
     @staticmethod
@@ -154,25 +175,38 @@ class TopViewStreamNode(Node):
             self._stream_server.frame_source = self
             self._stream_thread = threading.Thread(
                 target=self._stream_server.serve_forever,
-                name="top-view-mjpeg",
+                name="control-tower-mjpeg",
                 daemon=True,
             )
             self._stream_thread.start()
         except OSError as error:
             self._stream_server = None
             self.get_logger().error(
-                f"MJPEG server could not bind "
-                f"{self.stream_host}:{self.stream_port}: {error}"
+                f"MJPEG server could not bind {self.stream_host}:{self.stream_port}: {error}"
             )
 
     def _image_callback(self, message: Image):
+        now = time.monotonic()
+        if now - self._last_encode_at < self._encode_interval:
+            return
+        self._last_encode_at = now
+
         bgr = self._image_to_bgr(message)
         if bgr is None:
             self.get_logger().warning(
-                f'unsupported/truncated top-view image encoding="{message.encoding}"',
+                f'unsupported/truncated image encoding="{message.encoding}"',
                 throttle_duration_sec=5.0,
             )
             return
+
+        if self.max_width > 0 and bgr.shape[1] > self.max_width:
+            scale = self.max_width / bgr.shape[1]
+            target_height = max(1, int(round(bgr.shape[0] * scale)))
+            bgr = cv2.resize(
+                bgr,
+                (self.max_width, target_height),
+                interpolation=cv2.INTER_AREA,
+            )
 
         success, encoded = cv2.imencode(
             ".jpg",
@@ -203,9 +237,7 @@ class TopViewStreamNode(Node):
             return None
 
         rows = array[:required].reshape((message.height, message.step))
-        image = rows[:, :row_size].reshape(
-            (message.height, message.width, channels)
-        )
+        image = rows[:, :row_size].reshape((message.height, message.width, channels))
 
         if message.encoding == "rgb8":
             return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -219,10 +251,13 @@ class TopViewStreamNode(Node):
         if self._stream_server is not None:
             self._stream_server.shutdown()
             self._stream_server.server_close()
+
         with self._frame_condition:
             self._frame_condition.notify_all()
+
         if self._stream_thread is not None and self._stream_thread.is_alive():
             self._stream_thread.join(timeout=2.0)
+
         return super().destroy_node()
 
 
