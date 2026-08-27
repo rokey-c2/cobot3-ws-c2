@@ -23,4 +23,6 @@ export PYTHONPATH="$ROS2_BRIDGE_DIR/rclpy"
 export LD_LIBRARY_PATH="$ROS2_BRIDGE_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 cd "$ROOT_DIR/isaac_sim"
-exec "$ISAAC_SIM_DIR/python.sh" main_mission.py
+# Keep main_mission.py untouched.  The wrapper injects only the optional
+# Control Tower top-view camera and then executes the existing mission.
+exec "$ISAAC_SIM_DIR/python.sh" main_mission_live_view.py
