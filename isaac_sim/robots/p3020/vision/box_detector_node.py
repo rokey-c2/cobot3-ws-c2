@@ -38,6 +38,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.abspath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
 sys.path.insert(0, _THIS_DIR)
 
+import cv2
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -50,8 +51,11 @@ from object_detector import ObjectDetector
 MODEL_PATH = os.path.join(_REPO_ROOT, "models", "parcel_box_yolo_model", "best.onnx")
 IMAGE_TOPIC = "/rgb"
 BOX_PIXEL_TOPIC = "/box_pixel"
+BOX_VIZ_TOPIC = "/box_detection_viz"
 
 _ENCODING_CHANNELS = {"rgb8": 3, "bgr8": 3}
+_BOX_COLOR = (0, 255, 0)      # RGB: 초록 사각형
+_CENTER_COLOR = (255, 0, 0)   # RGB: 빨강 중심점 + 텍스트
 
 
 class BoxDetectorNode(Node):
@@ -60,11 +64,13 @@ class BoxDetectorNode(Node):
 
         self.declare_parameter("image_topic", IMAGE_TOPIC)
         self.declare_parameter("box_pixel_topic", BOX_PIXEL_TOPIC)
+        self.declare_parameter("box_viz_topic", BOX_VIZ_TOPIC)
         self.declare_parameter("model_path", MODEL_PATH)
         self.declare_parameter("conf_threshold", 0.5)
 
         image_topic = str(self.get_parameter("image_topic").value)
         pixel_topic = str(self.get_parameter("box_pixel_topic").value)
+        viz_topic = str(self.get_parameter("box_viz_topic").value)
         model_path = str(self.get_parameter("model_path").value)
         conf_threshold = float(self.get_parameter("conf_threshold").value)
 
@@ -75,8 +81,13 @@ class BoxDetectorNode(Node):
             Image, image_topic, self.image_callback, qos_profile_sensor_data
         )
         self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
+        # 인식 결과(바운딩박스 + 중심점 좌표)를 그린 프레임을 그대로 다시 발행한다.
+        # RViz2/rqt_image_view에서 이 토픽을 구독하면 인식 과정을 눈으로 확인할 수 있다.
+        self.viz_pub = self.create_publisher(Image, viz_topic, qos_profile_sensor_data)
 
-        self.get_logger().info(f"listening: {image_topic} | publishing: {pixel_topic}")
+        self.get_logger().info(
+            f"listening: {image_topic} | publishing: {pixel_topic}, {viz_topic}"
+        )
 
     @staticmethod
     def imgmsg_to_rgb(msg: Image):
@@ -92,6 +103,37 @@ class BoxDetectorNode(Node):
             arr = arr[:, :, ::-1]
         return arr
 
+    @staticmethod
+    def rgb_to_imgmsg(rgb: np.ndarray, header) -> Image:
+        """imgmsg_to_rgb의 역변환. cv_bridge 없이 rgb8 Image 메시지를 직접 만든다."""
+        msg = Image()
+        msg.header = header
+        msg.height, msg.width = rgb.shape[:2]
+        msg.encoding = "rgb8"
+        msg.is_bigendian = 0
+        msg.step = msg.width * 3
+        msg.data = np.ascontiguousarray(rgb, dtype=np.uint8).tobytes()
+        return msg
+
+    @staticmethod
+    def draw_detection(rgb: np.ndarray, det: dict) -> np.ndarray:
+        """감지된 박스의 바운딩박스 + 중심점 + 좌표 텍스트를 그린 프레임을 반환한다."""
+        viz = rgb.copy()
+        cx, cy, w, h, conf = det["cx"], det["cy"], det["w"], det["h"], det["conf"]
+        x1, y1 = int(cx - w / 2), int(cy - h / 2)
+        x2, y2 = int(cx + w / 2), int(cy + h / 2)
+
+        cv2.rectangle(viz, (x1, y1), (x2, y2), _BOX_COLOR, 2)
+        cv2.circle(viz, (int(cx), int(cy)), 4, _CENTER_COLOR, -1)
+
+        label = f"({cx:.0f}, {cy:.0f})  {conf:.2f}"
+        label_y = max(y1 - 8, 12)
+        cv2.putText(
+            viz, label, (x1, label_y),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, _CENTER_COLOR, 1, cv2.LINE_AA,
+        )
+        return viz
+
     def image_callback(self, msg: Image):
         rgb = self.imgmsg_to_rgb(msg)
         if rgb is None:
@@ -102,6 +144,11 @@ class BoxDetectorNode(Node):
             return
 
         det = self.detector.detect(rgb)
+
+        # 감지 성공/실패와 무관하게 시각화 프레임은 계속 발행한다 (스트림이 안 끊기게).
+        viz = self.draw_detection(rgb, det) if det is not None else rgb
+        self.viz_pub.publish(self.rgb_to_imgmsg(viz, msg.header))
+
         if det is None:
             return
 
