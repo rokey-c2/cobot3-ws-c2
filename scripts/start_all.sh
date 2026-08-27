@@ -38,6 +38,7 @@ done
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 export PYTHONUNBUFFERED=1
+ISAAC_ROS_WS="${ISAAC_ROS_WS:-$HOME/IsaacSim-ros_workspaces/jazzy_ws}"
 
 mkdir -p "$PID_DIR" "$LOG_DIR"
 cd "$ROOT_DIR"
@@ -168,6 +169,7 @@ require_file "$ROOT_DIR/.env" "Run ./scripts/quick_setup.sh first."
 require_file "$ROOT_DIR/.venv/bin/python3" "Run ./scripts/quick_setup.sh first."
 require_file "$ROOT_DIR/ros2_ws/install/setup.bash" "Run ./scripts/quick_setup.sh first."
 require_file "$ROOT_DIR/frontend/node_modules" "Run ./scripts/quick_setup.sh first."
+require_file "$ISAAC_ROS_WS/install/setup.bash" "Set ISAAC_ROS_WS to the Isaac ROS Jazzy workspace."
 
 if [ "$FRESH_DB" = "1" ]; then
     echo "[DOCKER] resetting PostgreSQL/MQTT volumes"
@@ -179,7 +181,7 @@ compose up -d --build
 compose ps
 
 start_process isaac \
-    bash -lc "cd '$ROOT_DIR' && exec ./scripts/run_isaac_mission.sh"
+    bash -c "cd '$ROOT_DIR' && exec ./scripts/run_isaac_mission.sh"
 
 if ! wait_for_ros_publisher /clock 240; then
     echo "See: $LOG_DIR/isaac.log"
@@ -190,24 +192,24 @@ wait_for_ros_publisher /back_2d_lidar/scan 120
 wait_for_ros_publisher /chassis/odom 120
 
 start_process nav2 \
-    bash -lc "cd '$ROOT_DIR' && exec ./scripts/run_ros2.sh"
+    bash -c "cd '$ROOT_DIR' && source /opt/ros/jazzy/setup.bash && source '$ISAAC_ROS_WS/install/setup.bash' && exec ./scripts/run_ros2.sh"
 
 start_process adapters \
-    bash -lc "cd '$ROOT_DIR' && exec ./scripts/run_control_tower_adapters.sh"
+    bash -c "cd '$ROOT_DIR' && exec ./scripts/run_control_tower_adapters.sh"
 
 start_process p3020_action \
-    bash -lc "cd '$ROOT_DIR/ros2_ws' && source /opt/ros/jazzy/setup.bash && source install/setup.bash && exec ros2 run arm_controller pick_place_action_server"
+    bash -c "cd '$ROOT_DIR/ros2_ws' && source /opt/ros/jazzy/setup.bash && source install/setup.bash && exec ros2 run arm_controller pick_place_action_server"
 
 start_process vision \
-    bash -lc "cd '$ROOT_DIR' && exec ./scripts/run_vision_streams.sh"
+    bash -c "cd '$ROOT_DIR' && exec ./scripts/run_vision_streams.sh"
 
 start_process frontend \
-    bash -lc "cd '$ROOT_DIR/frontend' && exec npm run dev -- --host 0.0.0.0"
+    bash -c "cd '$ROOT_DIR/frontend' && exec npm run dev -- --host 0.0.0.0"
 
 wait_for_log nav2 "[ROS2] Nav2 is ready." 240
 
 start_process pose_sync \
-    bash -lc "cd '$ROOT_DIR' && exec ./scripts/run_pose_sync.sh"
+    bash -c "cd '$ROOT_DIR' && exec ./scripts/run_pose_sync.sh"
 
 wait_for_action /p3020/pick_place 120
 wait_for_action /navigate_to_pose 120
@@ -233,7 +235,7 @@ echo "Stop:   ./scripts/stop_all.sh"
 
 if [ "$AUTO_MISSION" = "1" ]; then
     start_process mission \
-        bash -lc "cd '$ROOT_DIR' && exec ./scripts/start_mission.sh"
+        bash -c "cd '$ROOT_DIR' && exec ./scripts/start_mission.sh"
     echo "Mission started. Log: $LOG_DIR/mission.log"
 else
     echo "Mission is NOT started yet. Trigger it with:"
