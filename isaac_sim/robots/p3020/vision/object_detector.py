@@ -1,78 +1,116 @@
-"""팀원이 학습한 택배 상자 YOLO 모델(best.onnx, YOLOv8/v11 단일 클래스 "box") 추론.
+"""Parcel-box YOLO ONNX inference with low-latency runtime settings.
 
-    입력  images   [1, 3, 640, 640]  float32, NCHW, 0~1 정규화
-    출력  output0  [1, 5, 8400]      (cx, cy, w, h, confidence) x 8400 앵커
+The model input is fixed at 640x640. Frames are letterboxed with OpenCV and the
+highest-confidence box is mapped back to source-image pixel coordinates.
 
-640x640이 아닌 원본 프레임은 letterbox(비율 유지 리사이즈 + 패딩)로 맞추고,
-결과 좌표는 다시 원본 프레임 좌표로 역변환한다.
+CUDAExecutionProvider is used automatically when the installed ONNX Runtime
+supports it; otherwise CPUExecutionProvider is used with a small fixed thread
+pool so two P3020 detector processes do not fight Isaac Sim for every CPU core.
 """
 
+import os
+
+import cv2
 import numpy as np
 import onnxruntime as ort
 
 
 class ObjectDetector:
-    def __init__(self, model_path: str, input_size: int = 640, conf_threshold: float = 0.5):
-        self._session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+    def __init__(
+        self,
+        model_path: str,
+        input_size: int = 640,
+        conf_threshold: float = 0.5,
+        cpu_threads: int = 2,
+    ):
+        session_options = ort.SessionOptions()
+        session_options.graph_optimization_level = (
+            ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        )
+        session_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        session_options.intra_op_num_threads = max(
+            1,
+            int(os.getenv("ORT_INTRA_OP_NUM_THREADS", str(cpu_threads))),
+        )
+        session_options.inter_op_num_threads = 1
+
+        available = ort.get_available_providers()
+        providers = []
+        if "CUDAExecutionProvider" in available:
+            providers.append("CUDAExecutionProvider")
+        providers.append("CPUExecutionProvider")
+
+        self._session = ort.InferenceSession(
+            model_path,
+            sess_options=session_options,
+            providers=providers,
+        )
         self._input_name = self._session.get_inputs()[0].name
-        self._input_size = input_size
-        self._conf_threshold = conf_threshold
+        self._input_size = int(input_size)
+        self._conf_threshold = float(conf_threshold)
+        self.provider = self._session.get_providers()[0]
 
     def _letterbox(self, image_rgb: np.ndarray):
-        h, w = image_rgb.shape[:2]
-        scale = self._input_size / max(h, w)
-        new_h, new_w = int(round(h * scale)), int(round(w * scale))
+        height, width = image_rgb.shape[:2]
+        scale = self._input_size / max(height, width)
+        new_height = max(1, int(round(height * scale)))
+        new_width = max(1, int(round(width * scale)))
 
-        # 외부 의존성(cv2) 없이 최근접 리사이즈로 충분 (박스 검출용 정확도면 충분)
-        row_idx = (np.arange(new_h) / scale).astype(np.int32).clip(0, h - 1)
-        col_idx = (np.arange(new_w) / scale).astype(np.int32).clip(0, w - 1)
-        resized = image_rgb[row_idx][:, col_idx]
+        resized = cv2.resize(
+            image_rgb,
+            (new_width, new_height),
+            interpolation=cv2.INTER_LINEAR,
+        )
 
-        canvas = np.full((self._input_size, self._input_size, 3), 114, dtype=np.uint8)
-        pad_y = (self._input_size - new_h) // 2
-        pad_x = (self._input_size - new_w) // 2
-        canvas[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = resized
+        canvas = np.full(
+            (self._input_size, self._input_size, 3),
+            114,
+            dtype=np.uint8,
+        )
+        pad_y = (self._input_size - new_height) // 2
+        pad_x = (self._input_size - new_width) // 2
+        canvas[
+            pad_y : pad_y + new_height,
+            pad_x : pad_x + new_width,
+        ] = resized
         return canvas, scale, pad_x, pad_y
 
-    def _preprocess(self, image_rgba: np.ndarray):
-        image_rgb = image_rgba[:, :, :3].astype(np.uint8)
-        canvas, scale, pad_x, pad_y = self._letterbox(image_rgb)
-        blob = canvas.astype(np.float32) / 255.0
-        blob = blob.transpose(2, 0, 1)[None, ...]  # HWC -> NCHW
+    def _preprocess(self, image_rgb: np.ndarray):
+        canvas, scale, pad_x, pad_y = self._letterbox(image_rgb[:, :, :3])
+        blob = cv2.dnn.blobFromImage(
+            canvas,
+            scalefactor=1.0 / 255.0,
+            size=(self._input_size, self._input_size),
+            mean=(0.0, 0.0, 0.0),
+            swapRB=False,
+            crop=False,
+        )
         return blob, scale, pad_x, pad_y
 
-    def detect(self, image_rgba: np.ndarray):
-        """가장 confidence 높은 박스 하나를 반환한다.
-
-        Returns:
-            dict(cx, cy, w, h, conf) -- 전부 원본 image_rgba 픽셀 좌표계 기준.
-            검출 실패 시 None.
-        """
-        if image_rgba is None or image_rgba.size == 0:
+    def detect(self, image_rgb: np.ndarray):
+        """Return the highest-confidence box in source-image pixel coordinates."""
+        if image_rgb is None or image_rgb.size == 0:
             return None
 
-        blob, scale, pad_x, pad_y = self._preprocess(image_rgba)
-        output = self._session.run(None, {self._input_name: blob})[0]  # [1, 5, 8400]
-        preds = output[0].T  # [8400, 5] -> (cx, cy, w, h, conf)
+        blob, scale, pad_x, pad_y = self._preprocess(image_rgb)
+        output = self._session.run(
+            None,
+            {self._input_name: blob},
+        )[0]
 
-        mask = preds[:, 4] >= self._conf_threshold
-        preds = preds[mask]
-        if len(preds) == 0:
+        predictions = output[0].T
+        confidences = predictions[:, 4]
+        best_index = int(np.argmax(confidences))
+        confidence = float(confidences[best_index])
+        if confidence < self._conf_threshold:
             return None
 
-        best = preds[np.argmax(preds[:, 4])]
-        cx, cy, w, h, conf = best
-
-        # letterbox 역변환: 640x640 좌표 -> 원본 프레임 좌표
-        orig_cx = (cx - pad_x) / scale
-        orig_cy = (cy - pad_y) / scale
-        orig_w = w / scale
-        orig_h = h / scale
+        cx, cy, width, height = predictions[best_index, :4]
 
         return {
-            "cx": float(orig_cx),
-            "cy": float(orig_cy),
-            "w": float(orig_w),
-            "h": float(orig_h),
-            "conf": float(conf),
+            "cx": float((cx - pad_x) / scale),
+            "cy": float((cy - pad_y) / scale),
+            "w": float(width / scale),
+            "h": float(height / scale),
+            "conf": confidence,
         }
