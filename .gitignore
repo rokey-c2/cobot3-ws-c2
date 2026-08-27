@@ -54,3 +54,5 @@ isaac_sim/robots/p3020/vision/models/
 # Offline test ros2 bags (large binaries, keep outside Git)
 tests/ros2/*/
 !tests/ros2/.gitkeep
+docs/amr_scene_01.gif
+docs/arm_scene_01.gif
