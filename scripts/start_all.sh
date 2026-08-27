@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Start the complete demo stack in the background with per-process log files.
 # Nothing is written to ~/.bashrc. Runtime pid/log files live under .runtime/.
-# NOTE: Do not enable `set -u` here. ROS 2 setup.bash references variables that
-# may intentionally be unset while it is constructing the environment.
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,7 +15,8 @@ usage() {
 Usage: ./scripts/start_all.sh [--fresh-db] [--mission]
 
 Options:
-  --fresh-db  Stop Docker and delete PostgreSQL/MQTT volumes before startup.
+  --fresh-db  Stop all processes started by this launcher, delete PostgreSQL/MQTT
+              volumes, then restart the complete stack from a clean state.
   --mission   Start the real AMR + P3020 mission automatically after readiness.
 
 Examples:
@@ -174,8 +173,8 @@ require_file "$ROOT_DIR/frontend/node_modules" "Run ./scripts/quick_setup.sh fir
 require_file "$ISAAC_ROS_WS/install/setup.bash" "Set ISAAC_ROS_WS to the Isaac ROS Jazzy workspace."
 
 if [ "$FRESH_DB" = "1" ]; then
-    echo "[DOCKER] resetting PostgreSQL/MQTT volumes"
-    compose down -v --remove-orphans
+    echo "[FRESH] stopping tracked processes and resetting PostgreSQL/MQTT volumes"
+    "$ROOT_DIR/scripts/stop_all.sh" --volumes
 fi
 
 echo "[DOCKER] starting PostgreSQL + MQTT + Backend"
