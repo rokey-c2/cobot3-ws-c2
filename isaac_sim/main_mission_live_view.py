@@ -12,7 +12,7 @@ import main_mission as mission
 import omni.usd
 import robots.iw_hub.iw_hub_agent as iw_hub_agent
 from isaacsim.sensors.camera import Camera
-from pxr import Gf, Usd, UsdGeom
+from pxr import Gf, UsdGeom
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
@@ -43,14 +43,19 @@ def _configure_iw_hub_camera_rigs(robot_prim):
 
     ``iw_hub_agent.py`` historically disabled both rigs for RTX performance.
     The Control Tower now consumes the front stereo RGB stream, so only the
-    unused Intel depth rig should remain disabled. ``AllPrims`` also lets this
-    recover the front rig if an inactive opinion is present in the live stage.
+    unused Intel depth rig should remain disabled. ``TraverseAll`` also lets
+    this recover the front rig if an inactive opinion is present in the stage.
     """
 
     enabled = []
     disabled = []
+    stage = robot_prim.GetStage()
+    root_path = robot_prim.GetPath()
 
-    for prim in Usd.PrimRange.AllPrims(robot_prim):
+    for prim in stage.TraverseAll():
+        if not prim.GetPath().HasPrefix(root_path):
+            continue
+
         name = prim.GetName()
 
         if name == AMR_CAMERA_RIG_NAME:
