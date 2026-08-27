@@ -24,6 +24,9 @@ dist/
 .env
 *.env
 
+# Local runtime process manager state
+.runtime/
+
 # Isaac Sim / Omniverse local cache & logs
 .cache/
 .omniverse/
