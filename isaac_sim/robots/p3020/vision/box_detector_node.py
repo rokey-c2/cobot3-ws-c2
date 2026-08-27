@@ -1,17 +1,9 @@
-"""ROS 2 box detector and web video stream for the P3020 camera.
+"""Low-latency ROS 2 parcel detector + P3020 MJPEG stream.
 
-Subscribes:
-    /rgb                                (sensor_msgs/msg/Image)
-
-Publishes:
-    /box_pixel                          (geometry_msgs/msg/PointStamped)
-    /p3020/vision/image_annotated       (sensor_msgs/msg/Image)
-
-Web stream:
-    http://<vision-pc-ip>:8091/stream.mjpg
-
-The raw camera topic is left unchanged.  The annotated topic and MJPEG stream
-contain a green laser HUD drawn around the highest-confidence parcel box.
+The subscription callback only keeps the newest camera frame. A worker thread
+runs YOLO at a capped rate, so old frames are dropped instead of building a ROS
+callback backlog. MJPEG encoding and optional annotated ROS publishing are also
+rate-limited independently.
 """
 
 import json
@@ -31,7 +23,12 @@ import numpy as np
 import rclpy
 from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import (
+    DurabilityPolicy,
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+)
 from sensor_msgs.msg import Image
 
 from object_detector import ObjectDetector
@@ -48,6 +45,13 @@ _ENCODING_CHANNELS = {"rgb8": 3, "bgr8": 3}
 _LASER_GREEN = (0, 255, 92)
 _LASER_GREEN_DIM = (0, 150, 54)
 
+_IMAGE_QOS = QoSProfile(
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+    reliability=ReliabilityPolicy.BEST_EFFORT,
+    durability=DurabilityPolicy.VOLATILE,
+)
+
 
 class _MjpegServer(ThreadingHTTPServer):
     daemon_threads = True
@@ -55,19 +59,21 @@ class _MjpegServer(ThreadingHTTPServer):
 
 
 class _MjpegHandler(BaseHTTPRequestHandler):
-    """Serve the latest annotated frame without introducing web dependencies."""
-
-    server_version = "P3020Vision/1.0"
+    server_version = "P3020Vision/2.0"
 
     def do_GET(self):
         source = self.server.frame_source
+        request_path = self.path.split("?", 1)[0]
 
-        if self.path.rstrip("/") == "/health":
+        if request_path.rstrip("/") == "/health":
             payload = json.dumps(
                 {
                     "status": "ok",
                     "stream": source.stream_path,
                     "frame_ready": source.has_stream_frame,
+                    "provider": source.detector.provider,
+                    "detection_fps": source.detection_fps,
+                    "stream_fps": source.stream_fps,
                 }
             ).encode("utf-8")
             self.send_response(200)
@@ -78,7 +84,7 @@ class _MjpegHandler(BaseHTTPRequestHandler):
             self.wfile.write(payload)
             return
 
-        if self.path.split("?", 1)[0] != source.stream_path:
+        if request_path != source.stream_path:
             self.send_error(404, "P3020 stream not found")
             return
 
@@ -107,7 +113,6 @@ class _MjpegHandler(BaseHTTPRequestHandler):
             pass
 
     def log_message(self, _format, *_args):
-        # Browser reconnects are expected; keep the ROS log readable.
         return
 
 
@@ -123,37 +128,82 @@ class BoxDetectorNode(Node):
         self.declare_parameter("stream_host", STREAM_HOST)
         self.declare_parameter("stream_port", STREAM_PORT)
         self.declare_parameter("stream_path", STREAM_PATH)
-        self.declare_parameter("jpeg_quality", 82)
+        self.declare_parameter("jpeg_quality", 68)
+        self.declare_parameter("detection_fps", 5.0)
+        self.declare_parameter("stream_fps", 6.0)
+        self.declare_parameter("stream_max_width", 640)
+        self.declare_parameter("publish_annotated", False)
+        self.declare_parameter("cpu_threads", 2)
 
         image_topic = str(self.get_parameter("image_topic").value)
         pixel_topic = str(self.get_parameter("box_pixel_topic").value)
         annotated_topic = str(self.get_parameter("annotated_image_topic").value)
         model_path = str(self.get_parameter("model_path").value)
         conf_threshold = float(self.get_parameter("conf_threshold").value)
+
         self.stream_host = str(self.get_parameter("stream_host").value)
         self.stream_port = int(self.get_parameter("stream_port").value)
         self.stream_path = self._normalise_stream_path(
             str(self.get_parameter("stream_path").value)
         )
         self.jpeg_quality = int(np.clip(self.get_parameter("jpeg_quality").value, 40, 95))
+        self.detection_fps = max(0.5, float(self.get_parameter("detection_fps").value))
+        self.stream_fps = max(0.5, float(self.get_parameter("stream_fps").value))
+        self.stream_max_width = max(0, int(self.get_parameter("stream_max_width").value))
+        self.publish_annotated = bool(self.get_parameter("publish_annotated").value)
+        cpu_threads = max(1, int(self.get_parameter("cpu_threads").value))
 
-        self.detector = ObjectDetector(model_path, conf_threshold=conf_threshold)
-        self.image_sub = self.create_subscription(
-            Image, image_topic, self.image_callback, qos_profile_sensor_data
+        self._detection_interval = 1.0 / self.detection_fps
+        self._stream_interval = 1.0 / self.stream_fps
+
+        self.detector = ObjectDetector(
+            model_path,
+            conf_threshold=conf_threshold,
+            cpu_threads=cpu_threads,
         )
+
         self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
-        self.annotated_pub = self.create_publisher(Image, annotated_topic, 10)
+        self.annotated_pub = None
+        if self.publish_annotated:
+            self.annotated_pub = self.create_publisher(Image, annotated_topic, _IMAGE_QOS)
+
+        self.image_sub = self.create_subscription(
+            Image,
+            image_topic,
+            self.image_callback,
+            _IMAGE_QOS,
+        )
+
+        self._input_condition = threading.Condition()
+        self._latest_input = None
+        self._input_sequence = 0
+        self._worker_stop = False
+        self._worker_thread = threading.Thread(
+            target=self._worker_loop,
+            name="p3020-yolo-latest-frame",
+            daemon=True,
+        )
 
         self._frame_condition = threading.Condition()
         self._latest_jpeg = None
         self._frame_sequence = 0
         self._stream_server = None
         self._stream_thread = None
-        self._start_stream_server()
 
+        self._start_stream_server()
+        self._worker_thread.start()
+
+        annotated_state = annotated_topic if self.publish_annotated else "disabled"
         self.get_logger().info(
-            f"listening: {image_topic} | detection: {pixel_topic} | "
-            f"annotated: {annotated_topic}"
+            f"listening: {image_topic} | detection: {pixel_topic} | annotated: {annotated_state}"
+        )
+        self.get_logger().info(
+            "vision perf: "
+            f"provider={self.detector.provider}, "
+            f"detection<={self.detection_fps:.1f} Hz, "
+            f"MJPEG<={self.stream_fps:.1f} Hz, "
+            f"max_width={self.stream_max_width or 'source'}, "
+            f"jpeg={self.jpeg_quality}"
         )
 
     @staticmethod
@@ -175,7 +225,8 @@ class BoxDetectorNode(Node):
     def _start_stream_server(self):
         try:
             self._stream_server = _MjpegServer(
-                (self.stream_host, self.stream_port), _MjpegHandler
+                (self.stream_host, self.stream_port),
+                _MjpegHandler,
             )
             self._stream_server.frame_source = self
             self._stream_thread = threading.Thread(
@@ -194,52 +245,110 @@ class BoxDetectorNode(Node):
             )
 
     @staticmethod
-    def imgmsg_to_rgb(msg: Image):
-        channels = _ENCODING_CHANNELS.get(msg.encoding)
+    def imgmsg_to_rgb(message: Image):
+        channels = _ENCODING_CHANNELS.get(message.encoding)
         if channels is None:
             return None
 
-        row_size = msg.width * channels
-        if msg.step < row_size:
+        row_size = message.width * channels
+        if message.step < row_size:
             return None
 
-        arr = np.frombuffer(msg.data, dtype=np.uint8)
-        required = msg.height * msg.step
-        if arr.size < required:
+        array = np.frombuffer(message.data, dtype=np.uint8)
+        required = message.height * message.step
+        if array.size < required:
             return None
 
-        rows = arr[:required].reshape((msg.height, msg.step))
-        image = rows[:, :row_size].reshape((msg.height, msg.width, channels))
-        if msg.encoding == "bgr8":
-            image = image[:, :, ::-1]
+        rows = array[:required].reshape((message.height, message.step))
+        image = rows[:, :row_size].reshape((message.height, message.width, channels))
+        if message.encoding == "bgr8":
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return np.ascontiguousarray(image)
 
-    def image_callback(self, msg: Image):
-        rgb = self.imgmsg_to_rgb(msg)
+    def image_callback(self, message: Image):
+        rgb = self.imgmsg_to_rgb(message)
         if rgb is None:
-            self.get_logger().warn(
-                f'unsupported or truncated image (encoding="{msg.encoding}")',
+            self.get_logger().warning(
+                f'unsupported or truncated image (encoding="{message.encoding}")',
                 throttle_duration_sec=5.0,
             )
             return
 
-        detection = self.detector.detect(rgb)
-        if detection is not None:
-            stamped = PointStamped()
-            stamped.header.stamp = msg.header.stamp
-            stamped.header.frame_id = msg.header.frame_id
-            stamped.point.x = detection["cx"]
-            stamped.point.y = detection["cy"]
-            stamped.point.z = detection["conf"]
-            self.pixel_pub.publish(stamped)
+        with self._input_condition:
+            self._input_sequence += 1
+            self._latest_input = (
+                message.header.stamp,
+                message.header.frame_id,
+                rgb,
+                self._input_sequence,
+            )
+            self._input_condition.notify()
 
-        annotated_rgb = self.draw_laser_hud(rgb, detection, time.monotonic())
-        self._publish_annotated(msg, annotated_rgb)
-        self._update_web_stream(annotated_rgb)
+    def _worker_loop(self):
+        consumed_sequence = -1
+        last_detection_at = 0.0
+        last_stream_at = 0.0
+        latest_detection = None
+
+        while True:
+            with self._input_condition:
+                if (
+                    not self._worker_stop
+                    and (
+                        self._latest_input is None
+                        or self._latest_input[3] == consumed_sequence
+                    )
+                ):
+                    self._input_condition.wait(timeout=0.25)
+
+                if self._worker_stop:
+                    return
+
+                if self._latest_input is None:
+                    continue
+
+                stamp, frame_id, rgb, sequence = self._latest_input
+
+            if sequence == consumed_sequence:
+                continue
+            consumed_sequence = sequence
+
+            now = time.monotonic()
+            should_detect = now - last_detection_at >= self._detection_interval
+            should_stream = now - last_stream_at >= self._stream_interval
+
+            if not should_detect and not should_stream:
+                continue
+
+            if should_detect:
+                latest_detection = self.detector.detect(rgb)
+                last_detection_at = time.monotonic()
+
+                if latest_detection is not None:
+                    self._publish_pixel(stamp, frame_id, latest_detection)
+
+            if should_stream:
+                annotated_rgb = self.draw_laser_hud(
+                    rgb,
+                    latest_detection,
+                    time.monotonic(),
+                )
+                if self.publish_annotated:
+                    self._publish_annotated(stamp, frame_id, annotated_rgb)
+                self._update_web_stream(annotated_rgb)
+                last_stream_at = time.monotonic()
+
+    def _publish_pixel(self, stamp, frame_id, detection):
+        stamped = PointStamped()
+        stamped.header.stamp = stamp
+        stamped.header.frame_id = frame_id
+        stamped.point.x = detection["cx"]
+        stamped.point.y = detection["cy"]
+        stamped.point.z = detection["conf"]
+        self.pixel_pub.publish(stamped)
 
     @staticmethod
     def draw_laser_hud(rgb, detection, now):
-        """Return a copy of ``rgb`` with an animated green targeting HUD."""
         frame = rgb.copy()
         height, width = frame.shape[:2]
 
@@ -347,9 +456,13 @@ class BoxDetectorNode(Node):
             cv2.LINE_AA,
         )
 
-    def _publish_annotated(self, source_msg, annotated_rgb):
+    def _publish_annotated(self, stamp, frame_id, annotated_rgb):
+        if self.annotated_pub is None:
+            return
+
         output = Image()
-        output.header = source_msg.header
+        output.header.stamp = stamp
+        output.header.frame_id = frame_id
         output.height, output.width = annotated_rgb.shape[:2]
         output.encoding = "rgb8"
         output.is_bigendian = 0
@@ -357,26 +470,52 @@ class BoxDetectorNode(Node):
         output.data = annotated_rgb.tobytes()
         self.annotated_pub.publish(output)
 
+    def _resize_for_stream(self, rgb):
+        if self.stream_max_width <= 0 or rgb.shape[1] <= self.stream_max_width:
+            return rgb
+
+        scale = self.stream_max_width / rgb.shape[1]
+        target_height = max(1, int(round(rgb.shape[0] * scale)))
+        return cv2.resize(
+            rgb,
+            (self.stream_max_width, target_height),
+            interpolation=cv2.INTER_AREA,
+        )
+
     def _update_web_stream(self, annotated_rgb):
-        bgr = cv2.cvtColor(annotated_rgb, cv2.COLOR_RGB2BGR)
+        stream_rgb = self._resize_for_stream(annotated_rgb)
+        bgr = cv2.cvtColor(stream_rgb, cv2.COLOR_RGB2BGR)
         success, encoded = cv2.imencode(
-            ".jpg", bgr, [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality]
+            ".jpg",
+            bgr,
+            [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality],
         )
         if not success:
             return
+
         with self._frame_condition:
             self._latest_jpeg = encoded.tobytes()
             self._frame_sequence += 1
             self._frame_condition.notify_all()
 
     def destroy_node(self):
+        with self._input_condition:
+            self._worker_stop = True
+            self._input_condition.notify_all()
+
+        if self._worker_thread is not None and self._worker_thread.is_alive():
+            self._worker_thread.join(timeout=3.0)
+
         if self._stream_server is not None:
             self._stream_server.shutdown()
             self._stream_server.server_close()
+
         with self._frame_condition:
             self._frame_condition.notify_all()
+
         if self._stream_thread is not None and self._stream_thread.is_alive():
             self._stream_thread.join(timeout=2.0)
+
         return super().destroy_node()
 
 
