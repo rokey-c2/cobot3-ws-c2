@@ -1,8 +1,11 @@
 import omni.graph.core as og
 import omni.usd
 
+from isaacsim.core.utils.extensions import enable_extension
+
 
 CONVEYOR_NODE_TYPE = "isaacsim.asset.gen.conveyor.IsaacConveyor"
+CONVEYOR_EXTENSION = "isaacsim.asset.gen.conveyor"
 
 
 class ConveyorController:
@@ -14,6 +17,11 @@ class ConveyorController:
     ConveyorBeltGraph is wrong, because ConveyorTrack_01/02/03's second
     graph must run at -1.0 (not +1.0), and ConveyorTrack_05 must not be
     touched at all (role not confirmed yet).
+
+    Mission rule: once the simulation is running, an owned conveyor graph
+    must be physically active. setup()/start() therefore explicitly enable
+    Isaac's conveyor runtime extension and re-enable every IsaacConveyor
+    node before applying velocity.
     """
 
     SORTER_TRACKS = ("01", "02", "03")
@@ -31,6 +39,12 @@ class ConveyorController:
             )
         self._graph_speeds = {}
         self.running = False
+
+    @staticmethod
+    def _ensure_conveyor_extension():
+        """Make sure IsaacConveyor node types are available at runtime."""
+
+        enable_extension(CONVEYOR_EXTENSION)
 
     def _expected_graph_speeds(self):
         """Return the exact graph paths and their target velocities."""
@@ -51,12 +65,7 @@ class ConveyorController:
         return graph_speeds
 
     def _enable_conveyor_nodes(self, graph_prim):
-        """Some plain ConveyorBeltGraph segments in Parcel_Sorting_Map ship
-        with their IsaacConveyor node's inputs:enabled left unauthored
-        (defaults to disabled) -- Velocity alone does nothing if the node
-        itself is off. Force it on for every IsaacConveyor node under this
-        graph (found by node:type so it doesn't depend on the node's given
-        name)."""
+        """Force every IsaacConveyor node under one graph to enabled=True."""
 
         for prim in graph_prim.GetChildren():
             node_type_attr = prim.GetAttribute("node:type")
@@ -64,13 +73,9 @@ class ConveyorController:
                 continue
 
             try:
-                # og.Controller.attribute() needs the graph to already be
-                # live in the OmniGraph runtime -- before world.reset() the
-                # node exists in USD but isn't instantiated yet, so this
-                # raises. setup() is called again after reset() (see
-                # main_mission.py), so the retry there succeeds; just skip
-                # quietly the first time.
-                attribute = og.Controller.attribute(f"{prim.GetPath()}.inputs:enabled")
+                attribute = og.Controller.attribute(
+                    f"{prim.GetPath()}.inputs:enabled"
+                )
             except og.OmniGraphError:
                 continue
 
@@ -123,6 +128,8 @@ class ConveyorController:
     def setup(self):
         """Apply all authored initial conveyor values for the current map."""
 
+        self._ensure_conveyor_extension()
+
         stage = omni.usd.get_context().get_stage()
         if stage is None:
             raise RuntimeError("USD stage is not available")
@@ -142,12 +149,26 @@ class ConveyorController:
         print("[CONVEYOR] configured current map; ConveyorTrack_05 intentionally untouched")
 
     def start(self):
-        """Re-apply values after world.play() makes OmniGraph fully active."""
+        """Physically enable owned conveyor nodes and apply running speeds."""
+
+        self._ensure_conveyor_extension()
+        stage = omni.usd.get_context().get_stage()
 
         for graph_path, speed in self._graph_speeds.items():
+            prim = stage.GetPrimAtPath(graph_path)
+            if not prim.IsValid():
+                print(f"[CONVEYOR] WARNING: expected graph missing: {graph_path}")
+                continue
+
+            # Important: Velocity alone does nothing when IsaacConveyor's
+            # inputs:enabled is false. Re-enable it every time START is
+            # requested so a box placed on the belt immediately flows.
+            self._enable_conveyor_nodes(prim)
             self._set_usd_velocity(graph_path, speed)
             self._set_runtime_velocity(graph_path, speed)
+
         self.running = True
+        print("[CONVEYOR] START confirmed: conveyor nodes enabled and speeds applied")
 
     def stop(self):
         """Stop only the graphs owned by this controller."""
