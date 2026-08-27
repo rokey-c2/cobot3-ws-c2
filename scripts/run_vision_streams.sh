@@ -48,7 +48,63 @@ start_node() {
     PIDS+=("$!")
 }
 
+resolve_amr_camera_topic() {
+    if [ -n "${AMR_CAMERA_TOPIC:-}" ]; then
+        printf '%s\n' "$AMR_CAMERA_TOPIC"
+        return
+    fi
+
+    local candidates=(
+        "/front_stereo_camera/left/image_raw"
+        "/front_stereo_camera/left/image_rect_color"
+        "/front_stereo_camera/left_rgb/image_raw"
+    )
+    local topics=""
+    local candidate=""
+    local discovered=""
+
+    # Isaac's IW Hub camera graph can appear a moment after the mission READY
+    # banner. Wait briefly and accept the topic names used across Isaac Sim
+    # sensor asset revisions instead of hard-coding only one variant.
+    for _ in $(seq 1 20); do
+        topics="$(ros2 topic list 2>/dev/null || true)"
+
+        for candidate in "${candidates[@]}"; do
+            if grep -Fxq "$candidate" <<<"$topics"; then
+                printf '%s\n' "$candidate"
+                return
+            fi
+        done
+
+        discovered="$(
+            grep -E '^/front_stereo_camera/.+(image_raw|image_rect_color)$' <<<"$topics" \
+                | head -n 1 || true
+        )"
+        if [ -n "$discovered" ]; then
+            printf '%s\n' "$discovered"
+            return
+        fi
+
+        sleep 0.5
+    done
+
+    # Subscribers may still connect later. Isaac Sim 5.x commonly uses this
+    # topic for the left front stereo RGB camera.
+    printf '%s\n' "/front_stereo_camera/left/image_raw"
+}
+
 cd "$ROOT_DIR"
+AMR_CAMERA_TOPIC_RESOLVED="$(resolve_amr_camera_topic)"
+
+echo "[VISION] AMR camera topic: $AMR_CAMERA_TOPIC_RESOLVED"
+
+start_node "AMR front camera :8090" \
+    "$PYTHON_BIN" isaac_sim/vision/top_view_stream_node.py \
+    --ros-args \
+    --remap __node:=control_tower_amr_camera_stream \
+    -p image_topic:="$AMR_CAMERA_TOPIC_RESOLVED" \
+    -p stream_port:=8090 \
+    -p jpeg_quality:=78
 
 start_node "Warehouse Top View :8092" \
     "$PYTHON_BIN" isaac_sim/vision/top_view_stream_node.py \
@@ -77,10 +133,11 @@ start_node "P3020 OUT laser vision :8093" \
     -p stream_port:=8093
 
 echo "[VISION] ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+echo "[VISION] AMR       http://<this-pc-ip>:8090/stream.mjpg"
+echo "[VISION] P3020 IN  http://<this-pc-ip>:8091/stream.mjpg"
 echo "[VISION] TOP VIEW  http://<this-pc-ip>:8092/stream.mjpg"
-echo "[VISION] P3020 IN http://<this-pc-ip>:8091/stream.mjpg"
 echo "[VISION] P3020 OUT http://<this-pc-ip>:8093/stream.mjpg"
-echo "[VISION] Ctrl+C stops all three stream processes."
+echo "[VISION] Ctrl+C stops all four stream processes."
 
 wait -n "${PIDS[@]}"
 status=$?

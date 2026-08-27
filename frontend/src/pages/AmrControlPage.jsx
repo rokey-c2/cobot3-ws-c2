@@ -4,8 +4,13 @@ import { api } from "../api";
 import StatusPill from "../components/StatusPill";
 
 const EQUIPMENT_CODE = "AMR_IN";
-const CAMERA_STREAM_URL = import.meta.env.VITE_AMR_CAMERA_STREAM_URL || "";
 const MANUAL_HEARTBEAT_MS = 180;
+const CAMERA_RETRY_DELAY_MS = 3000;
+
+function defaultCameraStreamUrl() {
+  if (typeof window === "undefined") return "http://localhost:8090/stream.mjpg";
+  return `http://${window.location.hostname}:8090/stream.mjpg`;
+}
 
 export default function AmrControlPage() {
   const [equipment, setEquipment] = useState([]);
@@ -14,9 +19,20 @@ export default function AmrControlPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [manualDirection, setManualDirection] = useState("STOP");
+  const [cameraStreamState, setCameraStreamState] = useState("CONNECTING");
+  const [cameraRetryToken, setCameraRetryToken] = useState(0);
 
   const manualTimerRef = useRef(null);
   const manualDirectionRef = useRef("STOP");
+
+  const cameraStreamUrl = useMemo(() => {
+    const configuredUrl = String(
+      import.meta.env.VITE_AMR_CAMERA_STREAM_URL || "",
+    ).trim();
+    return configuredUrl || defaultCameraStreamUrl();
+  }, []);
+
+  const cameraImageUrl = `${cameraStreamUrl}${cameraStreamUrl.includes("?") ? "&" : "?"}retry=${cameraRetryToken}`;
 
   const loadEquipment = useCallback(async () => {
     try {
@@ -33,6 +49,17 @@ export default function AmrControlPage() {
     const timer = window.setInterval(loadEquipment, 1500);
     return () => window.clearInterval(timer);
   }, [loadEquipment]);
+
+  useEffect(() => {
+    if (cameraStreamState !== "OFFLINE") return undefined;
+
+    const timer = window.setTimeout(() => {
+      setCameraStreamState("CONNECTING");
+      setCameraRetryToken((value) => value + 1);
+    }, CAMERA_RETRY_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [cameraStreamState]);
 
   useEffect(() => {
     const handleWindowBlur = () => stopManual();
@@ -186,24 +213,40 @@ export default function AmrControlPage() {
           <div className="panel-title">
             <div>
               <span>VISION</span>
-              <h3>Live Camera</h3>
+              <h3>AMR Front Camera</h3>
             </div>
-            <small>{CAMERA_STREAM_URL ? "STREAM" : "NOT CONFIGURED"}</small>
+            <small>{cameraStreamState}</small>
           </div>
-          <div className="camera-frame">
-            {CAMERA_STREAM_URL ? (
-              <img src={CAMERA_STREAM_URL} alt="AMR live camera" />
-            ) : (
-              <div className="camera-placeholder">
+          <div className="camera-frame" style={{ position: "relative" }}>
+            <img
+              key={cameraRetryToken}
+              src={cameraImageUrl}
+              alt="AMR front stereo camera live stream"
+              style={{ position: "absolute", inset: 0 }}
+              onLoad={() => setCameraStreamState("LIVE")}
+              onError={() => setCameraStreamState("OFFLINE")}
+            />
+            {cameraStreamState !== "LIVE" && (
+              <div
+                className="camera-placeholder"
+                style={{ position: "absolute", inset: 0 }}
+              >
                 <div className="camera-reticle" />
-                <strong>AMR CAMERA</strong>
-                <span>Set VITE_AMR_CAMERA_STREAM_URL after MJPEG server is connected.</span>
+                <strong>
+                  {cameraStreamState === "OFFLINE" ? "AMR CAMERA OFFLINE" : "AMR CAMERA CONNECTING"}
+                </strong>
+                <span>
+                  IW Hub front stereo camera → ROS2 Image → MJPEG :8090 연결을 기다리는 중입니다.
+                </span>
               </div>
             )}
           </div>
           <div className="camera-footer">
-            <span><i className={`dot ${CAMERA_STREAM_URL ? "live" : "waiting"}`} /> {CAMERA_STREAM_URL ? "LIVE" : "STREAM WAITING"}</span>
-            <small>ROS2 Camera → MJPEG → Browser</small>
+            <span>
+              <i className={`dot ${cameraStreamState === "LIVE" ? "live" : "waiting"}`} />
+              {cameraStreamState}
+            </span>
+            <small title={cameraStreamUrl}>Front Stereo Left · MJPEG :8090</small>
           </div>
         </div>
 

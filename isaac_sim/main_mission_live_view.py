@@ -1,16 +1,18 @@
-"""Run the existing warehouse mission with a Control Tower top-view camera.
+"""Run the warehouse mission with Control Tower live camera feeds.
 
-This wrapper intentionally leaves ``main_mission.py`` untouched.  It swaps only
-its ROS bridge class so the already-open Isaac stage gets one fixed overhead
-camera that publishes ``/top_view/rgb`` for the web Control Tower.
+This wrapper intentionally leaves ``main_mission.py`` untouched. It adds the
+fixed warehouse top-view publisher and keeps NVIDIA's stock IW Hub front stereo
+camera active so the AMR Control page can stream the robot's own view.
 """
 
+import carb
 import numpy as np
 
 import main_mission as mission
 import omni.usd
+import robots.iw_hub.iw_hub_agent as iw_hub_agent
 from isaacsim.sensors.camera import Camera
-from pxr import Gf, UsdGeom
+from pxr import Gf, Usd, UsdGeom
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
@@ -18,6 +20,12 @@ TOP_VIEW_CAMERA_PATH = "/World/ControlTowerTopViewCamera"
 TOP_VIEW_IMAGE_TOPIC = "/top_view/rgb"
 TOP_VIEW_RESOLUTION = (1280, 720)
 TOP_VIEW_PUBLISH_PERIOD_SEC = 0.10
+
+# NVIDIA's stock IW Hub already contains this stereo camera and its ROS 2
+# publisher. Keep it active for the AMR Control live feed instead of creating a
+# second robot-mounted camera/render product.
+AMR_CAMERA_RIG_NAME = "front_stereo_camera"
+_UNUSED_CAMERA_RIG_NAMES = ("intel_realsense_r200_depth",)
 
 # The Final_Real_Map working area is centred slightly left/below world origin.
 # A 32 m high camera with this lens keeps the complete inbound -> sorter ->
@@ -28,6 +36,56 @@ TOP_VIEW_UP = Gf.Vec3d(0.0, 1.0, 0.0)
 TOP_VIEW_FOCAL_LENGTH_MM = 28.0
 TOP_VIEW_HORIZONTAL_APERTURE_MM = 36.0
 TOP_VIEW_VERTICAL_APERTURE_MM = 20.25
+
+
+def _configure_iw_hub_camera_rigs(robot_prim):
+    """Keep the front stereo camera active and disable only unused depth rig.
+
+    ``iw_hub_agent.py`` historically disabled both rigs for RTX performance.
+    The Control Tower now consumes the front stereo RGB stream, so only the
+    unused Intel depth rig should remain disabled. ``AllPrims`` also lets this
+    recover the front rig if an inactive opinion is present in the live stage.
+    """
+
+    enabled = []
+    disabled = []
+
+    for prim in Usd.PrimRange.AllPrims(robot_prim):
+        name = prim.GetName()
+
+        if name == AMR_CAMERA_RIG_NAME:
+            if not prim.IsActive():
+                prim.SetActive(True)
+            enabled.append(prim.GetPath().pathString)
+            continue
+
+        if name not in _UNUSED_CAMERA_RIG_NAMES:
+            continue
+        if not prim.IsActive():
+            continue
+
+        prim.SetActive(False)
+        disabled.append(prim.GetPath().pathString)
+
+    if enabled:
+        carb.log_info(
+            "[IW HUB][CAMERA] Control Tower AMR camera kept active: "
+            + ", ".join(enabled)
+        )
+    else:
+        carb.log_warn(
+            "[IW HUB][CAMERA] front_stereo_camera was not found under "
+            f"{robot_prim.GetPath()}; AMR web stream will wait for a camera topic"
+        )
+
+    if disabled:
+        carb.log_info(
+            "[IW HUB][CAMERA] disabled unused camera rigs: "
+            + ", ".join(disabled)
+        )
+
+    # Preserve the return contract of iw_hub_agent._disable_unused_cameras().
+    return disabled
 
 
 def _create_top_view_camera():
@@ -113,6 +171,10 @@ class LiveViewAmrMissionBridge(mission.AmrMissionBridge):
 
 
 def main():
+    # MissionIwHubAgent resolves this module-level helper when setup() runs,
+    # so replacing it here changes only this live-view launch path and leaves
+    # the base/main branch implementation untouched.
+    iw_hub_agent._disable_unused_cameras = _configure_iw_hub_camera_rigs
     mission.AmrMissionBridge = LiveViewAmrMissionBridge
     mission.main()
 
