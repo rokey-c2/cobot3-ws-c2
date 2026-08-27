@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Start the complete demo stack in the background with per-process log files.
 # Nothing is written to ~/.bashrc. Runtime pid/log files live under .runtime/.
-set -euo pipefail
+# NOTE: Do not enable `set -u` here. ROS 2 setup.bash references variables that
+# may intentionally be unset while it is constructing the environment.
+set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_DIR="$ROOT_DIR/.runtime"
