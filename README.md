@@ -149,6 +149,17 @@ export ROS_DOMAIN_ID=111 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 python3 isaac_sim/robots/p3020/vision/box_detector_node.py
 ```
 
+박스 검출 노드는 원본 `/rgb`를 변경하지 않고 녹색 레이저 HUD 영상을
+`/p3020/vision/image_annotated` 토픽과 MJPEG로 함께 송출합니다.
+
+```text
+http://<비전 PC IP>:8091/stream.mjpg
+```
+
+프론트엔드를 다른 PC에서 열면 현재 웹 호스트의 8091 포트로 자동 연결합니다.
+주소를 직접 지정하려면 `frontend/.env`의
+`VITE_P3020_CAMERA_STREAM_URL`을 설정합니다.
+
 터미널 8 — 관제타워 프론트엔드:
 
 ```bash

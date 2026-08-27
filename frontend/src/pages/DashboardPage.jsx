@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api } from "../api";
 import StatusPill from "../components/StatusPill";
+import P3020VisionPanel from "../components/P3020VisionPanel";
 
 const pipeline = [
   "INPUT_ZONE",
@@ -248,6 +249,8 @@ export default function DashboardPage() {
           </div>
         </Link>
       </section>
+
+      <P3020VisionPanel />
 
       <section className="dashboard-grid bottom-grid">
         <div className="panel">

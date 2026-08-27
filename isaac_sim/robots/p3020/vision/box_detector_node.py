@@ -1,57 +1,114 @@
-"""ROS 2 box detector for the P3020 pick&place exercise.
-
-m0609_color_detector.py 와 같은 구조 (같은 PC 안에서 실행해도, 실제로는
-"카메라를 가진 PC"와 "인식하는 PC"가 분리돼 있다는 걸 보여주는 것과 같은
-구조): 카메라 이미지를 토픽으로 받아서, 딥러닝 모델로 박스를 찾고, 그
-결과(픽셀 좌표)만 다시 토픽으로 돌려준다. 3D 위치 계산(깊이 역투영)은
-카메라/깊이 정보를 직접 가진 시뮬레이션 쪽에서 한다 (실제 로봇에서도
-카메라 depth는 로봇 쪽에만 있는 경우가 많은 것과 같은 이유).
+"""ROS 2 box detector and web video stream for the P3020 camera.
 
 Subscribes:
-    /rgb        (sensor_msgs/msg/Image)
+    /rgb                                (sensor_msgs/msg/Image)
 
 Publishes:
-    /box_pixel  (geometry_msgs/msg/PointStamped)
-        point.x, point.y: 감지된 박스 중심의 픽셀 좌표
-        point.z         : confidence (0~1). 감지 실패 시 이 토픽 자체를 발행하지 않는다.
-        header.stamp    : 입력으로 쓴 /rgb 이미지의 header.stamp를 그대로 echo한다.
-            이 노드는 별도 프로세스로 실제 처리 시간이 걸리기 때문에, 응답을
-            받는 쪽(p3020_pick_place_poc.py)에서 "이 결과가 언제 찍힌 이미지에서
-            나온 건지" 알아야 팔이 이미 움직인 뒤에 도착한 오래된 탐지 결과를
-            걸러낼 수 있다 (Point에는 header가 없어서 PointStamped로 바꿨다).
+    /box_pixel                          (geometry_msgs/msg/PointStamped)
+    /p3020/vision/image_annotated       (sensor_msgs/msg/Image)
 
-이 노드는 Isaac Sim 프로세스가 아니라 일반 시스템 python3(+ /opt/ros/jazzy)
-에서 실행한다:
+Web stream:
+    http://<vision-pc-ip>:8091/stream.mjpg
 
-    source /opt/ros/jazzy/setup.bash
-    export ROS_DOMAIN_ID=55 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-    python3 box_detector_node.py
-
-onnxruntime 은 시스템 python3 에 --user 로 설치돼 있다 (apt의 numpy<2, cv2
-와 호환되도록 numpy 는 그대로 두고 onnxruntime만 추가 설치함).
+The raw camera topic is left unchanged.  The annotated topic and MJPEG stream
+contain a green laser HUD drawn around the highest-confidence parcel box.
 """
 
+import json
+import math
 import os
 import sys
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.abspath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
 sys.path.insert(0, _THIS_DIR)
 
+import cv2
 import numpy as np
 import rclpy
+from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PointStamped
 
 from object_detector import ObjectDetector
 
 MODEL_PATH = os.path.join(_REPO_ROOT, "models", "parcel_box_yolo_model", "best.onnx")
 IMAGE_TOPIC = "/rgb"
 BOX_PIXEL_TOPIC = "/box_pixel"
+ANNOTATED_IMAGE_TOPIC = "/p3020/vision/image_annotated"
+STREAM_HOST = "0.0.0.0"
+STREAM_PORT = 8091
+STREAM_PATH = "/stream.mjpg"
 
 _ENCODING_CHANNELS = {"rgb8": 3, "bgr8": 3}
+_LASER_GREEN = (0, 255, 92)
+_LASER_GREEN_DIM = (0, 150, 54)
+
+
+class _MjpegServer(ThreadingHTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+class _MjpegHandler(BaseHTTPRequestHandler):
+    """Serve the latest annotated frame without introducing web dependencies."""
+
+    server_version = "P3020Vision/1.0"
+
+    def do_GET(self):
+        source = self.server.frame_source
+
+        if self.path.rstrip("/") == "/health":
+            payload = json.dumps(
+                {
+                    "status": "ok",
+                    "stream": source.stream_path,
+                    "frame_ready": source.has_stream_frame,
+                }
+            ).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
+        if self.path.split("?", 1)[0] != source.stream_path:
+            self.send_error(404, "P3020 stream not found")
+            return
+
+        self.send_response(200)
+        self.send_header("Age", "0")
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Connection", "close")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+        self.end_headers()
+
+        last_sequence = -1
+        try:
+            while rclpy.ok():
+                jpeg, sequence = source.wait_for_stream_frame(last_sequence, timeout=2.0)
+                if jpeg is None or sequence == last_sequence:
+                    continue
+                last_sequence = sequence
+                self.wfile.write(b"--frame\r\n")
+                self.wfile.write(b"Content-Type: image/jpeg\r\n")
+                self.wfile.write(f"Content-Length: {len(jpeg)}\r\n\r\n".encode("ascii"))
+                self.wfile.write(jpeg)
+                self.wfile.write(b"\r\n")
+        except (BrokenPipeError, ConnectionResetError, TimeoutError):
+            pass
+
+    def log_message(self, _format, *_args):
+        # Browser reconnects are expected; keep the ROS log readable.
+        return
 
 
 class BoxDetectorNode(Node):
@@ -60,37 +117,102 @@ class BoxDetectorNode(Node):
 
         self.declare_parameter("image_topic", IMAGE_TOPIC)
         self.declare_parameter("box_pixel_topic", BOX_PIXEL_TOPIC)
+        self.declare_parameter("annotated_image_topic", ANNOTATED_IMAGE_TOPIC)
         self.declare_parameter("model_path", MODEL_PATH)
         self.declare_parameter("conf_threshold", 0.5)
+        self.declare_parameter("stream_host", STREAM_HOST)
+        self.declare_parameter("stream_port", STREAM_PORT)
+        self.declare_parameter("stream_path", STREAM_PATH)
+        self.declare_parameter("jpeg_quality", 82)
 
         image_topic = str(self.get_parameter("image_topic").value)
         pixel_topic = str(self.get_parameter("box_pixel_topic").value)
+        annotated_topic = str(self.get_parameter("annotated_image_topic").value)
         model_path = str(self.get_parameter("model_path").value)
         conf_threshold = float(self.get_parameter("conf_threshold").value)
+        self.stream_host = str(self.get_parameter("stream_host").value)
+        self.stream_port = int(self.get_parameter("stream_port").value)
+        self.stream_path = self._normalise_stream_path(
+            str(self.get_parameter("stream_path").value)
+        )
+        self.jpeg_quality = int(np.clip(self.get_parameter("jpeg_quality").value, 40, 95))
 
         self.detector = ObjectDetector(model_path, conf_threshold=conf_threshold)
-
-        # 카메라 퍼블리셔는 보통 sensor-data QoS(best effort)를 쓴다.
         self.image_sub = self.create_subscription(
             Image, image_topic, self.image_callback, qos_profile_sensor_data
         )
         self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
+        self.annotated_pub = self.create_publisher(Image, annotated_topic, 10)
 
-        self.get_logger().info(f"listening: {image_topic} | publishing: {pixel_topic}")
+        self._frame_condition = threading.Condition()
+        self._latest_jpeg = None
+        self._frame_sequence = 0
+        self._stream_server = None
+        self._stream_thread = None
+        self._start_stream_server()
+
+        self.get_logger().info(
+            f"listening: {image_topic} | detection: {pixel_topic} | "
+            f"annotated: {annotated_topic}"
+        )
+
+    @staticmethod
+    def _normalise_stream_path(path):
+        path = path.strip() or STREAM_PATH
+        return path if path.startswith("/") else f"/{path}"
+
+    @property
+    def has_stream_frame(self):
+        with self._frame_condition:
+            return self._latest_jpeg is not None
+
+    def wait_for_stream_frame(self, last_sequence, timeout):
+        with self._frame_condition:
+            if self._frame_sequence == last_sequence:
+                self._frame_condition.wait(timeout=timeout)
+            return self._latest_jpeg, self._frame_sequence
+
+    def _start_stream_server(self):
+        try:
+            self._stream_server = _MjpegServer(
+                (self.stream_host, self.stream_port), _MjpegHandler
+            )
+            self._stream_server.frame_source = self
+            self._stream_thread = threading.Thread(
+                target=self._stream_server.serve_forever,
+                name="p3020-mjpeg",
+                daemon=True,
+            )
+            self._stream_thread.start()
+            self.get_logger().info(
+                f"web stream: http://{self.stream_host}:{self.stream_port}{self.stream_path}"
+            )
+        except OSError as error:
+            self._stream_server = None
+            self.get_logger().error(
+                f"MJPEG server could not bind {self.stream_host}:{self.stream_port}: {error}"
+            )
 
     @staticmethod
     def imgmsg_to_rgb(msg: Image):
         channels = _ENCODING_CHANNELS.get(msg.encoding)
         if channels is None:
             return None
-        expected = msg.height * msg.width * channels
-        arr = np.frombuffer(msg.data, dtype=np.uint8)
-        if arr.size < expected:
+
+        row_size = msg.width * channels
+        if msg.step < row_size:
             return None
-        arr = arr[:expected].reshape((msg.height, msg.width, channels))
+
+        arr = np.frombuffer(msg.data, dtype=np.uint8)
+        required = msg.height * msg.step
+        if arr.size < required:
+            return None
+
+        rows = arr[:required].reshape((msg.height, msg.step))
+        image = rows[:, :row_size].reshape((msg.height, msg.width, channels))
         if msg.encoding == "bgr8":
-            arr = arr[:, :, ::-1]
-        return arr
+            image = image[:, :, ::-1]
+        return np.ascontiguousarray(image)
 
     def image_callback(self, msg: Image):
         rgb = self.imgmsg_to_rgb(msg)
@@ -101,19 +223,161 @@ class BoxDetectorNode(Node):
             )
             return
 
-        det = self.detector.detect(rgb)
-        if det is None:
-            return
+        detection = self.detector.detect(rgb)
+        if detection is not None:
+            stamped = PointStamped()
+            stamped.header.stamp = msg.header.stamp
+            stamped.header.frame_id = msg.header.frame_id
+            stamped.point.x = detection["cx"]
+            stamped.point.y = detection["cy"]
+            stamped.point.z = detection["conf"]
+            self.pixel_pub.publish(stamped)
 
-        stamped = PointStamped()
-        stamped.header.stamp = msg.header.stamp   # 어느 /rgb 프레임에서 나온 결과인지 echo
-        stamped.point.x = det["cx"]
-        stamped.point.y = det["cy"]
-        stamped.point.z = det["conf"]
-        self.pixel_pub.publish(stamped)
-        self.get_logger().info(
-            f"box detected  pixel=({det['cx']:.1f},{det['cy']:.1f})  conf={det['conf']:.3f}"
+        annotated_rgb = self.draw_laser_hud(rgb, detection, time.monotonic())
+        self._publish_annotated(msg, annotated_rgb)
+        self._update_web_stream(annotated_rgb)
+
+    @staticmethod
+    def draw_laser_hud(rgb, detection, now):
+        """Return a copy of ``rgb`` with an animated green targeting HUD."""
+        frame = rgb.copy()
+        height, width = frame.shape[:2]
+
+        cv2.putText(
+            frame,
+            "P3020 VISION // LIVE",
+            (18, 28),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            _LASER_GREEN,
+            1,
+            cv2.LINE_AA,
         )
+
+        if detection is None:
+            scan_y = int((0.5 + 0.5 * math.sin(now * 2.4)) * max(1, height - 1))
+            glow = frame.copy()
+            cv2.line(glow, (0, scan_y), (width - 1, scan_y), _LASER_GREEN, 9)
+            cv2.addWeighted(glow, 0.14, frame, 0.86, 0, frame)
+            cv2.line(frame, (0, scan_y), (width - 1, scan_y), _LASER_GREEN, 1)
+            BoxDetectorNode._draw_label(frame, 18, 52, "SCANNING FOR BOX")
+            return frame
+
+        half_w = max(2.0, detection["w"] / 2.0)
+        half_h = max(2.0, detection["h"] / 2.0)
+        x1 = int(np.clip(detection["cx"] - half_w, 0, width - 1))
+        y1 = int(np.clip(detection["cy"] - half_h, 0, height - 1))
+        x2 = int(np.clip(detection["cx"] + half_w, 0, width - 1))
+        y2 = int(np.clip(detection["cy"] + half_h, 0, height - 1))
+        if x2 <= x1 or y2 <= y1:
+            return frame
+
+        corner = max(14, min(54, int(min(x2 - x1, y2 - y1) * 0.28)))
+        segments = [
+            ((x1, y1), (x1 + corner, y1)),
+            ((x1, y1), (x1, y1 + corner)),
+            ((x2, y1), (x2 - corner, y1)),
+            ((x2, y1), (x2, y1 + corner)),
+            ((x1, y2), (x1 + corner, y2)),
+            ((x1, y2), (x1, y2 - corner)),
+            ((x2, y2), (x2 - corner, y2)),
+            ((x2, y2), (x2, y2 - corner)),
+        ]
+
+        glow = frame.copy()
+        for start, end in segments:
+            cv2.line(glow, start, end, _LASER_GREEN, 13, cv2.LINE_AA)
+        cv2.addWeighted(glow, 0.17, frame, 0.83, 0, frame)
+        for start, end in segments:
+            cv2.line(frame, start, end, _LASER_GREEN, 2, cv2.LINE_AA)
+
+        cx = int(np.clip(detection["cx"], 0, width - 1))
+        cy = int(np.clip(detection["cy"], 0, height - 1))
+        pulse = 8 + int(3 * (0.5 + 0.5 * math.sin(now * 7.0)))
+        cv2.circle(frame, (cx, cy), pulse, _LASER_GREEN, 1, cv2.LINE_AA)
+        cv2.line(frame, (cx - 18, cy), (cx + 18, cy), _LASER_GREEN, 1, cv2.LINE_AA)
+        cv2.line(frame, (cx, cy - 18), (cx, cy + 18), _LASER_GREEN, 1, cv2.LINE_AA)
+
+        scan_y = y1 + int((0.5 + 0.5 * math.sin(now * 3.5)) * (y2 - y1))
+        scan_glow = frame.copy()
+        cv2.line(scan_glow, (x1, scan_y), (x2, scan_y), _LASER_GREEN, 7)
+        cv2.addWeighted(scan_glow, 0.13, frame, 0.87, 0, frame)
+        cv2.line(frame, (x1, scan_y), (x2, scan_y), _LASER_GREEN, 1)
+
+        label_y = max(52, y1 - 12)
+        BoxDetectorNode._draw_label(
+            frame,
+            x1,
+            label_y,
+            f"TARGET LOCKED  {detection['conf'] * 100:.1f}%",
+        )
+        return frame
+
+    @staticmethod
+    def _draw_label(frame, x, baseline_y, text):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.48
+        thickness = 1
+        (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+        height, width = frame.shape[:2]
+        x = int(np.clip(x, 0, max(0, width - text_w - 12)))
+        baseline_y = int(np.clip(baseline_y, text_h + 10, height - 3))
+        cv2.rectangle(
+            frame,
+            (x, baseline_y - text_h - 8),
+            (x + text_w + 10, baseline_y + 4),
+            (4, 20, 12),
+            -1,
+        )
+        cv2.rectangle(
+            frame,
+            (x, baseline_y - text_h - 8),
+            (x + text_w + 10, baseline_y + 4),
+            _LASER_GREEN_DIM,
+            1,
+        )
+        cv2.putText(
+            frame,
+            text,
+            (x + 5, baseline_y),
+            font,
+            font_scale,
+            _LASER_GREEN,
+            thickness,
+            cv2.LINE_AA,
+        )
+
+    def _publish_annotated(self, source_msg, annotated_rgb):
+        output = Image()
+        output.header = source_msg.header
+        output.height, output.width = annotated_rgb.shape[:2]
+        output.encoding = "rgb8"
+        output.is_bigendian = 0
+        output.step = output.width * 3
+        output.data = annotated_rgb.tobytes()
+        self.annotated_pub.publish(output)
+
+    def _update_web_stream(self, annotated_rgb):
+        bgr = cv2.cvtColor(annotated_rgb, cv2.COLOR_RGB2BGR)
+        success, encoded = cv2.imencode(
+            ".jpg", bgr, [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality]
+        )
+        if not success:
+            return
+        with self._frame_condition:
+            self._latest_jpeg = encoded.tobytes()
+            self._frame_sequence += 1
+            self._frame_condition.notify_all()
+
+    def destroy_node(self):
+        if self._stream_server is not None:
+            self._stream_server.shutdown()
+            self._stream_server.server_close()
+        with self._frame_condition:
+            self._frame_condition.notify_all()
+        if self._stream_thread is not None and self._stream_thread.is_alive():
+            self._stream_thread.join(timeout=2.0)
+        return super().destroy_node()
 
 
 def main(args=None):

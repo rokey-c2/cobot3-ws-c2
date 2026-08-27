@@ -202,3 +202,37 @@ input:focus, select:focus { border-color: #7fa7f7; box-shadow: 0 0 0 3px #3978f6
   .equipment-grid { grid-template-columns: repeat(3, 1fr); }
   .amr-control-grid { grid-template-columns: 1fr; }
 }
+
+.p3020-vision-panel { padding: 0; overflow: hidden; background: #07110d; border-color: #153f2c; color: #dfffee; }
+.vision-panel-header { min-height: 78px; padding: 17px 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: linear-gradient(90deg, #09150f, #0d1d15); border-bottom: 1px solid #17462f; }
+.vision-panel-header h3 { margin: 4px 0 3px; font-size: 16px; color: #effff5; }
+.vision-panel-header p { margin: 0; color: #76a88c; font-size: 10px; }
+.vision-panel-header .eyebrow { color: #22ff7c; }
+.vision-live-badge { min-width: 105px; min-height: 30px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #2a6b49; color: #8eb7a0; background: #11251a; font-size: 9px; font-weight: 900; letter-spacing: .08em; }
+.vision-live-badge i { width: 7px; height: 7px; border-radius: 50%; background: #71877a; }
+.vision-live-badge.live { color: #4dff98; border-color: #22c86a; }
+.vision-live-badge.live i { background: #22ff7c; box-shadow: 0 0 10px #22ff7c; animation: visionPulse 1.3s ease-in-out infinite; }
+.vision-live-badge.offline { color: #ff8d8d; border-color: #8d3e45; background: #2c1519; }
+.vision-live-badge.offline i { background: #ff6262; }
+.vision-stream-frame { position: relative; aspect-ratio: 16 / 7; min-height: 360px; overflow: hidden; background: #020806; }
+.vision-stream-frame > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; background: #020806; }
+.vision-stream-frame::after { content: ""; pointer-events: none; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #0000 0, #0000 3px, #16ff6b0a 4px); }
+.vision-stream-message { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; z-index: 2; color: #7eab90; background-image: linear-gradient(#22ff7c0a 1px, transparent 1px), linear-gradient(90deg, #22ff7c0a 1px, transparent 1px); background-size: 42px 42px; }
+.vision-stream-message strong { color: #35f487; font-size: 12px; letter-spacing: .18em; }
+.vision-stream-message span { font-size: 9px; }
+.vision-scanner-icon { width: 68px; height: 68px; position: relative; border: 1px solid #2acd6d; border-radius: 50%; box-shadow: 0 0 28px #22ff7c22, inset 0 0 18px #22ff7c12; }
+.vision-scanner-icon::before, .vision-scanner-icon::after { content: ""; position: absolute; background: #22ff7c; box-shadow: 0 0 8px #22ff7c; }
+.vision-scanner-icon::before { left: 50%; top: 8px; bottom: 8px; width: 1px; }
+.vision-scanner-icon::after { top: 50%; left: 8px; right: 8px; height: 1px; }
+.vision-corner { position: absolute; z-index: 3; width: 28px; height: 28px; pointer-events: none; border-color: #22ff7c; filter: drop-shadow(0 0 5px #22ff7c); }
+.vision-corner.top-left { top: 14px; left: 14px; border-top: 2px solid; border-left: 2px solid; }
+.vision-corner.top-right { top: 14px; right: 14px; border-top: 2px solid; border-right: 2px solid; }
+.vision-corner.bottom-left { bottom: 14px; left: 14px; border-bottom: 2px solid; border-left: 2px solid; }
+.vision-corner.bottom-right { right: 14px; bottom: 14px; border-right: 2px solid; border-bottom: 2px solid; }
+.vision-panel-footer { min-height: 45px; padding: 0 20px; display: flex; align-items: center; gap: 18px; color: #77a48a; border-top: 1px solid #153f2c; font-size: 9px; }
+.vision-panel-footer span { display: flex; align-items: center; gap: 7px; font-weight: 800; }
+.vision-panel-footer code { margin-left: auto; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4d7b60; font-size: 9px; }
+.legend-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.legend-dot.detected { background: #22ff7c; box-shadow: 0 0 7px #22ff7c; }
+.legend-dot.scanning { background: #f1c458; }
+@keyframes visionPulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
