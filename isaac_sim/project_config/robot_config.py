@@ -86,6 +86,10 @@ PARCEL_SCALE_XYZ = (0.7, 0.7, 0.7)
 _PARCEL_SETTLE_CLEARANCE_Z = 0.005
 PARCEL_Z = 0.4518 + _PARCEL_SETTLE_CLEARANCE_Z
 
+# "destination"을 생략하면 main_mission.py._spawn_parcels()가 A/B/C/D 중
+# 하나를 랜덤으로 배정한다 (D는 sorter 어느 구역과도 안 맞아 p3020_out
+# 쪽 "배송지 오류" 구간으로 흘러간다). 특정 박스를 항상 같은 목적지로
+# 고정하고 싶을 때만 여기에 "destination"을 명시하면 된다.
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
@@ -93,7 +97,6 @@ PARCEL_REGISTRY = [
         "spawn_xyz": (9.0, -3.0, PARCEL_Z),
         "scale_xyz": PARCEL_SCALE_XYZ,
         "mass_kg": 15.0,
-        "destination": "A",
     },
 ]
 

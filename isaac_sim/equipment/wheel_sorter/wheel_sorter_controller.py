@@ -1,205 +1,290 @@
+import math
+
 import omni.graph.core as og
 import omni.usd
 
-
-# 분기 스위치 노드 이름 후보. 지금 맵(WIP)은 "reroute"를 쓰지만, 표준 Isaac
-# Sim conveyor-split 예제는 "binary_switch"를 쓴다 -- 사용자가 소터/컨베이어를
-# 직접 다시 만들기로 했으니, 어느 쪽으로 만들어도 자동으로 찾도록 둘 다 시도한다.
-SWITCH_NODE_CANDIDATES = ("reroute", "binary_switch")
-# 소터 자체 벨트 속도 노드 이름 후보 (지금 맵의 "SorterSpeed", 또는 표준
-# 예제의 컨베이어 그래프 변수 "Velocity"에 대응하는 상수 노드).
-SPEED_NODE_CANDIDATES = ("SorterSpeed", "Velocity")
-ROUTE_COMPLETE_SECONDS = 6.0
-
-
-def _resolve_attr_path(action_graph_path: str, node_candidates):
-    """action_graph_path 밑에서 node_candidates 중 실제로 존재하는 노드의
-    inputs:value 속성 경로를 찾아서 돌려준다. 없으면 None."""
-    for node_name in node_candidates:
-        path = f"{action_graph_path}/{node_name}.inputs:value"
-        if og.Controller.attribute(path).is_valid():
-            return path
-    return None
+from pxr import Usd, UsdGeom
 
 
 class WheelSorterUnit:
     """One physical wheel-sorter (a ConveyorTrack_XX/Sorter/ActionGraph).
 
-    Diverting the switch (reroute/binary_switch) True routes a box off the
-    main line into this unit's region; False lets it continue straight down
-    the line to the next sorter (or, past the last one, to the end-of-line
-    배송지 오류 section).
+    Direction (1,0,0) lets a box continue straight down the main line;
+    (1,-2,0) diverts it off the line into this unit's region. These paths
+    and values come from hwi_new_sorter's verified Demo2 run -- the earlier
+    reroute/binary_switch node search was for a different, never-finished
+    sorter graph design.
     """
 
-    def __init__(self, track_name: str, action_graph_path: str):
-        self.track_name = track_name
-        self.action_graph_path = action_graph_path
-        self.switch_attr_path = _resolve_attr_path(
-            action_graph_path, SWITCH_NODE_CANDIDATES
-        )
-        self.speed_attr_path = _resolve_attr_path(
-            action_graph_path, SPEED_NODE_CANDIDATES
-        )
-        if self.switch_attr_path is None:
-            raise RuntimeError(
-                f"no divert-switch node ({SWITCH_NODE_CANDIDATES}) found "
-                f"under {action_graph_path}"
-            )
+    STRAIGHT_DIRECTION = (1.0, 0.0, 0.0)
+    DIVERT_DIRECTION = (1.0, -2.0, 0.0)
 
-    def set_reroute(self, active: bool):
-        og.Controller.attribute(self.switch_attr_path).set(bool(active))
+    def __init__(self, track_id: str):
+        self.track_id = str(track_id)
+        self.track_name = f"ConveyorTrack_{self.track_id}"
+        self.sorter_path = f"/World/{self.track_name}/Sorter"
+        self.sorter_physics_path = f"{self.sorter_path}/Sorter_physics"
+        self.action_graph_path = f"{self.sorter_path}/ActionGraph"
+        self.speed_attr_path = f"{self.action_graph_path}/SorterSpeed.inputs:value"
+        self.direction_attr_path = f"{self.action_graph_path}/conveyor_belt.inputs:direction"
+        self.state = False
+
+    def _get_attribute(self, path: str):
+        try:
+            attribute = og.Controller.attribute(path)
+        except og.OmniGraphError as exc:
+            raise RuntimeError(f"OmniGraph attribute is not ready: {path}: {exc}") from exc
+        if not attribute.is_valid():
+            raise RuntimeError(f"OmniGraph attribute was not found: {path}")
+        return attribute
+
+    def setup(self, speed: float):
+        # main_mission.py calls setup() twice: once before world.reset()/
+        # play() (when this ActionGraph exists in USD but isn't live in the
+        # OmniGraph runtime yet -- same race ConveyorController's
+        # _enable_conveyor_nodes already works around) and once after, when
+        # it's actually ready. Skip quietly on the first pass instead of
+        # crashing the whole Isaac Sim process; the post-reset call succeeds
+        # for real.
+        try:
+            self.set_speed(speed)
+            self.set_state(False)
+        except RuntimeError as exc:
+            print(
+                f"[SORTER] {self.track_name} not live yet "
+                f"(expected before world.reset()): {exc}"
+            )
 
     def set_speed(self, speed: float):
-        if self.speed_attr_path is None:
-            print(
-                f"[SORTER][WARN] {self.track_name}: no speed node "
-                f"({SPEED_NODE_CANDIDATES}) found, skipping"
-            )
-            return
-        og.Controller.attribute(self.speed_attr_path).set(float(speed))
+        attribute = self._get_attribute(self.speed_attr_path)
+        attribute.set(float(speed))
+        print(f"[SORTER] {self.track_name} SorterSpeed={float(speed):.2f}")
+
+    def set_direction(self, direction):
+        vector = tuple(float(value) for value in direction)
+        if len(vector) != 3:
+            raise ValueError("sorter direction must have exactly 3 values")
+        attribute = self._get_attribute(self.direction_attr_path)
+        attribute.set(vector)
+        print(
+            f"[SORTER] {self.track_name} direction="
+            f"({vector[0]:.1f}, {vector[1]:.1f}, {vector[2]:.1f})"
+        )
+
+    def set_state(self, active: bool):
+        self.state = bool(active)
+        direction = self.DIVERT_DIRECTION if self.state else self.STRAIGHT_DIRECTION
+        self.set_direction(direction)
+
+    def reset(self):
+        self.set_state(False)
+
+    def get_world_xy(self):
+        stage = omni.usd.get_context().get_stage()
+        prim = stage.GetPrimAtPath(self.sorter_physics_path)
+        if not prim.IsValid():
+            prim = stage.GetPrimAtPath(self.sorter_path)
+        if not prim.IsValid():
+            raise RuntimeError(f"sorter prim was not found: {self.sorter_physics_path}")
+        matrix = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        position = matrix.ExtractTranslation()
+        return float(position[0]), float(position[1])
 
 
 class WheelSorterController:
-    """Discovers every ConveyorTrack_XX/Sorter/ActionGraph in the stage
-    (Parcel_Sorting_Map has one at each of the A/B/C regions today) and maps
-    the first len(regions) of them, ordered by track name, to the given
-    region letters.
+    """Physical box_id-based routing (verified on hwi_new_sorter's Demo2),
+    plus the control-tower region START/STOP + process-event interface that
+    main_mission.py's ProcessEquipmentBridge already depends on.
 
-    route_box(destination) diverts exactly one region's sorter and sets
-    every other configured region to pass-through. A destination that
-    matches no configured region (e.g. "D") leaves every sorter
-    pass-through, so the box naturally travels to the conveyor's end
-    (배송지 오류 section) for Arm #2 to pick up.
+    Physical routing truth is box_id, read directly off each parcel prim's
+    "box_id" attribute -- NOT the "destination" attribute. destination stays
+    on the prim for dashboard/business display only (see
+    docs/sorter_merge/SORTER_MERGE_PLAN.md section 7). Region letters
+    (A/B/C, used by the dashboard's per-sorter START/STOP controls) map
+    positionally onto the verified physical tracks (01/02/03).
     """
 
-    def __init__(self, regions=("A", "B", "C"), sorter_speed: float = 1.0):
-        self.regions = tuple(regions)
-        self.sorter_speed = float(sorter_speed)
-        self.units_by_region = {}
-        self.all_units = []
-        self.enabled_by_region = {region: True for region in self.regions}
-        self.active_destination = None
-        self.active_elapsed = 0.0
+    TRACK_IDS = ("01", "02", "03")
+    SPEED_TARGET = -1.0
+    REGION_TO_TRACK = {"A": "01", "B": "02", "C": "03"}
+
+    def __init__(
+        self,
+        regions=("A", "B", "C"),
+        sorter_speed=None,
+        approach_threshold: float = 0.45,
+        reset_threshold: float = 0.70,
+    ):
+        if tuple(regions) != ("A", "B", "C"):
+            print(
+                f"[SORTER] regions={regions} ignored; region letters are "
+                "fixed to A/B/C mapped onto verified tracks 01/02/03"
+            )
+        if sorter_speed is not None and float(sorter_speed) != self.SPEED_TARGET:
+            print(
+                f"[SORTER] legacy sorter_speed={sorter_speed} ignored; "
+                f"using verified {self.SPEED_TARGET}"
+            )
+
+        self.approach_threshold = float(approach_threshold)
+        self.reset_threshold = float(reset_threshold)
+        if self.approach_threshold <= 0.0:
+            raise ValueError("approach_threshold must be greater than 0")
+        if self.reset_threshold <= self.approach_threshold:
+            raise ValueError("reset_threshold must be greater than approach_threshold")
+
+        self.units = {track_id: WheelSorterUnit(track_id) for track_id in self.TRACK_IDS}
+        self.enabled = {track_id: True for track_id in self.TRACK_IDS}
+        self._triggered_pairs = set()
+        self._completed_pairs = set()
         self._process_events = []
 
     def setup(self):
-        """Discover sorter units and set a known initial (pass-through)
-        state on every region sorter."""
-
         stage = omni.usd.get_context().get_stage()
         if stage is None:
             raise RuntimeError("USD stage is not available")
 
-        discovered = []
-        for prim in stage.Traverse():
-            if prim.GetName() != "ActionGraph":
-                continue
-            parent = prim.GetParent()
-            if parent.GetName() != "Sorter":
-                continue
-            track = parent.GetParent()
-            track_name = track.GetName()
-            if not track_name.startswith("ConveyorTrack"):
-                continue
-            discovered.append((track_name, str(prim.GetPath())))
+        for track_id, unit in self.units.items():
+            sorter_prim = stage.GetPrimAtPath(unit.sorter_path)
+            if not sorter_prim.IsValid():
+                raise RuntimeError(f"expected sorter was not found: {unit.sorter_path}")
+            unit.setup(self.SPEED_TARGET if self.enabled[track_id] else 0.0)
 
-        discovered.sort(key=lambda item: item[0])
-        self.all_units = [
-            WheelSorterUnit(name, path) for name, path in discovered
-        ]
-
-        if len(self.all_units) < len(self.regions):
-            print(
-                f"[SORTER] WARNING: found {len(self.all_units)} sorter "
-                f"unit(s) but {len(self.regions)} region(s) configured "
-                f"{self.regions}"
-            )
-
-        self.units_by_region = dict(zip(self.regions, self.all_units))
-
-        for unit in self.units_by_region.values():
-            unit.set_reroute(False)
-            unit.set_speed(self.sorter_speed)
-
-        self.enabled_by_region = {
-            region: True for region in self.units_by_region
-        }
-
-        extra = self.all_units[len(self.units_by_region):]
-        for unit in extra:
-            # Role not confirmed yet (e.g. ConveyorTrack_05) -- leave the
-            # divert state untouched, only make sure it can move.
-            unit.set_speed(self.sorter_speed)
-
-        assigned = {r: u.track_name for r, u in self.units_by_region.items()}
-        print(f"[SORTER] region sorters ready: {assigned}")
-        if extra:
-            print(
-                f"[SORTER] {len(extra)} unassigned sorter unit(s) found: "
-                f"{[u.track_name for u in extra]} (role not wired yet)"
-            )
-
-    def route_box(self, destination: str):
-        """Set every region sorter's divert state for one box. Boxes are
-        placed onto the conveyor one at a time by the inbound arm, so there
-        is no concurrent-box queueing to resolve here yet -- call this once
-        per box, right as it is placed."""
-
-        destination = str(destination).strip().upper()
-        target_unit = self.units_by_region.get(destination)
-        target_enabled = self.enabled_by_region.get(destination, False)
-        if not target_enabled:
-            target_unit = None
-
-        for region, unit in self.units_by_region.items():
-            unit.set_reroute(unit is target_unit)
-
-        if target_unit is not None:
-            print(
-                f"[SORTER] routing box -> {destination} "
-                f"({target_unit.track_name})"
-            )
-        else:
-            print(
-                f"[SORTER] destination '{destination}' matches no region "
-                "sorter -- box continues to the end-of-line 배송지 오류 section"
-            )
-        self.active_destination = destination if target_unit is not None else "UNKNOWN"
-        self.active_elapsed = 0.0
-        self._process_events.append(
-            {"state": f"ROUTING:{destination if target_unit is not None else 'UNKNOWN'}"}
+        self._triggered_pairs.clear()
+        self._completed_pairs.clear()
+        print(
+            "[SORTER] current-map sorters 01/02/03 ready; "
+            f"approach={self.approach_threshold:.2f} m; "
+            f"reset={self.reset_threshold:.2f} m"
         )
-        return destination
+
+    def start(self):
+        for track_id, unit in self.units.items():
+            unit.setup(self.SPEED_TARGET if self.enabled[track_id] else 0.0)
+
+    def verify(self):
+        for track_id, unit in self.units.items():
+            xy = unit.get_world_xy()
+            print(
+                f"[SORTER][VERIFY] track={track_id} "
+                f"world_xy=({xy[0]:.3f}, {xy[1]:.3f}) "
+                f"speed={self.SPEED_TARGET:.1f} state={int(unit.state)}"
+            )
 
     def set_region_enabled(self, region: str, enabled: bool):
-        region = str(region).strip().upper()
-        unit = self.units_by_region.get(region)
+        track_id = self.REGION_TO_TRACK.get(str(region).strip().upper())
+        unit = self.units.get(track_id)
         if unit is None:
             return False
         enabled = bool(enabled)
-        self.enabled_by_region[region] = enabled
-        unit.set_reroute(False)
-        unit.set_speed(self.sorter_speed if enabled else 0.0)
+        self.enabled[track_id] = enabled
+        unit.reset()
+        unit.set_speed(self.SPEED_TARGET if enabled else 0.0)
         return True
 
     def get_region_status(self, region: str):
-        region = str(region).strip().upper()
-        if not self.enabled_by_region.get(region, False):
+        track_id = self.REGION_TO_TRACK.get(str(region).strip().upper())
+        if track_id is None or not self.enabled.get(track_id, False):
             return "STOPPED"
         return "RUNNING"
-
-    def on_physics_step(self, dt: float):
-        if self.active_destination is None:
-            return
-        self.active_elapsed += float(dt)
-        if self.active_elapsed < ROUTE_COMPLETE_SECONDS:
-            return
-        destination = self.active_destination
-        self.active_destination = None
-        self.active_elapsed = 0.0
-        self._process_events.append({"state": f"ARRIVED:{destination}"})
 
     def take_process_events(self):
         events = list(self._process_events)
         self._process_events.clear()
         return events
+
+    def _box_world_xy(self, box_path):
+        stage = omni.usd.get_context().get_stage()
+        prim = stage.GetPrimAtPath(box_path)
+        if not prim.IsValid():
+            return None
+        matrix = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        position = matrix.ExtractTranslation()
+        return float(position[0]), float(position[1])
+
+    def _read_box_id(self, box_path):
+        stage = omni.usd.get_context().get_stage()
+        prim = stage.GetPrimAtPath(box_path)
+        if not prim.IsValid():
+            return None
+        attribute = prim.GetAttribute("box_id")
+        if not attribute or not attribute.IsValid():
+            return None
+        value = attribute.Get()
+        return None if value is None else int(value)
+
+    def update_boxes(self, box_prim_paths, box_id_to_track):
+        """Call every simulation tick (including from inside P3020's
+        blocking pick/place loop via tick_others) with the live list of
+        parcel prim paths still on the map and a {box_id: track_id} routing
+        table. A box_id absent from the table, or mapped to None, passes
+        every sorter straight through."""
+
+        for box_path in tuple(box_prim_paths):
+            box_xy = self._box_world_xy(box_path)
+            if box_xy is None:
+                continue
+
+            box_id = self._read_box_id(box_path)
+            if box_id is None:
+                continue
+
+            target_track = box_id_to_track.get(box_id)
+            if target_track is not None:
+                target_track = str(target_track).zfill(2)
+                if target_track not in self.units:
+                    raise ValueError(
+                        f"box_id_to_track[{box_id}] points to invalid track {target_track}"
+                    )
+
+            for track_id, unit in self.units.items():
+                pair = (box_path, track_id)
+                if pair in self._completed_pairs:
+                    continue
+
+                sorter_xy = unit.get_world_xy()
+                distance = math.hypot(box_xy[0] - sorter_xy[0], box_xy[1] - sorter_xy[1])
+
+                if pair not in self._triggered_pairs:
+                    if distance > self.approach_threshold:
+                        continue
+
+                    should_divert = self.enabled.get(track_id, True) and target_track == track_id
+                    unit.set_state(should_divert)
+                    self._triggered_pairs.add(pair)
+                    print(
+                        f"[SORTER] box={box_path} box_id={box_id} "
+                        f"reached track={track_id} distance={distance:.3f} "
+                        f"state={int(should_divert)}"
+                    )
+                    if should_divert:
+                        region = next(
+                            (r for r, t in self.REGION_TO_TRACK.items() if t == track_id),
+                            track_id,
+                        )
+                        self._process_events.append({"state": f"ROUTING:{region}"})
+                    continue
+
+                if distance >= self.reset_threshold:
+                    unit.reset()
+                    self._completed_pairs.add(pair)
+                    print(
+                        f"[SORTER] box={box_path} passed track={track_id}; "
+                        "direction reset to (1, 0, 0)"
+                    )
+                    if target_track == track_id:
+                        region = next(
+                            (r for r, t in self.REGION_TO_TRACK.items() if t == track_id),
+                            track_id,
+                        )
+                        self._process_events.append({"state": f"ARRIVED:{region}"})
+
+    def route_box(self, destination: str):
+        """Compatibility shim for old destination-based callers -- no
+        longer the physical routing path (see update_boxes()). Kept only
+        in case something outside this module still calls it."""
+
+        track_id = self.REGION_TO_TRACK.get(str(destination).strip().upper())
+        for unit_track_id, unit in self.units.items():
+            unit.set_state(unit_track_id == track_id)
+        return destination

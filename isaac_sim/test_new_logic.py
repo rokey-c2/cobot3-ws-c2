@@ -113,19 +113,19 @@ def main():
     world = World(stage_units_in_meters=1.0)
     stage = omni.usd.get_context().get_stage()
 
-    conveyor = ConveyorController(speed=1.0)
-    sorter = WheelSorterController(regions=("A", "B", "C"), sorter_speed=1.0)
+    conveyor = ConveyorController()
+    sorter = WheelSorterController()
     conveyor.setup()
     sorter.setup()
     check(
         "conveyor.setup() found segments",
-        len(conveyor._graph_paths) > 0,
-        f"({len(conveyor._graph_paths)} found)",
+        len(conveyor._graph_speeds) > 0,
+        f"({len(conveyor._graph_speeds)} found)",
     )
     check(
-        "sorter.setup() found 3 region units",
-        len(sorter.units_by_region) == 3,
-        f"({list(sorter.units_by_region.keys())})",
+        "sorter.setup() found 3 track units",
+        len(sorter.units) == 3,
+        f"({list(sorter.units.keys())})",
     )
 
     spawn_cargo_and_parcels(stage)

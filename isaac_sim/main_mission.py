@@ -48,6 +48,11 @@ WORLD_USD = (
 
 VISION_RGB_PUBLISH_INTERVAL_STEPS = 6
 
+# Physical sorter routing truth (see docs/sorter_merge/SORTER_MERGE_PLAN.md
+# section 7) -- box_id, not the "destination" attribute, decides which
+# ConveyorTrack a box gets diverted onto. box_id 4 passes every sorter.
+BOX_ID_TO_TRACK = {1: "01", 2: "02", 3: "03", 4: None}
+
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
@@ -100,13 +105,25 @@ def _create_clock_graph():
 
 
 def _spawn_parcels(parcel_configs):
+    """Returns the spawned parcels' prim paths so the caller can keep
+    tracking them (e.g. WheelSorterController.update_boxes()) -- the prim
+    itself stays put even after P3020 picks it up, so the same path list is
+    valid for the parcel's whole time on the map."""
+
     if not parcel_configs:
-        return
+        return []
 
     stage = omni.usd.get_context().get_stage()
     UsdGeom.Xform.Define(stage, "/World/Cargo/Parcels")
 
     box_ids = random.sample([1, 2, 3, 4], len(parcel_configs))
+    parcel_paths = []
+
+    # A/B/C는 sorter 정상 구역, D는 어느 sorter 구역과도 안 맞아 컨베이어
+    # 끝단(p3020_out 쪽 "배송지 오류" 구간)으로 흘러간다 -- wheel_sorter_
+    # controller.py의 route_box() 참고. PARCEL_REGISTRY 쪽에서 "destination"을
+    # 직접 지정하지 않은 박스는 이 네 값 중 하나로 랜덤 배정된다.
+    DESTINATIONS = ("A", "B", "C", "D")
 
     for config, box_id in zip(parcel_configs, box_ids):
         prim_path = f"/World/Cargo/Parcels/{config['name']}"
@@ -120,11 +137,17 @@ def _spawn_parcels(parcel_configs):
             mass_kg=float(config.get("mass_kg", 15.0)),
         )
         parcel_prim = stage.GetPrimAtPath(prim_path)
-        destination = str(config.get("destination", "UNKNOWN")).strip().upper()
+        if "destination" in config:
+            destination = str(config["destination"]).strip().upper()
+        else:
+            destination = random.choice(DESTINATIONS)
         parcel_prim.CreateAttribute(
             PARCEL_DESTINATION_ATTR, Sdf.ValueTypeNames.String
         ).Set(destination)
         print(f"[PARCEL] {config['name']} -> box_id={box_id}, destination={destination}")
+        parcel_paths.append(prim_path)
+
+    return parcel_paths
 
 
 class AmrMissionBridge(Node):
@@ -506,12 +529,12 @@ def main():
 
     _create_clock_graph()
 
-    conveyor = ConveyorController(speed=1.0)
-    sorter = WheelSorterController(regions=("A", "B", "C"), sorter_speed=1.0)
+    conveyor = ConveyorController()
+    sorter = WheelSorterController()
     conveyor.setup()
     sorter.setup()
 
-    _spawn_parcels(PARCEL_REGISTRY)
+    parcel_paths = _spawn_parcels(PARCEL_REGISTRY)
 
     spawn_cargo_guard_clone(
         omni.usd.get_context().get_stage(),
@@ -598,7 +621,13 @@ def main():
     def tick_iw_hub_agents(step_dt):
         for agent in agents:
             agent.on_physics_step(step_dt)
-        sorter.on_physics_step(step_dt)
+        # P3020's pick/place loop blocks the outer while loop below by
+        # stepping the world itself -- passing this same tick_others into
+        # it (see the run_until_cargo_empty() call further down) is the
+        # only way sorter routing keeps updating for boxes already on the
+        # conveyor while P3020 is mid-cycle (see SORTER_MERGE_PLAN.md
+        # section 9).
+        sorter.update_boxes(parcel_paths, BOX_ID_TO_TRACK)
 
     try:
         while simulation_app.is_running():
@@ -637,22 +666,23 @@ def main():
                     f"place={place_xy} scan_hint={scan_hint}"
                 )
 
-                # FigJam / backup-main-20260824 기준:
-                # 한 액션 명령은 박스 한 개의 Vision -> Pick -> Place -> Result
-                # 사이클만 수행한다. Cargo 전체를 자동으로 비우거나 Sorter를
-                # P3020 내부에서 직접 제어하지 않는다.
-                success, message = p3020_agent.run_pick_place(
+                # 액션 서버(pick_place_action_server.py)는 한 골(goal)을
+                # "적재함이 빌 때까지"로 취급하고 CARGO_EMPTY가 와야만
+                # 끝낸다 -- run_until_cargo_empty()가 박스를 하나씩 옮기다가
+                # 기본 자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 더 이상
+                # 안 보이면 CARGO_EMPTY를 찍고 AMR에 복귀 요청까지 보낸다.
+                def _on_box_placed(message):
+                    equipment_bridge.publish_conveyor_event("PACKAGE_ENTERED")
+                    print(f"[P3020] result: success=True message={message}")
+
+                p3020_agent.run_until_cargo_empty(
                     p3020_bridge,
                     place_xy_world=place_xy,
+                    amr_agent=agents[0],
                     scan_xy_world=scan_hint,
                     tick_others=tick_iw_hub_agents,
                     dt=dt,
-                    sorter=sorter,
-                )
-                if success:
-                    equipment_bridge.publish_conveyor_event("PACKAGE_ENTERED")
-                print(
-                    f"[P3020] result: success={success} message={message}"
+                    on_box_placed=_on_box_placed,
                 )
 
             if equipment_bridge.p3020_out_enabled:

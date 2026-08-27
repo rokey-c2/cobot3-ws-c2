@@ -33,13 +33,12 @@ HOME_JOINT_DEG 각도가 맵을 재조정할 때마다 계속 stale해지는 문
 컨베이어 끝단을 보도록 잡아 둔) p3020_out의 현재 자세를 그대로 홈으로
 채택한다. 좌표를 몰라도, 재측정하지 않아도 항상 맞는 자세를 쓴다.
 
-TODO(결정 필요) -- REJECT_BIN_SPAWN_XY 하나만 아직 placeholder다. 적재함
-(cargo_guard_clone.py로 복제할 카고 가드)을 놓을 world (x, y) -- p3020_out
-베이스(P3020_OUT_BASE_POS, reach=2.0m) 기준으로 컨베이어 픽업 지점과 안
-겹치는 빈 자리를 고르면 된다. 바닥 높이/벽 높이는 추측이 아니라
-cargo_guard_clone.py의 BASELINE_FLOOR_TOP_Z/BASELINE_WALL_HEIGHT 상수에서
-그대로 역산한다(spawn_xyz z=0.5 관례를 따르면 floor_z=0.30, wall top=0.40으로
-p3020_in 쪽 카고 포드와 정확히 동일).
+적재함 위치: 사용자가 Isaac Sim 스테이지에서 직접 확인한 실측 좌표
+(x=-15.5, y=-3.5, z=0.5)를 REJECT_BIN_SPAWN_XY/Z로 쓴다. z=0.5는
+cargo_guard_clone.py의 spawn 관례(다리가 바닥(z=0)에 닿는 기준)와 정확히
+일치하므로, 바닥/벽 높이는 추측이 아니라 그 파일의
+BASELINE_FLOOR_TOP_Z/BASELINE_WALL_HEIGHT 상수에서 그대로 역산한다
+(floor_z=0.30, wall top=0.40 -- p3020_in 쪽 카고 포드와 동일).
 """
 
 import os
@@ -138,16 +137,14 @@ SPEC_REACH = 2.0
 #  1.0 x 1.0m 루트에 벽이 안쪽으로 0.49m 인셋된 것과 맞아떨어진다(주석
 #  "Baseline cargo_pod is exactly 1.0 x 1.0 m in XY" 참고) -- 그대로 둔다.
 #
-#  TODO(실측/결정 필요): REJECT_BIN_SPAWN_XY만 아직 placeholder다. p3020_out
-#  베이스(P3020_OUT_BASE_POS, reach=2.0m) 기준으로 컨베이어 픽업 지점과
-#  겹치지 않는 빈 바닥 위치를 골라서 알려주면 그 값으로 바꾼다.
+#  Isaac Sim 스테이지에서 사용자가 직접 확인한 실측 좌표: x=-15.5, y=-3.5,
+#  z=0.5. z=0.5는 cargo_guard_clone.py의 spawn 관례(다리가 바닥(z=0)에
+#  닿는 기준)와 정확히 일치하므로, floor_z/wall top 역산이 그대로 유효하다.
+#  p3020_out 베이스(-14.2, -2.6)에서 거리 ≈1.58m로 reach(2.0m) 안이다.
 # ══════════════════════════════════════════════════════════════
 REJECT_BIN_PRIM_PATH = "/World/Cargo/RejectBin"
 REJECT_BIN_SPAWN_Z = 0.5  # cargo_guard_clone.py 관례: 이 값일 때 다리가 바닥(z=0)에 닿는다.
-REJECT_BIN_SPAWN_XY = (
-    float(P3020_OUT_BASE_POS[0] - 1.2),
-    float(P3020_OUT_BASE_POS[1]),
-)
+REJECT_BIN_SPAWN_XY = (-15.5, -3.5)
 REJECT_BIN_SPAWN_YAW_DEG = 0.0
 
 REJECT_BIN_POSE = CargoPose(

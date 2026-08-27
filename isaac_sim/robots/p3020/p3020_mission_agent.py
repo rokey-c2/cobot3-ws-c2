@@ -171,7 +171,6 @@ APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 # 거리 약 1.51m -- 2.0m 사거리 안. 액션 goal에 pickup_pose가 오면 그쪽을
 # 우선 쓰고, 없으면 이 기본값(AMR 도착 지점 방향)을 쓴다.
 AMR_DELIVERY_POSE_WORLD = np.array([1.7009891271591187, -1.369241714477539])
-DEFAULT_SCAN_XY = AMR_DELIVERY_POSE_WORLD - ROBOT_BASE_POS[:2]
 
 MIN_VALID_SCAN_DEPTH = 0.4
 # AMR 몸체(섀시)의 실측 world Z는 약 0.03~0.23m, 적재함 위에 놓인 박스는
@@ -313,23 +312,10 @@ def find_nearest_parcel(stage, pick_xy: np.ndarray, parent_path: str = PARCEL_PA
     return best_path
 
 
-# TODO: 목적지(A/B/C/D)를 박스에 어떻게 표시할지 아직 정해지지 않았다 --
-# 사용자가 "박스에 목적지에 따른 속성을 달리할 것"이라고만 밝혔다. 일단은
-# 파라셀 프림의 커스텀 USD 속성 하나(이름은 PARCEL_DESTINATION_ATTR)를
-# 읽는 것으로 가정해뒀다. 실제 표기 방식(속성 이름/타입, 또는 비전 인식
-# 결과로 대체 등)이 정해지면 이 함수만 바꾸면 된다.
+# Kept for dashboard/business display only -- physical sorter routing uses
+# box_id via WheelSorterController.update_boxes(), not this attribute (see
+# docs/sorter_merge/SORTER_MERGE_PLAN.md section 7).
 PARCEL_DESTINATION_ATTR = "destination"
-
-
-def read_parcel_destination(stage, box_prim_path):
-    prim = stage.GetPrimAtPath(box_prim_path)
-    if not prim.IsValid():
-        return None
-    attr = prim.GetAttribute(PARCEL_DESTINATION_ATTR)
-    if not attr or not attr.IsValid():
-        return None
-    value = attr.Get()
-    return None if value is None else str(value)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -681,6 +667,31 @@ class P3020PickPlaceAgent:
             snap_distance=PARCEL_SNAP_DISTANCE,
         )
 
+        # ROBOT_BASE_POS/QUAT used to be a hardcoded, headlessly-measured
+        # constant -- the comment above it already documents one map
+        # rebuild silently rotating p3020_in 53.5 deg and throwing IK off
+        # by that much. Reading the prim's actual world transform here
+        # means IK always matches wherever p3020_in is placed in the
+        # currently loaded map, with no re-measurement step needed (same
+        # fix as _set_home_pose() for HOME_JOINT_DEG).
+        global ROBOT_BASE_POS, ROBOT_BASE_QUAT
+        base_matrix = UsdGeom.Xformable(
+            self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
+        ).ComputeLocalToWorldTransform(0)
+        base_translation = base_matrix.ExtractTranslation()
+        base_quat = base_matrix.ExtractRotationQuat()
+        ROBOT_BASE_POS = np.array(
+            [base_translation[0], base_translation[1], base_translation[2]]
+        )
+        ROBOT_BASE_QUAT = np.array(
+            [
+                base_quat.GetReal(),
+                base_quat.GetImaginary()[0],
+                base_quat.GetImaginary()[1],
+                base_quat.GetImaginary()[2],
+            ]
+        )
+
         lula = LulaKinematicsSolver(
             robot_description_path=DESCRIPTION_PATH,
             urdf_path=URDF_PATH,
@@ -820,13 +831,15 @@ class P3020PickPlaceAgent:
         return box_xy
 
     def run_pick_place(self, ros_node, place_xy_world, scan_xy_world=None,
-                        tick_others=None, dt=1 / 60.0, sorter=None):
+                        tick_others=None, dt=1 / 60.0):
         """스캔(인식) -> 흡착 -> 컨베이어 위로 이동 -> 놓기, 한 사이클 전체.
         (success: bool, message: str) 을 반환한다. 블로킹 함수라서, 실행되는
         동안 매 스텝 tick_others(dt)를 호출해 다른 에이전트(IW Hub)도 계속
         애니메이션되게 한다."""
-        scan_xy_world = scan_xy_world if scan_xy_world is not None else (
-            ROBOT_BASE_POS[:2] + DEFAULT_SCAN_XY
+        scan_xy_world = (
+            scan_xy_world
+            if scan_xy_world is not None
+            else AMR_DELIVERY_POSE_WORLD
         )
 
         self.gripper.detach()
@@ -924,16 +937,12 @@ class P3020PickPlaceAgent:
             self.world.step(render=True)
             step += 1
 
-        if ever_attached and sorter is not None:
-            destination = read_parcel_destination(self.stage, target_box_path)
-            if destination is None:
-                print(
-                    f"[P3020][WARN] {target_box_path} has no "
-                    f"'{PARCEL_DESTINATION_ATTR}' attribute -- sorter not "
-                    "routed for this box"
-                )
-            else:
-                sorter.route_box(destination)
+        # P3020's job ends at placing the box on the conveyor. Physical
+        # sorter routing is decided later, by box_id, once the box actually
+        # reaches each track (WheelSorterController.update_boxes(), driven
+        # every tick from main_mission.py) -- not pre-emptively here by the
+        # "destination" attribute (see docs/sorter_merge/SORTER_MERGE_PLAN.md
+        # section 7/8).
 
         self._return_to_ready_pose(tick_others=tick_others, dt=dt)
 
@@ -948,19 +957,24 @@ class P3020PickPlaceAgent:
 
     def run_until_cargo_empty(self, ros_node, place_xy_world, amr_agent,
                                scan_xy_world=None, tick_others=None, dt=1 / 60.0,
-                               sorter=None):
+                               on_box_placed=None):
         """적재함의 박스를 하나씩 찾아서 컨베이어 위로 옮기고, 기본(스캔)
         자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 박스가 안 보이면 적재함이
         빈 것으로 확정하고 amr_agent에 복귀 신호를 보낸다. 박스 개수는
         가정하지 않는다 -- run_pick_place가 실패할 때마다(=기본 자세에서
-        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다."""
+        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다.
+        on_box_placed(message)는 박스 하나를 성공적으로 옮길 때마다 호출된다
+        (관제타워 PACKAGE_ENTERED 이벤트처럼, 호출 쪽이 박스 단위 후크가
+        필요할 때 쓴다)."""
         while True:
             success, message = self.run_pick_place(
                 ros_node, place_xy_world, scan_xy_world=scan_xy_world,
-                tick_others=tick_others, dt=dt, sorter=sorter,
+                tick_others=tick_others, dt=dt,
             )
             if success:
                 print(f"[P3020] {message} -- 다음 박스 확인")
+                if on_box_placed:
+                    on_box_placed(message)
                 continue
 
             print(
