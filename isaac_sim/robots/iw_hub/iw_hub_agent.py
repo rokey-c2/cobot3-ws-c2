@@ -122,6 +122,23 @@ def _navigation_robot_prim_path(stage):
             candidates.append(root_path)
 
     if candidates:
+        if len(candidates) > 1:
+            # More than one ArticulationRootAPI prim matches every required
+            # sensor topic -- this happens if a second IW Hub got saved into
+            # the map (e.g. loaded in the stage for reference while editing
+            # something else) alongside the one actually meant to be used.
+            # stage.Load() above already loaded every payload in the whole
+            # stage regardless, so an extra copy keeps fully simulating
+            # (LiDAR raycasts, wheel physics, cameras) even though only the
+            # one path returned here ever gets driven -- pure wasted load.
+            carb.log_warn(
+                "[IW HUB] multiple IW Hub-like prims found in the map "
+                f"({len(candidates)}): "
+                + ", ".join(path.pathString for path in candidates)
+                + " -- only the deepest path is used; delete the others "
+                "from the map and re-save to stop them from being "
+                "simulated for nothing."
+            )
         return max(
             candidates,
             key=lambda path: path.pathString.count("/"),
@@ -343,7 +360,41 @@ def _configure_lidar_range(
             + ", ".join(configured)
         )
 
-    return configured
+# Camera rigs baked into NVIDIA's stock IW Hub asset that nothing in this
+# project subscribes to -- confirmed by grepping the whole codebase for
+# their topics (front_stereo_camera/*, intel_realsense_r200_depth/*) and
+# finding zero references. They're only wired up as debug Image panels in
+# NVIDIA's own iw_hub_navigation.rviz (RealsenseDepthImage, Image), so
+# disabling them just leaves those two panels blank -- Nav2/AMCL/map/
+# costmap panels are unaffected. Matched by prim name rather than a fixed
+# path since the exact path depends on how the map was saved.
+_UNUSED_CAMERA_RIG_NAMES = ("front_stereo_camera", "intel_realsense_r200_depth")
+
+
+def _disable_unused_cameras(robot_prim):
+    """Turn off camera rigs this project never reads from, to cut RTX
+    render workload. Uses SetActive(False), which is reversible (flip back
+    to True) and never touches the saved map file."""
+
+    disabled = []
+    for prim in Usd.PrimRange(robot_prim):
+        if prim.GetName() not in _UNUSED_CAMERA_RIG_NAMES:
+            continue
+        if not prim.IsActive():
+            continue
+        prim.SetActive(False)
+        disabled.append(prim.GetPath().pathString)
+
+    if disabled:
+        carb.log_info(f"[IW HUB][CAMERA] disabled unused rigs: {disabled}")
+    else:
+        carb.log_warn(
+            "[IW HUB][CAMERA] none of the expected unused camera rigs "
+            f"{_UNUSED_CAMERA_RIG_NAMES} were found under {robot_prim.GetPath()} "
+            "-- map structure may have changed, nothing was disabled"
+        )
+
+    return disabled
 
 
 class IwHubAgent(BaseRobotAgent):
@@ -382,6 +433,7 @@ class IwHubAgent(BaseRobotAgent):
             self.lidar_min_range_m,
             self.lidar_max_range_m,
         )
+        _disable_unused_cameras(robot_prim)
 
         if configured_lidars:
             carb.log_info(

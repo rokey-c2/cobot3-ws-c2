@@ -33,7 +33,8 @@ class AmrP3020Mission(Node):
     def __init__(self):
         super().__init__("amr_p3020_mission")
 
-        # rviz2 Publish Point real measurement -- matches
+        # AMR delivery point -- where it sets the pod down (see
+        # request_lower_at_delivery in iw_hub_mission_agent.py). Matches
         # p3020_mission_agent.py's AMR_DELIVERY_POSE_WORLD. AMR parks here,
         # facing 0 deg (toward the arm), so it is within arm #1's 2 m reach.
         self.declare_parameter("delivery_x", 1.7009891271591187)
@@ -240,9 +241,9 @@ class AmrP3020Mission(Node):
 
         if purpose == "DELIVERY":
             self.get_logger().info(
-                "IW Hub destination arrived: sending P3020 action"
+                "IW Hub destination arrived: confirming dock before P3020"
             )
-            self._set_state("P3020_START")
+            self._set_state("REQUEST_CONVEYOR_DOCK")
         elif purpose == "RETURN_APPROACH":
             self._set_state("REQUEST_RETURN_DOCK")
         else:
@@ -305,7 +306,7 @@ class AmrP3020Mission(Node):
             self.get_logger().info(
                 f"P3020 PickPlace complete: {result.message}"
             )
-            self._set_state("NAV_TO_RETURN")
+            self._set_state("REQUEST_RAISE_AT_DELIVERY")
             return
 
         self._fail(
@@ -350,6 +351,31 @@ class AmrP3020Mission(Node):
             )
             return
 
+        if self.state == "REQUEST_CONVEYOR_DOCK":
+            self._publish_pickup_command("CONVEYOR_DOCK")
+
+            if self.pickup_state == "CONVEYOR_DOCK_DONE":
+                self._set_state("REQUEST_LOWER_AT_DELIVERY")
+            elif self.pickup_state == "ERROR":
+                self._fail(
+                    "Isaac conveyor-dock confirmation reported ERROR"
+                )
+            return
+
+        if self.state == "REQUEST_LOWER_AT_DELIVERY":
+            self._publish_pickup_command("LOWER_AT_DELIVERY")
+
+            if self.pickup_state == "LOWERED_AT_DELIVERY":
+                self.get_logger().info(
+                    "cargo pod set down at delivery point; starting P3020"
+                )
+                self._set_state("P3020_START")
+            elif self.pickup_state == "ERROR":
+                self._fail(
+                    "Isaac lower-at-delivery controller reported ERROR"
+                )
+            return
+
         if self.state == "P3020_START":
             simulate = bool(
                 self.get_parameter("simulate_p3020").value
@@ -381,10 +407,24 @@ class AmrP3020Mission(Node):
                 self.get_logger().info(
                     "simulated P3020 PickPlace complete"
                 )
-                self._set_state("NAV_TO_RETURN")
+                self._set_state("REQUEST_RAISE_AT_DELIVERY")
             return
 
         if self.state in {"P3020_GOAL_SENT", "P3020_WORKING"}:
+            return
+
+        if self.state == "REQUEST_RAISE_AT_DELIVERY":
+            self._publish_pickup_command("RAISE_AT_DELIVERY")
+
+            if self.pickup_state == "RAISED_AT_DELIVERY_DONE":
+                self.get_logger().info(
+                    "empty pod picked back up; returning to cargo dock"
+                )
+                self._set_state("NAV_TO_RETURN")
+            elif self.pickup_state == "ERROR":
+                self._fail(
+                    "Isaac raise-at-delivery controller reported ERROR"
+                )
             return
 
         if self.state == "NAV_TO_RETURN":

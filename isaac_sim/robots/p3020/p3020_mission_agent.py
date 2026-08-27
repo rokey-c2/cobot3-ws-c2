@@ -44,7 +44,6 @@ import omni.usd
 from pxr import Usd, UsdGeom, UsdPhysics, Gf
 
 import rclpy
-from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.time import Time
 from sensor_msgs.msg import Image
@@ -96,18 +95,6 @@ SAFE_JOINT_LIMITS = {
     "joint_6": (-3.14, 3.14),
 }
 
-# p3020_in's authored home pose (degrees) -- matches
-# state:angular:physics:position on /World/p3020_in's joints in the saved
-# map exactly, confirmed via headless inspection. This is what post_reset()
-# now sets directly instead of overwriting it with an IK-computed scan pose.
-HOME_JOINT_DEG = {
-    "joint_1": 0.0,
-    "joint_2": 0.0,
-    "joint_3": 90.0,
-    "joint_5": 76.8,
-    "joint_6": 56.8,
-}
-
 DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
@@ -132,17 +119,14 @@ SPEC_REACH = 2.0
 
 TCP_OFFSET = np.array([0.0049, 0.0321, 0.0942])
 
-# 파라셀(NVIDIA CardBox)의 실제 바운딩박스를 헤드리스로 직접 재측정함 --
-# add_parcel_asset_scaled()가 scale_xyz=PARCEL_SCALE_XYZ=(0.75,0.75,0.5)를
-# 적용한 이후로는 더 이상 정육면체가 아니라 0.375 x 0.375 x 0.25 m 납작한
-# 상자다 (world bbox size=(0.375,0.375,0.25) 확인됨). 반높이는 0.125m --
-# 이전에 남아있던 0.15m는 scale 적용 전(0.3m 정육면체 시절) 값이 그대로
-# 남아있던 것으로, 흡착 접촉 판정을 2.5cm 어긋나게 만들어 AMR이 튕겨나갈
-# 정도로 과하게 눌리는 원인이었다. 박스 프림 원점은 add_parcel_asset_scaled()가
-# "기하학적 중심"에 맞춰서 만들기 때문에(예전 p3020_pick_place_poc.py의 박스
-# 애셋처럼 바닥면 원점이 아님), ContactGripper의 snap_distance/contact_threshold
-# 도 전체 높이가 아니라 반높이 기준으로 잡는다.
-PARCEL_HALF_HEIGHT = 0.125
+# 파라셀(NVIDIA CardBox) 크기 -- add_parcel_asset_scaled()가
+# scale_xyz=PARCEL_SCALE_XYZ=(0.7,0.7,0.7)를 균일 적용하므로 0.5m 정육면체
+# 원본이 0.35 x 0.35 x 0.35 m 정육면체가 된다. 반높이는 0.175m. 박스
+# 프림 원점은 add_parcel_asset_scaled()가 "기하학적 중심"에 맞춰서 만들기
+# 때문에(예전 p3020_pick_place_poc.py의 박스 애셋처럼 바닥면 원점이 아님),
+# ContactGripper의 snap_distance/contact_threshold도 전체 높이가 아니라
+# 반높이 기준으로 잡는다.
+PARCEL_HALF_HEIGHT = 0.175
 PARCEL_SNAP_DISTANCE = PARCEL_HALF_HEIGHT + 0.01
 
 # 픽업 쪽(카고 포드 위)과 플레이스 쪽(컨베이어) 높이가 서로 많이 달라서
@@ -183,14 +167,18 @@ APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여�
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
-# rviz2 Publish Point로 실측한 컨베이어 앞 AMR 도착 지점 (map 좌표 = world
-# 좌표와 1:1 확인됨). base(0.2,-1.5)에서 거리 약 1.51m -- 2.0m 사거리 안.
-# 액션 goal에 pickup_pose가 오면 그쪽을 우선 쓰고, 없으면 이 기본값(AMR
-# 도착 지점 방향)을 쓴다.
+# AMR이 적재함을 내려놓는 실제 배달 지점 (사용자 지정). base(0.2,-1.5)에서
+# 거리 약 1.51m -- 2.0m 사거리 안. 액션 goal에 pickup_pose가 오면 그쪽을
+# 우선 쓰고, 없으면 이 기본값(AMR 도착 지점 방향)을 쓴다.
 AMR_DELIVERY_POSE_WORLD = np.array([1.7009891271591187, -1.369241714477539])
-DEFAULT_SCAN_XY = AMR_DELIVERY_POSE_WORLD - ROBOT_BASE_POS[:2]
 
 MIN_VALID_SCAN_DEPTH = 0.4
+# AMR 몸체(섀시)의 실측 world Z는 약 0.03~0.23m, 적재함 위에 놓인 박스는
+# 약 0.30m 이상(실측 드롭테스트 기준, 박스 바닥=포드 표면=0.2768m)이라 이
+# 둘 사이에 확실한 간격이 있다 -- 노란 AMR 몸체를 박스로 오탐지하는 문제를
+# 색상 대신 높이로 걸러낸다(색상 체크는 "R>B"만 보는데 노란색도 이 조건을
+# 만족해서 갈색 박스랑 구분이 안 됐었다).
+MIN_BOX_WORLD_Z = 0.30
 SCAN_DESCEND_STEPS = 150
 SCAN_MID_HEIGHT = (SCAN_HEIGHT + APPROACH_HEIGHT) / 2.0
 VISION_WAIT_TIMEOUT_STEPS = 300
@@ -324,23 +312,10 @@ def find_nearest_parcel(stage, pick_xy: np.ndarray, parent_path: str = PARCEL_PA
     return best_path
 
 
-# TODO: 목적지(A/B/C/D)를 박스에 어떻게 표시할지 아직 정해지지 않았다 --
-# 사용자가 "박스에 목적지에 따른 속성을 달리할 것"이라고만 밝혔다. 일단은
-# 파라셀 프림의 커스텀 USD 속성 하나(이름은 PARCEL_DESTINATION_ATTR)를
-# 읽는 것으로 가정해뒀다. 실제 표기 방식(속성 이름/타입, 또는 비전 인식
-# 결과로 대체 등)이 정해지면 이 함수만 바꾸면 된다.
+# Kept for dashboard/business display only -- physical sorter routing uses
+# box_id via WheelSorterController.update_boxes(), not this attribute (see
+# docs/sorter_merge/SORTER_MERGE_PLAN.md section 7).
 PARCEL_DESTINATION_ATTR = "destination"
-
-
-def read_parcel_destination(stage, box_prim_path):
-    prim = stage.GetPrimAtPath(box_prim_path)
-    if not prim.IsValid():
-        return None
-    attr = prim.GetAttribute(PARCEL_DESTINATION_ATTR)
-    if not attr or not attr.IsValid():
-        return None
-    value = attr.Get()
-    return None if value is None else str(value)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -469,20 +444,38 @@ class PickPlaceFSM:
 # ══════════════════════════════════════════════════════════════
 #  ROS2 다리 (표준 타입만 사용 -- 모듈 상단 docstring의 ABI 문제 설명 참고)
 # ══════════════════════════════════════════════════════════════
-class P3020RosBridge(Node):
-    def __init__(self):
-        super().__init__("p3020_mission_bridge")
-        self.image_pub = self.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
-        self.depth_pub = self.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
-        self.pixel_sub = self.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
+class P3020RosBridge:
+    """Registers arm_a's pub/sub on a caller-supplied node.
+
+    Isaac Sim's bundled rclpy only reliably bridges the *first* Node object
+    created after rclpy.init() to the outside world -- every additional
+    Node instance created in the same process silently stops receiving
+    external messages (confirmed: /amr_a/* on the first node worked,
+    /arm_a/pick_place_command and /controltower/equipment/command on their
+    own separate Node objects never arrived). Attaching to the already-
+    working node instead of constructing a new one avoids that entirely.
+    """
+
+    def __init__(self, node):
+        self._node = node
+        self.image_pub = node.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
+        self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
+        self.pixel_sub = node.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
         self.latest_pixel = None
 
-        self.status_pub = self.create_publisher(String, STATUS_TOPIC, 10)
-        self.command_sub = self.create_subscription(String, COMMAND_TOPIC, self._on_command, 10)
+        self.status_pub = node.create_publisher(String, STATUS_TOPIC, 10)
+        self.command_sub = node.create_subscription(String, COMMAND_TOPIC, self._on_command, 10)
         self.pending_command = None
+
+    def get_clock(self):
+        return self._node.get_clock()
 
     def _on_pixel(self, msg: PointStamped):
         stamp = Time.from_msg(msg.header.stamp)
+        self._node.get_logger().info(
+            f"pixel received: x={msg.point.x:.1f} y={msg.point.y:.1f} "
+            f"stamp={stamp.nanoseconds}"
+        )
         self.latest_pixel = (msg.point.x, msg.point.y, msg.point.z, stamp)
 
     def take_pixel_after(self, not_before: Time):
@@ -491,6 +484,16 @@ class P3020RosBridge(Node):
             return None
         cx, cy, conf, stamp = pixel
         if stamp < not_before:
+            # DIAGNOSTIC: detections are being rejected as stale despite
+            # box_detector_node.py actively publishing them -- print the
+            # raw nanosecond values so we can see whether this is a real
+            # timing gap or a cross-runtime (Isaac-embedded vs system
+            # rclpy) PointStamped stamp deserialization problem.
+            self._node.get_logger().warn(
+                "pixel rejected as stale: "
+                f"stamp={stamp.nanoseconds} not_before={not_before.nanoseconds} "
+                f"delta_s={(not_before.nanoseconds - stamp.nanoseconds) / 1e9:.3f}"
+            )
             return None
         self.latest_pixel = None
         return (cx, cy, conf)
@@ -499,7 +502,7 @@ class P3020RosBridge(Node):
         try:
             self.pending_command = json.loads(msg.data)
         except (json.JSONDecodeError, TypeError) as error:
-            self.get_logger().error(f"bad pick_place command payload: {error}")
+            self._node.get_logger().error(f"bad pick_place command payload: {error}")
 
     def take_command(self):
         command = self.pending_command
@@ -510,14 +513,14 @@ class P3020RosBridge(Node):
         msg = String()
         msg.data = status
         self.status_pub.publish(msg)
-        self.get_logger().info(f"status: {status}")
+        self._node.get_logger().info(f"status: {status}")
 
     def publish_image(self, rgba):
         rgb = np.ascontiguousarray(rgba[:, :, :3])
         if rgb.mean() < 1.0:
             return
         msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = self._node.get_clock().now().to_msg()
         msg.header.frame_id = "p3020_rsd455"
         msg.height, msg.width = rgb.shape[:2]
         msg.encoding = "rgb8"
@@ -529,7 +532,7 @@ class P3020RosBridge(Node):
     def publish_depth(self, depth_map):
         d = np.ascontiguousarray(depth_map, dtype=np.float32)
         msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = self._node.get_clock().now().to_msg()
         msg.header.frame_id = "p3020_rsd455"
         msg.height, msg.width = d.shape[:2]
         msg.encoding = "32FC1"
@@ -568,6 +571,10 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
         print("   scanning     [warn] 색이 박스 같지 않습니다 -- 그림자로 보고 무시.")
         return None
     world_pos = camera.pixel_to_world(cx, cy, depth_val)
+    if world_pos[2] < MIN_BOX_WORLD_Z:
+        print(f"   scanning     [warn] 실측 높이가 너무 낮습니다"
+              f"(z={world_pos[2]:.3f}m) -- AMR 몸체(노란색)를 오탐지, 무시.")
+        return None
     print(f"   scanning     detected box conf={conf:.3f} "
           f"pixel=({cx:.1f},{cy:.1f}) -> world=({world_pos[0]:.3f}, {world_pos[1]:.3f}, {world_pos[2]:.3f})")
     # z도 그대로 반환한다 -- depth 역투영은 원래 3D 점을 주는데, 예전 코드가
@@ -674,6 +681,31 @@ class P3020PickPlaceAgent:
             snap_distance=PARCEL_SNAP_DISTANCE,
         )
 
+        # ROBOT_BASE_POS/QUAT used to be a hardcoded, headlessly-measured
+        # constant -- the comment above it already documents one map
+        # rebuild silently rotating p3020_in 53.5 deg and throwing IK off
+        # by that much. Reading the prim's actual world transform here
+        # means IK always matches wherever p3020_in is placed in the
+        # currently loaded map, with no re-measurement step needed (same
+        # fix as _set_home_pose() for HOME_JOINT_DEG).
+        global ROBOT_BASE_POS, ROBOT_BASE_QUAT
+        base_matrix = UsdGeom.Xformable(
+            self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
+        ).ComputeLocalToWorldTransform(0)
+        base_translation = base_matrix.ExtractTranslation()
+        base_quat = base_matrix.ExtractRotationQuat()
+        ROBOT_BASE_POS = np.array(
+            [base_translation[0], base_translation[1], base_translation[2]]
+        )
+        ROBOT_BASE_QUAT = np.array(
+            [
+                base_quat.GetReal(),
+                base_quat.GetImaginary()[0],
+                base_quat.GetImaginary()[1],
+                base_quat.GetImaginary()[2],
+            ]
+        )
+
         lula = LulaKinematicsSolver(
             robot_description_path=DESCRIPTION_PATH,
             urdf_path=URDF_PATH,
@@ -705,24 +737,33 @@ class P3020PickPlaceAgent:
         self._set_home_pose()
 
     def _set_home_pose(self):
-        """Set the arm to its authored home pose (HOME_JOINT_DEG).
+        """Adopt the arm's authored resting pose straight from the map.
 
         Previously this computed a camera-scan pose via 200 IK steps and
         used whatever that converged to as home -- which silently
         overwrote the pose the user had deliberately saved into the map,
-        every time main_mission.py started. Now it just sets that saved
-        pose directly.
+        every time main_mission.py started. A later fix replaced that with
+        a hardcoded HOME_JOINT_DEG dict re-measured from the map, but the
+        map's arm pose kept getting re-tuned, so the hardcoded numbers kept
+        going stale. Reading get_joint_positions() right after initialize()
+        (before anything else moves the arm) picks up whatever pose is
+        currently authored in the map, with no re-measurement step needed.
         """
 
-        home_q = np.array(
-            [np.radians(HOME_JOINT_DEG[name]) for name in self.robot.dof_names],
-            dtype=float,
-        )
-        self.robot.set_joint_positions(home_q)
-        self.home_q = home_q
+        self.home_q = np.array(self.robot.get_joint_positions(), dtype=float)
 
     def set_ready_pose(self):
+        # set_joint_positions() only teleports the joint state -- it does
+        # NOT move the drive's target angle. With drives this stiff
+        # (DRIVE_STIFFNESS=1e8), the very next physics step yanks the arm
+        # back toward whatever target the drive still holds (stale/default),
+        # not home_q. apply_action() below sets that target too, so the
+        # drive actually holds the teleported pose instead of fighting it.
         self.robot.set_joint_positions(self.home_q)
+        indices = np.arange(len(self.robot.dof_names))
+        self.robot.apply_action(
+            ArticulationAction(joint_positions=self.home_q, joint_indices=indices)
+        )
 
     def on_physics_step(self, dt: float):
         # 유휴 상태에서는 딱히 매 스텝 할 게 없다 (스캔 자세를 유지하는 건
@@ -755,7 +796,7 @@ class P3020PickPlaceAgent:
                 ros_node.publish_image(frame)
                 depth_map = self.camera.get_depth()
                 ros_node.publish_depth(depth_map)
-            rclpy.spin_once(ros_node, timeout_sec=0.0)
+            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
             pixel = ros_node.take_pixel_after(not_before)
             if pixel is not None and depth_map is not None:
                 world_xy = pixel_to_world_xy(pixel, depth_map, self.camera, last_frame)
@@ -790,7 +831,13 @@ class P3020PickPlaceAgent:
         box_xy = self._wait_for_detection(ros_node, VISION_WAIT_TIMEOUT_STEPS, tick_others, dt)
         if box_xy is None:
             return None
-        self._move_to(box_xy, SCAN_HEIGHT, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
+        # 탐지되기 전까진(_wait_for_detection) 팔이 안 움직이고 기본자세
+        # 그대로 유지한다 -- 사용자가 그 기본자세를 AMR 도착 지점이 카메라에
+        # 잘 보이도록 직접 잡아놓은 거라, 실제 위치가 아니라 고정된
+        # SCAN_HEIGHT에서 시작한다고 가정하면 첫 이동에서 그 높이로 확
+        # 점프해버린다. 실제 현재 TCP 높이에서부터 부드럽게 시작한다.
+        current_height = float(get_tcp_pose(self.ee_frame)[2])
+        self._move_to(box_xy, current_height, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         refined = self._wait_for_detection(ros_node, REFINE_WAIT_TIMEOUT_STEPS, tick_others, dt)
         if refined is not None:
             box_xy = refined
@@ -798,13 +845,15 @@ class P3020PickPlaceAgent:
         return box_xy
 
     def run_pick_place(self, ros_node, place_xy_world, scan_xy_world=None,
-                        tick_others=None, dt=1 / 60.0, sorter=None):
+                        tick_others=None, dt=1 / 60.0):
         """스캔(인식) -> 흡착 -> 컨베이어 위로 이동 -> 놓기, 한 사이클 전체.
         (success: bool, message: str) 을 반환한다. 블로킹 함수라서, 실행되는
         동안 매 스텝 tick_others(dt)를 호출해 다른 에이전트(IW Hub)도 계속
         애니메이션되게 한다."""
-        scan_xy_world = scan_xy_world if scan_xy_world is not None else (
-            ROBOT_BASE_POS[:2] + DEFAULT_SCAN_XY
+        scan_xy_world = (
+            scan_xy_world
+            if scan_xy_world is not None
+            else AMR_DELIVERY_POSE_WORLD
         )
 
         self.gripper.detach()
@@ -895,23 +944,19 @@ class P3020PickPlaceAgent:
                 if frame is not None:
                     ros_node.publish_image(frame)
                     ros_node.publish_depth(self.camera.get_depth())
-            rclpy.spin_once(ros_node, timeout_sec=0.0)
+            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
 
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
             step += 1
 
-        if ever_attached and sorter is not None:
-            destination = read_parcel_destination(self.stage, target_box_path)
-            if destination is None:
-                print(
-                    f"[P3020][WARN] {target_box_path} has no "
-                    f"'{PARCEL_DESTINATION_ATTR}' attribute -- sorter not "
-                    "routed for this box"
-                )
-            else:
-                sorter.route_box(destination)
+        # P3020's job ends at placing the box on the conveyor. Physical
+        # sorter routing is decided later, by box_id, once the box actually
+        # reaches each track (WheelSorterController.update_boxes(), driven
+        # every tick from main_mission.py) -- not pre-emptively here by the
+        # "destination" attribute (see docs/sorter_merge/SORTER_MERGE_PLAN.md
+        # section 7/8).
 
         self._return_to_ready_pose(tick_others=tick_others, dt=dt)
 
@@ -926,19 +971,24 @@ class P3020PickPlaceAgent:
 
     def run_until_cargo_empty(self, ros_node, place_xy_world, amr_agent,
                                scan_xy_world=None, tick_others=None, dt=1 / 60.0,
-                               sorter=None):
+                               on_box_placed=None):
         """적재함의 박스를 하나씩 찾아서 컨베이어 위로 옮기고, 기본(스캔)
         자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 박스가 안 보이면 적재함이
         빈 것으로 확정하고 amr_agent에 복귀 신호를 보낸다. 박스 개수는
         가정하지 않는다 -- run_pick_place가 실패할 때마다(=기본 자세에서
-        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다."""
+        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다.
+        on_box_placed(message)는 박스 하나를 성공적으로 옮길 때마다 호출된다
+        (관제타워 PACKAGE_ENTERED 이벤트처럼, 호출 쪽이 박스 단위 후크가
+        필요할 때 쓴다)."""
         while True:
             success, message = self.run_pick_place(
                 ros_node, place_xy_world, scan_xy_world=scan_xy_world,
-                tick_others=tick_others, dt=dt, sorter=sorter,
+                tick_others=tick_others, dt=dt,
             )
             if success:
                 print(f"[P3020] {message} -- 다음 박스 확인")
+                if on_box_placed:
+                    on_box_placed(message)
                 continue
 
             print(

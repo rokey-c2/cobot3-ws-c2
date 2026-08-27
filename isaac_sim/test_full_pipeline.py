@@ -45,7 +45,7 @@ from project_config.robot_config import (
 )
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Parcel_Sorting_Map_real_real_final_final" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "Final_Real_Map" / "Parcel_Sorting_Map.usd"
 
 # TEMP TEST VALUE -- must stay within P3020 arm #1's 2.0 m reach of its real
 # measured base (0.2, -1.5, 0.4) and land on the plain conveyor segment
@@ -55,6 +55,7 @@ CONVEYOR_PLACE_XY = (-0.5, 0.0)
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
+enable_extension("isaacsim.asset.gen.conveyor")
 simulation_app.update()
 
 from cargo.cargo_pod_physics import add_parcel_asset_scaled
@@ -205,10 +206,10 @@ def main():
     dt = float(world.get_physics_dt())
 
     rclpy.init(args=None)
-    p3020_bridge = P3020RosBridge()
     fake_detector = FakeBoxDetectorNode(
         p3020_agent.camera, stage, iw_hub_mission_module.CARGO_PRIM_PATH
     )
+    p3020_bridge = P3020RosBridge(fake_detector)
 
     def tick_all(step_dt):
         agent.on_physics_step(step_dt)
@@ -272,7 +273,6 @@ def main():
         tick_all(dt)
         world.step(render=True)
 
-    p3020_bridge.destroy_node()
     fake_detector.destroy_node()
     if rclpy.ok():
         rclpy.shutdown()

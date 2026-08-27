@@ -1,5 +1,9 @@
 # Agent Instructions (real_scenario)
 
+## Language
+
+답변은 한글로 할 것.
+
 Before creating, editing, or deleting ANY file in this project, ask the
 user for explicit permission first and wait for a clear yes. This applies
 to every file change, no exceptions -- bug fixes, config updates,

@@ -28,6 +28,12 @@ python3 -m venv --system-site-packages "$VENV_DIR"
 "$VENV_DIR/bin/python3" -m pip install --upgrade pip
 "$VENV_DIR/bin/python3" -m pip install -r "$REQUIREMENTS"
 
+if ! "$VENV_DIR/bin/python3" -c 'import cv2' >/dev/null 2>&1; then
+    echo "[ERROR] OpenCV for the laser HUD/MJPEG stream is not available"
+    echo "Ubuntu 24.04 example: sudo apt install -y python3-opencv"
+    exit 1
+fi
+
 echo ""
 echo "[Vision] setup complete"
 echo "Activate with: source $VENV_DIR/bin/activate"
