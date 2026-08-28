@@ -1,2 +1,3 @@
-# Non-ROS Python dependency used by scripts/ros2_mqtt_adapter.py.
-paho-mqtt
+# Host-side MQTT dependency used by pose sync and ROS2<->MQTT adapters.
+# CallbackAPIVersion.VERSION2 is used by the current code, so paho-mqtt 2.x is required.
+paho-mqtt>=2.0,<3
