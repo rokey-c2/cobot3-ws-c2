@@ -65,28 +65,81 @@ flowchart LR
 
 # 2. 전체 Flow Chart
 
+> FigJam 원본: [P3020 Pick & Place Mission Flow](https://www.figma.com/board/1833sIkwqEzvNOsQS1MEag/P3020-Pick---Place-Mission-Flow?node-id=0-1)
+>
+> 제출본에서도 전체 흐름과 YES/NO 분기를 바로 확인할 수 있도록 FigJam의 Mission Flow를 Mermaid로 재구성했습니다.
+
 ```mermaid
 flowchart TD
-    A[System Start] --> B[Docker\nPostgreSQL / MQTT / FastAPI]
-    B --> C[Isaac Sim Warehouse Load]
-    C --> D[IW Hub / P3020 / Conveyor / Sorter Ready]
-    D --> E[Nav2 + AMCL Ready]
-    E --> F[Pose Sync]
-    F --> G[IW Hub Cargo 접근]
-    G --> H[Lift Up]
-    H --> I[Nav2로 P3020 IN 이동]
-    I --> J[P3020 IN Box Detection]
-    J --> K[P3020 Pick & Place]
-    K --> L[Main Conveyor]
-    L --> M[Wheel Sorter 분류]
-    M --> N[P3020 OUT 처리]
-    N --> O[Control Tower 상태 반영]
-    O --> P[IW Hub Cargo 복귀]
-    P --> Q[정밀 도킹]
-    Q --> R[Lift Down]
-    R --> S[IW Hub Spawn 복귀]
-    S --> T[Mission Complete]
+    START([START]) --> READY[Isaac Sim / ROS2 / Nav2 / YOLO 준비]
+    READY --> SPAWN[IW Hub Spawn]
+    SPAWN --> DOCK[Cargo Pod 접근 및 정밀 도킹]
+    DOCK --> LIFT[Lift Up]
+
+    LIFT --> PICKUP{PICKUP_DONE?}
+    PICKUP -- NO --> PICKUP_RETRY[재도킹 / Lift 재시도]
+    PICKUP_RETRY --> PICKUP
+    PICKUP -- YES --> NAV_GOAL[Nav2 Goal 전송]
+
+    NAV_GOAL --> NAV[장애물 회피 자율주행]
+    NAV --> ARRIVE{P3020 작업 위치 도착?}
+    ARRIVE -- NO --> NAV_RECOVERY[Nav2 Recovery / 재시도]
+    NAV_RECOVERY --> NAV
+    ARRIVE -- YES --> DOCK_OK[CONVEYOR_DOCK 확인 및 작업 높이 조정]
+
+    DOCK_OK --> ACTION[PickPlace Action Goal 수신]
+    ACTION --> SCAN[SCANNING\nYOLO + Local Depth 탐지]
+    SCAN --> PIXEL{box_pixel 수신?}
+    PIXEL -- NO --> SCAN
+    PIXEL -- YES --> XYZ[Pixel + Depth 기반 3D 좌표 계산]
+
+    XYZ --> VALID{P3020 가동 범위 및 Parcel Prim 유효?}
+    VALID -- NO --> CHECK_EMPTY[CHECKING_EMPTY\n5초 재확인]
+    VALID -- YES --> APPROACH[APPROACH → DESCEND]
+    APPROACH --> GRASP[GRASP → LIFT]
+    GRASP --> MOVE[MOVE → PLACE]
+
+    MOVE --> RESULT{Pick & Place 성공?}
+    RESULT -- NO --> P3020_FAIL[P3020 FAIL]
+    RESULT -- YES --> PACKAGE[DONE_SUCCESS\nPACKAGE_ENTERED]
+
+    PACKAGE --> MORE{다음 박스 검출?}
+    MORE -- YES --> SCAN
+    MORE -- NO --> CHECK_EMPTY
+    CHECK_EMPTY --> EMPTY{CARGO_EMPTY?}
+    EMPTY -- NO --> SCAN
+    EMPTY -- YES --> RETURN_NAV[Nav2로 Cargo 복귀]
+
+    RETURN_NAV --> REDOCK[Cargo 원위치 정밀 도킹]
+    REDOCK --> VERIFY[Cargo Pose 검증]
+    VERIFY --> LIFT_DOWN[Lift Down]
+    LIFT_DOWN --> HOME[IW Hub Spawn 복귀]
+    HOME --> COMPLETE([AMR MISSION COMPLETE])
+
+    PACKAGE --> CONVEYOR[Main Conveyor 이송]
+    CONVEYOR --> SORT_ID{Wheel Sorter box_id}
+    SORT_ID -- 1 --> REGION_A[Region A 분류]
+    SORT_ID -- 2 --> REGION_B[Region B 분류]
+    SORT_ID -- 3 --> REGION_C[Region C 분류]
+    SORT_ID -- 4 --> STRAIGHT[직진 / Reject Line]
+
+    STRAIGHT --> P3020_OUT[P3020 OUT Pick & Place]
+    P3020_OUT --> BIN{Reject Bin 2×2 빈 Slot?}
+    BIN -- YES --> BIN_PLACE[빈 Slot에 Place]
+    BIN -- NO --> BIN_FULL[BIN_FULL\nBin 교체 로직 미구현]
+
+    REGION_A --> CONTROL[Control Tower 상태 반영]
+    REGION_B --> CONTROL
+    REGION_C --> CONTROL
+    BIN_PLACE --> CONTROL
+    BIN_FULL --> CONTROL
+
+    P3020_FAIL --> FAIL([MISSION FAIL])
 ```
+
+### 핵심 Mission 흐름
+
+`IW Hub Spawn → Cargo Pod 접근 → Lift Up → PICKUP_DONE → Nav2 자율주행 → P3020 작업 위치 → YOLO 박스 검출 → box_pixel → Pixel + Depth → 3D 좌표 → P3020 반복 Pick & Place → CARGO_EMPTY → Cargo 원위치 복귀/정밀 도킹 → Lift Down → IW Hub Spawn 복귀 → COMPLETE`
 
 ---
 
@@ -598,7 +651,6 @@ ros2_ws/src/
 
 ```bash
 sudo docker compose down --remove-orphans
-
 rm -rf ros2_ws/build
 rm -rf ros2_ws/install
 rm -rf ros2_ws/log
