@@ -1,0 +1,4 @@
+# Host-side Python dependencies for this repository.
+# ROS2 Python modules are provided by ROS 2 Jazzy; backend dependencies are installed in Docker from backend/requirements.txt.
+-r requirements/vision.txt
+-r requirements/ros2-adapter.txt
