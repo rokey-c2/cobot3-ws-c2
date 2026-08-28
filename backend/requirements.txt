@@ -1,6 +1,7 @@
-fastapi
-uvicorn
-pydantic
-psycopg[binary]
-python-dotenv
-paho-mqtt
+# FastAPI Control Tower backend dependencies.
+fastapi>=0.110,<1
+uvicorn>=0.29,<1
+pydantic>=2,<3
+psycopg[binary]>=3,<4
+python-dotenv>=1,<2
+paho-mqtt>=2.0,<3
