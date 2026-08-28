@@ -14,12 +14,20 @@ from pathlib import Path
 
 from isaacsim import SimulationApp
 
-from project_config.simulation_config import HEADLESS
+from project_config.simulation_config import (
+    HEADLESS,
+    LAUNCH_CONFIG,
+    PHYSICS_DT,
+    RENDERING_DT,
+    apply_render_optimizations,
+    disable_unused_cameras,
+)
 
 
-simulation_app = SimulationApp({"headless": HEADLESS})
+simulation_app = SimulationApp(LAUNCH_CONFIG)
 
 import omni.graph.core as og
+import omni.usd
 
 from isaacsim.core.api import World
 from isaacsim.core.utils.extensions import enable_extension
@@ -40,6 +48,8 @@ enable_extension("omni.physx.ui")
 enable_extension("omni.physx.supportui")
 enable_extension("omni.usdphysics.ui")
 simulation_app.update()
+
+apply_render_optimizations()
 
 
 def _create_clock_graph():
@@ -75,7 +85,13 @@ def main():
     for _ in range(5):
         simulation_app.update()
 
-    world = World(stage_units_in_meters=1.0)
+    disable_unused_cameras(omni.usd.get_context().get_stage())
+
+    world = World(
+        stage_units_in_meters=1.0,
+        physics_dt=PHYSICS_DT,
+        rendering_dt=RENDERING_DT,
+    )
     _create_clock_graph()
 
     world.reset()

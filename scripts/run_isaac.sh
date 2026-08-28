@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ISAAC_SIM_DIR="${ISAAC_SIM_DIR:-$HOME/isaacsim}"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_isaac_env.sh"
 
-if [ ! -x "$ISAAC_SIM_DIR/python.sh" ]; then
-    echo "[ERROR] Isaac Sim python.sh not found: $ISAAC_SIM_DIR/python.sh"
-    echo "Set ISAAC_SIM_DIR if Isaac Sim is installed somewhere else."
-    exit 1
-fi
-
-cd "$ROOT_DIR/isaac_sim"
 exec "$ISAAC_SIM_DIR/python.sh" main.py

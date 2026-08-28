@@ -49,7 +49,6 @@ import omni.usd
 from pxr import Gf, Usd, UsdPhysics
 
 import rclpy
-from rclpy.qos import qos_profile_sensor_data
 from rclpy.time import Time
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PointStamped
@@ -89,6 +88,10 @@ from robots.p3020.p3020_mission_agent import (
     DRIVE_MAX_FORCE,
     DRIVE_STIFFNESS,
     EE_LINK_NAME,
+    LATEST_IMAGE_QOS,
+    MAX_PIXEL_AGE_S,
+    MOTION_RENDER_EVERY,
+    P3020_CAMERA_RESOLUTION,
     P3020_OUT_BASE_POS,
     P3020_OUT_BASE_QUAT,
     PARCEL_HALF_HEIGHT,
@@ -101,6 +104,7 @@ from robots.p3020.p3020_mission_agent import (
     APPROACH_PITCH_DEG,
     APPROACH_ROLL_DEG,
     PickPlaceFSM,
+    _disable_baked_camera_graphs,
     clamp_to_safe_limits,
     find_nearest_parcel,
     get_tcp_pose,
@@ -190,7 +194,15 @@ STATUS_TOPIC = "/arm_b/pick_place_status"
 # 적재함 비움과 달리, 컨베이어는 계속 새 박스가 들어올 수 있는 라인이라
 # "완전히 끝났다"는 개념이 없다). 그래서 짧게만 기다리고 실패 리턴한다 --
 # 호출 쪽(main_mission.py)이 다음 tick에 다시 부르면 된다.
-IDLE_SCAN_TIMEOUT_STEPS = 90
+IDLE_SCAN_TIMEOUT_STEPS = 30
+
+# Only read the camera back to the CPU / publish it every Nth sim step while
+# scanning. camera.get_frame()/get_depth() each force a GPU->CPU texture copy
+# ("OgnSdPostRenderVarToHost ... counter-performant"), and the external YOLO
+# detector runs far slower than the sim loop anyway. p3020_in already does
+# this (main_mission.VISION_RGB_PUBLISH_INTERVAL_STEPS); this is the p3020_out
+# equivalent, which previously read + published every single step.
+VISION_PUBLISH_INTERVAL_STEPS = 6
 
 
 def base_relative(xy_world: np.ndarray) -> np.ndarray:
@@ -214,8 +226,8 @@ class P3020OutRosBridge:
 
     def __init__(self, node):
         self._node = node
-        self.image_pub = node.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
-        self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
+        self.image_pub = node.create_publisher(Image, IMAGE_TOPIC, LATEST_IMAGE_QOS)
+        self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, LATEST_IMAGE_QOS)
         self.pixel_sub = node.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
         self.latest_pixel = None
         self.status_pub = node.create_publisher(String, STATUS_TOPIC, 10)
@@ -233,6 +245,12 @@ class P3020OutRosBridge:
             return None
         cx, cy, conf, stamp = pixel
         if stamp < not_before:
+            return None
+        age_s = (self._node.get_clock().now().nanoseconds - stamp.nanoseconds) / 1e9
+        if age_s > MAX_PIXEL_AGE_S:
+            # Pipeline lagged -- box has moved since this detection. Wait for
+            # a current one instead of grasping a stale position.
+            self.latest_pixel = None
             return None
         self.latest_pixel = None
         return (cx, cy, conf)
@@ -293,6 +311,10 @@ class P3020UnloadToBinAgent:
         self.home_q = None
         self.planner = OutboundLoadPlanner(REJECT_BIN_PLANNER_CONFIG)
         self.bin_pose = REJECT_BIN_POSE
+        # Conveyor freeze state for the current try_unload_cycle (see there).
+        self._conveyor = None
+        self._conveyor_was_running = False
+        self._conveyor_halted = False
 
     def _configure_arm_drives(self):
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)):
@@ -306,6 +328,11 @@ class P3020UnloadToBinAgent:
                     drive.GetMaxForceAttr().Set(DRIVE_MAX_FORCE)
 
     def setup(self):
+        # p3020_out 애셋에도 같은 baked camera-graph가 있어 /rgb·/arm_b/rgb 에
+        # 중복 발행할 수 있다. stage 전체를 훑는 함수라 한 번 더 불러도 안전
+        # (이미 바뀐 토픽 이름은 걸리지 않는다).
+        _disable_baked_camera_graphs(self.stage)
+
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(GRIPPER_BODY_PATH)):
             attr = prim.GetAttribute("physics:collisionEnabled")
             if attr and attr.IsValid():
@@ -348,7 +375,10 @@ class P3020UnloadToBinAgent:
             end_effector_frame_name=EE_LINK_NAME,
         )
 
-        self.camera = CameraInterface(prim_path=CAMERA_PRIM_PATH, resolution=(640, 480))
+        self.camera = CameraInterface(
+            prim_path=CAMERA_PRIM_PATH,
+            resolution=P3020_CAMERA_RESOLUTION,
+        )
         self.camera.initialize()
 
     def post_reset(self):
@@ -383,19 +413,20 @@ class P3020UnloadToBinAgent:
             self.robot.apply_action(action)
             if tick_others:
                 tick_others(dt)
-            self.world.step(render=True)
+            self.world.step(render=(i % MOTION_RENDER_EVERY == 0))
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
         not_before = ros_node.get_clock().now()
         depth_map = None
         last_frame = None
-        for _ in range(timeout_steps):
-            frame = self.camera.get_frame()
-            if frame is not None:
-                last_frame = frame
-                ros_node.publish_image(frame)
-                depth_map = self.camera.get_depth()
-                ros_node.publish_depth(depth_map)
+        for step in range(timeout_steps):
+            if step % VISION_PUBLISH_INTERVAL_STEPS == 0:
+                frame = self.camera.get_frame()
+                if frame is not None:
+                    last_frame = frame
+                    ros_node.publish_image(frame)
+                    depth_map = self.camera.get_depth()
+                    ros_node.publish_depth(depth_map)
             rclpy.spin_once(ros_node._node, timeout_sec=0.0)
             pixel = ros_node.take_pixel_after(not_before)
             if pixel is not None and depth_map is not None:
@@ -425,12 +456,16 @@ class P3020UnloadToBinAgent:
                 self.robot.apply_action(action)
             if tick_others:
                 tick_others(dt)
-            self.world.step(render=True)
+            self.world.step(render=(i % MOTION_RENDER_EVERY == 0))
 
     def _locate_box_and_descend(self, ros_node, tick_others, dt):
         box_xy = self._wait_for_detection(ros_node, IDLE_SCAN_TIMEOUT_STEPS, tick_others, dt)
         if box_xy is None:
             return None
+        if self._conveyor_was_running and not self._conveyor_halted:
+            self._conveyor.stop()
+            self._conveyor_halted = True
+            print("   [p3020_out] 박스 확인 -> 컨베이어 정지 (지연에 무관하게 정확 파지)")
         current_height = float(get_tcp_pose(self.ee_frame)[2])
         self._move_to(box_xy, current_height, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         refined = self._wait_for_detection(ros_node, REFINE_WAIT_TIMEOUT_STEPS, tick_others, dt)
@@ -439,13 +474,30 @@ class P3020UnloadToBinAgent:
         self._move_to(box_xy, SCAN_MID_HEIGHT, APPROACH_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         return box_xy
 
-    def try_unload_cycle(self, ros_node, tick_others=None, dt=1 / 60.0):
+    def try_unload_cycle(self, ros_node, tick_others=None, dt=1 / 60.0, conveyor=None):
         """컨베이어를 한 번 살펴서, 박스가 있으면 적재함 다음 칸에 놓는다.
         (success: bool, message: str) 반환. main_mission.py의 while 루프에서
         매 tick 호출하면 된다 -- 박스가 없으면 짧게(IDLE_SCAN_TIMEOUT_STEPS)
         기다리다 실패 리턴하므로, 다음 tick에 다시 시도하는 형태로 계속
-        지켜보는 효과를 낸다."""
+        지켜보는 효과를 낸다.
 
+        conveyor를 넘기면, 박스가 확인된 순간부터 픽이 끝날 때까지 벨트를
+        멈춘다 -- 파이프라인이 밀려도 정지한 박스라면 파지 위치가 안 틀어진다.
+        진입 시점에 STOPPED였으면(관제타워가 세운 상태) 손대지 않는다."""
+
+        self._conveyor = conveyor
+        self._conveyor_was_running = bool(
+            conveyor is not None and conveyor.get_status() == "RUNNING"
+        )
+        self._conveyor_halted = False
+        try:
+            return self._try_unload_cycle_impl(ros_node, tick_others, dt)
+        finally:
+            if self._conveyor_halted and self._conveyor_was_running:
+                conveyor.start()
+                print("   [p3020_out] 컨베이어 재가동")
+
+    def _try_unload_cycle_impl(self, ros_node, tick_others=None, dt=1 / 60.0):
         if self.planner.is_full:
             ros_node.publish_status("BIN_FULL")
             capacity = self.planner.config.capacity

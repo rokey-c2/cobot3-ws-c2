@@ -44,11 +44,37 @@ import omni.usd
 from pxr import Usd, UsdGeom, UsdPhysics, Gf
 
 import rclpy
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import (
+    QoSProfile,
+    QoSHistoryPolicy,
+    QoSReliabilityPolicy,
+)
 from rclpy.time import Time
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PointStamped
 from std_msgs.msg import String
+
+# Publish only the newest camera frame; drop anything the detector could not
+# keep up with. Paired with the matching depth-1 subscriber in
+# box_detector_node.py so /rgb never builds a backlog.
+LATEST_IMAGE_QOS = QoSProfile(
+    history=QoSHistoryPolicy.KEEP_LAST,
+    depth=1,
+    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+)
+
+# A detection older than this (wall clock) is treated as stale even if it
+# arrived after the current wait started -- on a moving conveyor an old
+# pixel back-projects to where the box no longer is. Override with
+# P3020_MAX_PIXEL_AGE_S.
+MAX_PIXEL_AGE_S = float(os.getenv("P3020_MAX_PIXEL_AGE_S", "0.5"))
+
+# During pure arm-transit loops (no detection that step) render only every
+# Nth sim step -- physics still advances every step, only the RTX pass is
+# skipped. 1 restores the old always-render behavior. Note: the RTX LiDAR
+# also updates on render, so a large value briefly lowers scan rate while an
+# arm is moving; 2 is a safe default. Override with P3020_MOTION_RENDER_EVERY.
+MOTION_RENDER_EVERY = max(1, int(os.getenv("P3020_MOTION_RENDER_EVERY", "2")))
 
 from isaacsim.core.prims import SingleArticulation, XFormPrim
 from isaacsim.core.utils.types import ArticulationAction
@@ -63,6 +89,9 @@ sys.path.insert(0, _THIS_DIR)
 sys.path.insert(0, os.path.join(_THIS_DIR, "vision"))
 from contact_gripper import ContactGripper
 from camera import CameraInterface
+
+sys.path.insert(0, _ISAAC_SIM_DIR)
+from project_config.simulation_config import P3020_CAMERA_RESOLUTION
 
 
 # ══════════════════════════════════════════════════════════════
@@ -458,8 +487,8 @@ class P3020RosBridge:
 
     def __init__(self, node):
         self._node = node
-        self.image_pub = node.create_publisher(Image, IMAGE_TOPIC, qos_profile_sensor_data)
-        self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
+        self.image_pub = node.create_publisher(Image, IMAGE_TOPIC, LATEST_IMAGE_QOS)
+        self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, LATEST_IMAGE_QOS)
         self.pixel_sub = node.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
         self.latest_pixel = None
 
@@ -494,6 +523,13 @@ class P3020RosBridge:
                 f"stamp={stamp.nanoseconds} not_before={not_before.nanoseconds} "
                 f"delta_s={(not_before.nanoseconds - stamp.nanoseconds) / 1e9:.3f}"
             )
+            return None
+        age_s = (self._node.get_clock().now().nanoseconds - stamp.nanoseconds) / 1e9
+        if age_s > MAX_PIXEL_AGE_S:
+            # Fresh enough to have started after this wait, but the pipeline
+            # lagged -- discard so the caller keeps waiting for a current one
+            # instead of picking where the box used to be.
+            self.latest_pixel = None
             return None
         self.latest_pixel = None
         return (cx, cy, conf)
@@ -584,36 +620,58 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
     return np.array([world_pos[0], world_pos[1], world_pos[2]])
 
 
-def _disable_baked_camera_graph(stage):
-    """P3020 원본 애셋(P3020_mount_vgp20_rsd455_1)에는 /World/Graph/camra_graph
-    라는 OmniGraph가 이미 박혀 있어서(GUI로 예전에 만들어졌던 게 애셋에 그대로
-    남은 것으로 보임), 이 그래프의 RGBPublish/DepthPublish 노드가 우리
-    P3020RosBridge와 똑같이 /rgb, /depth 에 발행한다 -- 두 발행자가 번갈아
-    도착해서 화면이 깜빡이거나(카메라 두 개가 "충돌"하는 것처럼 보임) rqt로
-    아예 안 보이는 원인이 될 수 있다. p3020_pick_place_poc.py(단독 스크립트)
-    에서 이미 겪고 고쳤던 문제인데, 통합 맵으로 포팅할 때 이 수정을 옮기는
-    걸 빠뜨렸었다. 통합 맵에서는 이 그래프가 /World/Graph가 아니라
-    /World/World1/Graph 밑에 있다(P3020 전체가 World1 하위에 참조돼 있어서).
+_BAKED_PUBLISH_NODE_NAMES = ("RGBPublish", "DepthPublish", "CameraInfoPublish")
+_OUR_CAMERA_TOPICS = {
+    "/rgb", "/depth", "/camera_info",
+    "/arm_b/rgb", "/arm_b/depth", "/arm_b/camera_info",
+}
 
-    SetActive(False)만으로는 안 꺼지는 게 확인된 적이 있어서(OmniGraph 평가가
-    비활성화를 바로 반영 안 함), 그래프는 계속 돌게 두더라도 토픽 이름 자체를
-    바꿔서 우리 토픽과 절대 안 겹치게 한다. 자식 노드의 토픽 이름을 먼저
-    바꾸고 나서 부모를 비활성화해야 한다 (반대로 하면 자식 prim이 invalid가
-    되어 못 찾는다)."""
-    graph_prim = stage.GetPrimAtPath("/World/World1/Graph")
-    if not graph_prim.IsValid():
-        return
-    renamed = 0
-    for node_name in ("RGBPublish", "DepthPublish", "CameraInfoPublish"):
-        node_prim = stage.GetPrimAtPath(f"/World/World1/Graph/camra_graph/{node_name}")
-        if not node_prim.IsValid():
+
+def _disable_baked_camera_graphs(stage):
+    """P3020 애셋(P3020_mount_vgp20_rsd455_1)에는 카메라 OmniGraph(camra_graph)가
+    박혀 있고, 그 RGBPublish/DepthPublish 노드가 우리 P3020RosBridge와 같은
+    토픽(/rgb, /depth, /arm_b/rgb ...)에 "독자적으로" 발행한다. 두 발행자가
+    번갈아 도착하면 rqt에서 카메라 두 개가 깜빡이는 것처럼 보이고, YOLO가
+    엉뚱한 프레임(대개 검은 화면이거나 다른 카메라 시점)을 받아서 P3020가
+    박스를 못 잡는다. 도메인/다른 사용자와는 무관 -- 같은 Isaac 프로세스 안의
+    두 번째 발행자다.
+
+    맵을 다시 저장할 때마다 이 그래프 경로가 바뀐다(/World/Graph ->
+    /World/World1/Graph -> 현재 Final_Real_Map 은 /World/p3020_in/... ,
+    /World/p3020_out/... 밑). 그래서 고정 경로 대신 스테이지 전체를 훑어서
+    우리 토픽과 겹치는 publish 노드의 inputs:topicName 을 바꿔 충돌을 없앤다.
+    (SetActive(False) 는 OmniGraph 평가에 바로 반영이 안 돼서 토픽 이름 변경이
+    확실하다 -- p3020_pick_place_poc.py 에서 확인된 방식.)"""
+    renamed = []
+    for prim in stage.Traverse():
+        if prim.GetName() not in _BAKED_PUBLISH_NODE_NAMES:
             continue
-        attr = node_prim.GetAttribute("inputs:topicName")
-        if attr.IsValid():
-            attr.Set(f"/_disabled_baked_graph{attr.Get()}")
-            renamed += 1
-    graph_prim.SetActive(False)
-    print(f"   camera graph 비활성화 (/World/World1/Graph, 토픽 이름 {renamed}개 변경)")
+        attr = prim.GetAttribute("inputs:topicName")
+        if not (attr and attr.IsValid()):
+            continue
+        topic = attr.Get()
+        if not topic:
+            continue
+        path_l = prim.GetPath().pathString.lower()
+        leaf = "/" + str(topic).lstrip("/").split("/")[-1]
+        # Exact collision with our topics, or a *.../rgb|depth|camera_info
+        # publish node that sits inside the P3020 asset's baked "camra_graph"
+        # (the typo is in the asset). The camra_graph guard keeps this from
+        # touching the AMR's front_stereo_camera ROS graph or anything else.
+        if str(topic) in _OUR_CAMERA_TOPICS or (
+            leaf in ("/rgb", "/depth", "/camera_info") and "camra_graph" in path_l
+        ):
+            attr.Set(f"/_disabled_baked{topic}")
+            renamed.append(f"{prim.GetPath()} ({topic})")
+
+    if renamed:
+        print(f"   [camera] baked camera-graph publisher 무력화: {renamed}")
+    else:
+        print("   [camera] baked camera-graph publisher 없음 (또는 이미 무력화됨)")
+
+
+# 예전 이름 (호출부 호환용)
+_disable_baked_camera_graph = _disable_baked_camera_graphs
 
 
 class P3020PickPlaceAgent:
@@ -647,7 +705,7 @@ class P3020PickPlaceAgent:
                     drive.GetMaxForceAttr().Set(DRIVE_MAX_FORCE)
 
     def setup(self):
-        _disable_baked_camera_graph(self.stage)
+        _disable_baked_camera_graphs(self.stage)
 
         self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)
         self._configure_arm_drives()
@@ -720,7 +778,10 @@ class P3020PickPlaceAgent:
             end_effector_frame_name=EE_LINK_NAME,
         )
 
-        self.camera = CameraInterface(prim_path=CAMERA_PRIM_PATH, resolution=(640, 480))
+        self.camera = CameraInterface(
+            prim_path=CAMERA_PRIM_PATH,
+            resolution=P3020_CAMERA_RESOLUTION,
+        )
         self.camera.initialize()
 
     def post_reset(self):
@@ -783,7 +844,7 @@ class P3020PickPlaceAgent:
             self.robot.apply_action(action)
             if tick_others:
                 tick_others(dt)
-            self.world.step(render=True)
+            self.world.step(render=(i % MOTION_RENDER_EVERY == 0))
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
         not_before = ros_node.get_clock().now()
@@ -825,7 +886,7 @@ class P3020PickPlaceAgent:
                 self.robot.apply_action(action)
             if tick_others:
                 tick_others(dt)
-            self.world.step(render=True)
+            self.world.step(render=(i % MOTION_RENDER_EVERY == 0))
 
     def _locate_box_and_descend(self, ros_node, scan_xy_world, tick_others, dt):
         box_xy = self._wait_for_detection(ros_node, VISION_WAIT_TIMEOUT_STEPS, tick_others, dt)

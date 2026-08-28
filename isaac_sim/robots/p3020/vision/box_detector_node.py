@@ -41,9 +41,18 @@ sys.path.insert(0, _THIS_DIR)
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PointStamped
+
+# Depth-1 best-effort: when inference is slower than the camera frame rate,
+# always drop straight to the newest frame instead of working through a
+# backlog. A queue here is the main reason /box_pixel lags behind the sim.
+LATEST_IMAGE_QOS = QoSProfile(
+    history=QoSHistoryPolicy.KEEP_LAST,
+    depth=1,
+    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+)
 
 from object_detector import ObjectDetector
 
@@ -71,12 +80,16 @@ class BoxDetectorNode(Node):
         self.detector = ObjectDetector(model_path, conf_threshold=conf_threshold)
 
         # 카메라 퍼블리셔는 보통 sensor-data QoS(best effort)를 쓴다.
+        # depth=1 로 받아서 밀린 프레임은 버리고 항상 최신만 추론한다.
         self.image_sub = self.create_subscription(
-            Image, image_topic, self.image_callback, qos_profile_sensor_data
+            Image, image_topic, self.image_callback, LATEST_IMAGE_QOS
         )
         self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
 
-        self.get_logger().info(f"listening: {image_topic} | publishing: {pixel_topic}")
+        self.get_logger().info(
+            f"listening: {image_topic} | publishing: {pixel_topic} | "
+            f"provider: {self.detector.active_provider} | conf_threshold: {conf_threshold}"
+        )
 
     @staticmethod
     def imgmsg_to_rgb(msg: Image):
@@ -101,10 +114,19 @@ class BoxDetectorNode(Node):
             )
             return
 
+        h, w = rgb.shape[:2]
         det = self.detector.detect(rgb)
         if det is None:
+            # 왜 못 잡는지 보이게: 프레임은 들어오는데 임계값을 못 넘는 건지,
+            # 박스가 화면에 없어서 후보 자체가 낮은 건지 구분된다.
+            self.get_logger().info(
+                f"no box  image={w}x{h}  best_conf={self.detector.last_max_conf:.3f} "
+                f"< threshold  (candidates above: {self.detector.last_num_above})",
+                throttle_duration_sec=1.0,
+            )
             return
 
+        name = self.detector.class_names[0]
         stamped = PointStamped()
         stamped.header.stamp = msg.header.stamp   # 어느 /rgb 프레임에서 나온 결과인지 echo
         stamped.point.x = det["cx"]
@@ -112,7 +134,9 @@ class BoxDetectorNode(Node):
         stamped.point.z = det["conf"]
         self.pixel_pub.publish(stamped)
         self.get_logger().info(
-            f"box detected  pixel=({det['cx']:.1f},{det['cy']:.1f})  conf={det['conf']:.3f}"
+            f"detected '{name}'  conf={det['conf']:.3f}  "
+            f"center=({det['cx']:.1f},{det['cy']:.1f})  "
+            f"bbox={det['w']:.0f}x{det['h']:.0f}  image={w}x{h}"
         )
 
 

@@ -14,9 +14,16 @@ from pathlib import Path
 
 from isaacsim import SimulationApp
 
-from project_config.simulation_config import HEADLESS
+from project_config.simulation_config import (
+    HEADLESS,
+    LAUNCH_CONFIG,
+    PHYSICS_DT,
+    RENDERING_DT,
+    apply_render_optimizations,
+    disable_unused_cameras,
+)
 
-simulation_app = SimulationApp({"headless": HEADLESS})
+simulation_app = SimulationApp(LAUNCH_CONFIG)
 
 import omni.graph.core as og
 import omni.usd
@@ -63,6 +70,8 @@ enable_extension("isaacsim.robot.wheeled_robots")
 # anything, so the belt never actually moves.
 enable_extension("isaacsim.asset.gen.conveyor")
 simulation_app.update()
+
+apply_render_optimizations()
 
 from cargo.cargo_pod_physics import add_parcel_asset_scaled
 from equipment.conveyor.conveyor_controller import ConveyorController
@@ -529,7 +538,13 @@ def main():
     for _ in range(5):
         simulation_app.update()
 
-    world = World(stage_units_in_meters=1.0)
+    disable_unused_cameras(omni.usd.get_context().get_stage())
+
+    world = World(
+        stage_units_in_meters=1.0,
+        physics_dt=PHYSICS_DT,
+        rendering_dt=RENDERING_DT,
+    )
 
     _create_clock_graph()
 
@@ -691,6 +706,7 @@ def main():
                     p3020_out_bridge,
                     tick_others=tick_iw_hub_agents,
                     dt=dt,
+                    conveyor=conveyor,
                 )
                 if out_success:
                     print(f"[P3020_OUT] result: {out_message}")

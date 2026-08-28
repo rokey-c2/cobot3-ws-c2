@@ -7,14 +7,43 @@
 결과 좌표는 다시 원본 프레임 좌표로 역변환한다.
 """
 
+import os
+
 import numpy as np
 import onnxruntime as ort
 
 
 class ObjectDetector:
     def __init__(self, model_path: str, input_size: int = 640, conf_threshold: float = 0.5):
-        self._session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+        opts = ort.SessionOptions()
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        # A single 640x640 YOLO forward pass does not scale to all 24 logical
+        # cores -- thread sync overhead makes it slower past ~6. Override with
+        # YOLO_ORT_THREADS if the box PC differs.
+        opts.intra_op_num_threads = int(os.getenv("YOLO_ORT_THREADS", "6"))
+        opts.inter_op_num_threads = 1
+
+        # Prefer CUDA / TensorRT when an onnxruntime-gpu build is installed
+        # (pip install onnxruntime-gpu) -- drops inference from ~100 ms to
+        # ~15 ms, which is the main source of stale detections. Falls back to
+        # CPU automatically when the providers are not available.
+        available = ort.get_available_providers()
+        providers = [
+            p for p in ("TensorrtExecutionProvider", "CUDAExecutionProvider")
+            if p in available
+        ] + ["CPUExecutionProvider"]
+
+        self._session = ort.InferenceSession(
+            model_path, sess_options=opts, providers=providers
+        )
         self._input_name = self._session.get_inputs()[0].name
+        self.active_provider = self._session.get_providers()[0]
+        # single-class model ("box"); kept as a list so a future multi-class
+        # export just needs the names filled in.
+        self.class_names = ["box"]
+        self.last_max_conf = 0.0
+        self.last_num_above = 0
         self._input_size = input_size
         self._conf_threshold = conf_threshold
 
@@ -54,6 +83,11 @@ class ObjectDetector:
         blob, scale, pad_x, pad_y = self._preprocess(image_rgba)
         output = self._session.run(None, {self._input_name: blob})[0]  # [1, 5, 8400]
         preds = output[0].T  # [8400, 5] -> (cx, cy, w, h, conf)
+
+        # Diagnostics for "why isn't it detecting?" -- the best raw score and
+        # how many anchors cleared the threshold, regardless of the result.
+        self.last_max_conf = float(preds[:, 4].max()) if len(preds) else 0.0
+        self.last_num_above = int((preds[:, 4] >= self._conf_threshold).sum())
 
         mask = preds[:, 4] >= self._conf_threshold
         preds = preds[mask]

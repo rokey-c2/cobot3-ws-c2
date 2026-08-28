@@ -20,9 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from isaacsim import SimulationApp
 
-from project_config.simulation_config import HEADLESS
+from project_config.simulation_config import (
+    HEADLESS,
+    LAUNCH_CONFIG,
+    PHYSICS_DT,
+    RENDERING_DT,
+    apply_render_optimizations,
+    disable_unused_cameras,
+)
 
-simulation_app = SimulationApp({"headless": HEADLESS})
+simulation_app = SimulationApp(LAUNCH_CONFIG)
 
 import omni.usd
 import numpy as np
@@ -46,6 +53,8 @@ enable_extension("isaacsim.sensors.rtx")
 enable_extension("isaacsim.robot.wheeled_robots")
 enable_extension("isaacsim.asset.gen.conveyor")
 simulation_app.update()
+
+apply_render_optimizations()
 
 from cargo.cargo_pod_physics import add_parcel_asset_scaled
 import robots.iw_hub.iw_hub_mission_agent as iw_hub_mission_module
@@ -111,8 +120,14 @@ def main():
     for _ in range(5):
         simulation_app.update()
 
-    world = World(stage_units_in_meters=1.0)
     stage = omni.usd.get_context().get_stage()
+    disable_unused_cameras(stage)
+
+    world = World(
+        stage_units_in_meters=1.0,
+        physics_dt=PHYSICS_DT,
+        rendering_dt=RENDERING_DT,
+    )
 
     conveyor = ConveyorController()
     sorter = WheelSorterController()
