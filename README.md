@@ -987,7 +987,6 @@ cobot3-ws-c2/
 ## 주요 문서
 
 - `docs/new_pc_setup.md`
-- `docs/live_monitor.md`
 - `docs/conveyor_sorter_control.md`
 - `docs/scenario/amr_pose_sync_complete.md`
 - `docs/scenario/control_tower_live_integration.md`
