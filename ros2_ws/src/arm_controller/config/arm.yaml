@@ -1,6 +1,16 @@
-namespaces:
-  inbound: /arm_in_01
-  loading_a: /arm_a_01
-  loading_b: /arm_b_01
+# Reference for the current P3020 runtime interfaces.
+action:
+  pick_place: /p3020/pick_place
+
+vision:
+  p3020_in:
+    rgb: /rgb
+    box_pixel: /box_pixel
+  p3020_out:
+    topic_prefix: /arm_b
+    rgb: /arm_b/rgb
+    depth: /arm_b/depth
+    box_pixel: /arm_b/box_pixel
+    pick_place_status: /arm_b/pick_place_status
 
 gripper: suction

@@ -1,12 +1,7 @@
+# Reference for the current single-AMR runtime configuration.
 ros_domain_id: 110
 
-namespaces:
-  inbound:
-    - /amr_in_01
-    - /amr_in_02
-  outbound_a:
-    - /amr_out_a_01
-    - /amr_out_a_02
-  outbound_b:
-    - /amr_out_b_01
-    - /amr_out_b_02
+robots:
+  - name: amr_a
+    namespace: /amr_a
+    role: inbound_amr
