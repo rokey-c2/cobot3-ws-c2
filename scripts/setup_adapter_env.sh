@@ -5,7 +5,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="$ROOT_DIR/.venv"
-REQUIREMENTS="$ROOT_DIR/requirements/ros2-adapter.txt"
+REQUIREMENTS="$ROOT_DIR/requirements/ros2_adapter.txt"
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "[ERROR] python3 is not installed"
