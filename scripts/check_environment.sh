@@ -37,7 +37,7 @@ if [ -f "$ROOT_DIR/backend/requirements.txt" ]; then ok "Backend requirements.tx
 if [ -f "$ROOT_DIR/frontend/package.json" ]; then ok "Frontend package.json"; else fail "frontend/package.json missing"; fi
 if [ -f "$ROOT_DIR/frontend/package-lock.json" ]; then ok "Frontend package-lock.json"; else warn "frontend/package-lock.json missing; run npm install once and commit it"; fi
 if [ -f "$ROOT_DIR/requirements/vision.txt" ]; then ok "Vision requirements"; else fail "requirements/vision.txt missing"; fi
-if [ -f "$ROOT_DIR/requirements/ros2-adapter.txt" ]; then ok "ROS2 MQTT adapter requirements"; else fail "requirements/ros2-adapter.txt missing"; fi
+if [ -f "$ROOT_DIR/requirements/ros2_adapter.txt" ]; then ok "ROS2 MQTT adapter requirements"; else fail "requirements/ros2_adapter.txt missing"; fi
 
 printf '\n'
 if [ "$FAILED" -eq 0 ]; then

@@ -17,7 +17,7 @@ source /opt/ros/jazzy/setup.bash
 unset GTK_PATH
 unset GIO_MODULE_DIR
 
-export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-111}"
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
 if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
