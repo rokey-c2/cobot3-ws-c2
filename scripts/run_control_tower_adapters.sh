@@ -10,7 +10,7 @@ if [ ! -x "$ROOT_DIR/.venv/bin/python3" ]; then
 fi
 
 source /opt/ros/jazzy/setup.bash
-export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-111}"
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-110}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
 echo "[CONTROL TOWER] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"

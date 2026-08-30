@@ -346,7 +346,7 @@ export ROS_DOMAIN_ID=110
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ```
 
-> 일부 개별 스크립트에는 과거 기본값 `111`이 남아 있을 수 있으므로, 실행 시 위 두 환경변수를 각 터미널에서 명시적으로 export하는 것을 권장합니다.
+> 모든 프로젝트 실행 스크립트의 기본 ROS Domain은 `110`으로 통일되어 있습니다.
 
 ---
 
@@ -594,7 +594,7 @@ requirements.txt
 
 ```text
 requirements/vision.txt
-requirements/ros2-adapter.txt
+requirements/ros2_adapter.txt
 backend/requirements.txt
 frontend/package.json
 frontend/package-lock.json
@@ -986,8 +986,8 @@ cobot3-ws-c2/
 
 ## 주요 문서
 
-- `docs/NEW_PC_SETUP.md`
-- `docs/LIVE_MONITOR.md`
+- `docs/new_pc_setup.md`
+- `docs/live_monitor.md`
 - `docs/conveyor_sorter_control.md`
 - `docs/scenario/amr_pose_sync_complete.md`
 - `docs/scenario/control_tower_live_integration.md`

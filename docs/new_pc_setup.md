@@ -8,7 +8,7 @@ This repository uses more than one dependency system. Do not put every dependenc
 - FastAPI Backend: `backend/requirements.txt` (installed by `backend/Dockerfile`)
 - ROS2 packages: each real ROS package's `package.xml`, installed with `rosdep`
 - P3020 vision extra Python dependency: `requirements/vision.txt`
-- ROS2 MQTT Adapter extra Python dependency: `requirements/ros2-adapter.txt`
+- ROS2 MQTT Adapter extra Python dependency: `requirements/ros2_adapter.txt`
 - PostgreSQL / Mosquitto / Backend services: `compose.yaml`
 - Isaac Sim itself: external prerequisite, expected at `$HOME/isaacsim` unless `ISAAC_SIM_DIR` is set
 - NVIDIA IW Hub ROS workspace: external prerequisite, normally `$HOME/IsaacSim-ros_workspaces/jazzy_ws`
