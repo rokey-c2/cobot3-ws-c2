@@ -272,16 +272,17 @@ flowchart TD
     APPROACH --> GRASP[GRASP → LIFT]
     GRASP --> MOVE[MOVE → PLACE]
 
-    MOVE --> RESULT{Pick & Place 성공?}
-    RESULT -- NO --> P3020_FAIL[P3020 FAIL]
+    MOVE --> RESULT{박스 1개 처리 성공?}
+    RESULT -- NO --> BOX_FAIL[DONE_FAIL\n재Scan / 재확인]
     RESULT -- YES --> PACKAGE[DONE_SUCCESS\nPACKAGE_ENTERED]
+    BOX_FAIL --> CHECK_EMPTY
 
     PACKAGE --> MORE{다음 박스 검출?}
     MORE -- YES --> SCAN
     MORE -- NO --> CHECK_EMPTY
     CHECK_EMPTY --> EMPTY{CARGO_EMPTY?}
     EMPTY -- NO --> SCAN
-    EMPTY -- YES --> RETURN_NAV[Nav2로 Cargo 복귀]
+    EMPTY -- YES --> RETURN_NAV[PickPlace Action Success\nNav2로 Cargo 복귀]
 
     RETURN_NAV --> REDOCK[Cargo 원위치 정밀 도킹]
     REDOCK --> VERIFY[Cargo Pose 검증]
@@ -306,8 +307,6 @@ flowchart TD
     REGION_C --> CONTROL
     BIN_PLACE --> CONTROL
     BIN_FULL --> CONTROL
-
-    P3020_FAIL --> FAIL([MISSION FAIL])
 ```
 
 ### 핵심 Mission 흐름
@@ -323,7 +322,8 @@ flowchart TD
 | OS | Ubuntu 24.04 |
 | NVIDIA Isaac Sim | 5.1.0 |
 | ROS 2 | Jazzy |
-| Python | 3.12 |
+| Python (Host / ROS2) | 3.12 |
+| Python (Isaac Sim Embedded) | 3.11 |
 | ROS Domain | `ROS_DOMAIN_ID=110` |
 | RMW | `rmw_fastrtps_cpp` |
 | Navigation | Nav2 / AMCL |
@@ -522,7 +522,7 @@ iw_hub_navigation
 - Docker Compose plugin (`docker compose`)
 - NVIDIA Isaac Sim ROS Jazzy workspace + `iw_hub_navigation`
 - Git
-- Python 3.12
+- Python 3.12 (Host / ROS2; Isaac Sim embedded Python 3.11은 Isaac Sim에 포함)
 - Node.js 18+
 - npm 9+
 
@@ -607,7 +607,7 @@ paho-mqtt >= 2.0, < 3
 onnxruntime >= 1.18, < 2
 ```
 
-`pose_sync_manager.py`와 ROS2-MQTT adapter는 `paho-mqtt 2.x`의 `CallbackAPIVersion.VERSION2`를 사용합니다.
+`pose_sync_manager.py`는 `paho-mqtt 2.x`의 `CallbackAPIVersion.VERSION2`를 사용하며, ROS2/MQTT Adapter도 `paho-mqtt 2.x` 환경에서 실행됩니다.
 
 ## 8.5 ROS2 workspace build
 
