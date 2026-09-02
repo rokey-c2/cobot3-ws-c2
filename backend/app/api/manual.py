@@ -65,8 +65,7 @@ def manual_drive(
                         e.name,
                         e.type,
                         e.enabled,
-                        es.status,
-                        es.sync_status
+                        es.status
                     FROM equipment e
                     LEFT JOIN equipment_state es
                         ON es.equipment_id = e.id
@@ -105,13 +104,10 @@ def manual_drive(
                             ),
                         )
 
-                    if equipment["sync_status"] != "SYNCED":
-                        raise HTTPException(
-                            status_code=409,
-                            detail="AMR pose is not synchronized",
-                        )
-
-                    # Nav2가 주행 중일 때 수동 /cmd_vel과 경쟁하지 않도록 막는다.
+                    # Manual Jog는 /cmd_vel을 직접 발행하는 open-loop 제어다.
+                    # 따라서 Nav2/AMCL/TF 기반 Pose Sync가 없어도 사용할 수 있다.
+                    # 단, Nav2가 실제 주행 중이면 같은 /cmd_vel을 두 제어기가
+                    # 동시에 점유하지 않도록 수동 명령을 차단한다.
                     cursor.execute(
                         """
                         SELECT id
