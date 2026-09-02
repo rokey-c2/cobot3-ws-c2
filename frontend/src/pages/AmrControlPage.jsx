@@ -83,12 +83,6 @@ export default function AmrControlPage() {
   const poseSyncStatus = amr?.sync_status || "OFFLINE";
   const poseSynced = poseSyncStatus === "SYNCED";
 
-  useEffect(() => {
-    if (!poseSynced && manualDirectionRef.current !== "STOP") {
-      stopManual();
-    }
-  }, [poseSynced]);
-
   async function runAction(label, action) {
     stopManual();
     setBusy(true);
@@ -140,7 +134,7 @@ export default function AmrControlPage() {
   }
 
   function startManual(direction) {
-    if (busy || amr?.status !== "RUNNING" || !poseSynced) {
+    if (busy || amr?.status !== "RUNNING") {
       return;
     }
 
@@ -179,7 +173,7 @@ export default function AmrControlPage() {
   }
 
   const direction = yawDegrees(amr?.yaw);
-  const manualDisabled = busy || amr?.status !== "RUNNING" || !poseSynced;
+  const manualDisabled = busy || amr?.status !== "RUNNING";
   const navigationDisabled = busy || amr?.status !== "RUNNING" || !poseSynced;
 
   return (
@@ -204,7 +198,7 @@ export default function AmrControlPage() {
       {error && <div className="alert">{error}</div>}
       {amr && !poseSynced && (
         <div className="alert">
-          Pose Sync {poseSyncStatus}: 좌표 동기화가 완료될 때까지 Navigate와 Manual 이동을 사용할 수 없습니다.
+          Pose Sync {poseSyncStatus}: Auto Navigation은 사용할 수 없습니다. Manual Jog는 START AMR 후 사용할 수 있습니다.
         </div>
       )}
 
