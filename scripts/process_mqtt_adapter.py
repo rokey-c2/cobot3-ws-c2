@@ -23,10 +23,12 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_COMMAND_TOPIC = "controltower/command/equipment/+/control"
 MQTT_COMMAND_RESULT_TOPIC = "controltower/result/command"
 MQTT_PROCESS_EVENT_TOPIC = "controltower/process/event"
+MQTT_P3020_ARRIVAL_TOPIC = "controltower/command/mission/p3020-arrival"
 
 ROS_EQUIPMENT_COMMAND_TOPIC = "/controltower/equipment/command"
 ROS_EQUIPMENT_STATUS_TOPIC = "/controltower/equipment/status"
 ROS_PROCESS_EVENT_TOPIC = "/controltower/process/event"
+ROS_P3020_ARRIVAL_TOPIC = "/amr_a/p3020_arrival_confirm"
 
 SUPPORTED_EQUIPMENT = {
     "P3020_IN",
@@ -44,9 +46,13 @@ class Ros2ProcessMqttAdapter(Node):
         self.message_queue = queue.Queue()
         self.pending_commands = {}
         self.last_process_state = {}
+        self.pending_arrival_command = None
 
         self.equipment_command_publisher = self.create_publisher(
             String, ROS_EQUIPMENT_COMMAND_TOPIC, 10
+        )
+        self.p3020_arrival_publisher = self.create_publisher(
+            String, ROS_P3020_ARRIVAL_TOPIC, 10
         )
         self.create_subscription(
             String, ROS_EQUIPMENT_STATUS_TOPIC,
@@ -58,6 +64,9 @@ class Ros2ProcessMqttAdapter(Node):
         )
         self.create_subscription(
             String, "/amr_a/pickup_state", self._on_amr_state, 10
+        )
+        self.create_subscription(
+            String, "/amr_a/mission_state", self._on_mission_state, 10
         )
         self.create_subscription(
             String, "/arm_a/pick_place_status", self._on_p3020_state, 10
@@ -84,6 +93,7 @@ class Ros2ProcessMqttAdapter(Node):
             f"MQTT connected {MQTT_HOST}:{MQTT_PORT}, reason={reason_code}"
         )
         client.subscribe(MQTT_COMMAND_TOPIC, qos=1)
+        client.subscribe(MQTT_P3020_ARRIVAL_TOPIC, qos=1)
 
     def _on_mqtt_message(self, client, userdata, message):
         del client, userdata
@@ -100,7 +110,62 @@ class Ros2ProcessMqttAdapter(Node):
                 topic, payload = self.message_queue.get_nowait()
             except queue.Empty:
                 return
-            self.process_control_command(topic, payload)
+            if topic == MQTT_P3020_ARRIVAL_TOPIC:
+                self.process_p3020_arrival_command(payload)
+            else:
+                self.process_control_command(topic, payload)
+
+    def process_p3020_arrival_command(self, payload):
+        command_id = payload.get("command_id")
+        mission_id = payload.get("mission_id")
+        mission_code = str(payload.get("mission_code", "")).strip()
+        equipment_code = str(payload.get("equipment_code", "AMR_IN")).strip().upper()
+        if command_id is None or mission_id is None or not mission_code:
+            self.publish_command_result(
+                command_id, equipment_code, "CONFIRM_P3020_ARRIVAL", "FAILED",
+                "Invalid P3020 arrival payload",
+            )
+            return
+        if self.pending_arrival_command is not None:
+            self.publish_command_result(
+                command_id, equipment_code, "CONFIRM_P3020_ARRIVAL", "BUSY",
+                "Another P3020 arrival confirmation is in progress",
+            )
+            return
+
+        message = String()
+        message.data = json.dumps(payload)
+        self.p3020_arrival_publisher.publish(message)
+        self.pending_arrival_command = {
+            "command_id": int(command_id),
+            "equipment_code": equipment_code,
+            "deadline": time.monotonic() + COMMAND_TIMEOUT_SECONDS,
+        }
+        self.publish_command_result(
+            command_id, equipment_code, "CONFIRM_P3020_ARRIVAL", "RUNNING", None,
+        )
+
+    def _on_mission_state(self, message):
+        pending = self.pending_arrival_command
+        if pending is None:
+            return
+        state = str(message.data).strip().upper()
+        accepted_states = {
+            "REQUEST_CONVEYOR_DOCK", "REQUEST_LOWER_AT_DELIVERY",
+            "P3020_START", "P3020_GOAL_SENT", "P3020_WORKING",
+        }
+        if state in accepted_states:
+            self.publish_command_result(
+                pending["command_id"], pending["equipment_code"],
+                "CONFIRM_P3020_ARRIVAL", "SUCCESS", None,
+            )
+            self.pending_arrival_command = None
+        elif state == "ERROR":
+            self.publish_command_result(
+                pending["command_id"], pending["equipment_code"],
+                "CONFIRM_P3020_ARRIVAL", "FAILED", "Mission entered ERROR",
+            )
+            self.pending_arrival_command = None
 
     def process_control_command(self, topic, payload):
         parts = topic.split("/")
@@ -218,6 +283,15 @@ class Ros2ProcessMqttAdapter(Node):
 
     def _expire_commands(self):
         now = time.monotonic()
+        if (self.pending_arrival_command is not None and
+                self.pending_arrival_command["deadline"] <= now):
+            pending = self.pending_arrival_command
+            self.pending_arrival_command = None
+            self.publish_command_result(
+                pending["command_id"], pending["equipment_code"],
+                "CONFIRM_P3020_ARRIVAL", "FAILED",
+                "Timed out waiting for ROS2 mission acknowledgement",
+            )
         expired = [
             code for code, command in self.pending_commands.items()
             if command["deadline"] <= now

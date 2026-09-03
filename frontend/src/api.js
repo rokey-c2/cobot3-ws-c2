@@ -33,6 +33,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify(mission),
     }),
+  confirmP3020Arrival: () =>
+    request("/api/missions/current/confirm-p3020-arrival", {
+      method: "POST",
+    }),
+  getMissionCommand: (commandId) =>
+    request(`/api/missions/commands/${encodeURIComponent(commandId)}`),
   getPackages: () => request("/api/packages"),
   getPackage: (packageCode) =>
     request(`/api/packages/${encodeURIComponent(packageCode)}`),

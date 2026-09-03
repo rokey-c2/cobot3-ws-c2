@@ -38,6 +38,7 @@ echo "[8] lift down + cargo pose verification"
 echo "[9] local return -> (9, -6, yaw=0 deg)"
 echo
 echo "[TEST DEFAULT] simulate_p3020:=true"
+echo "[MANUAL DELIVERY] add -p manual_delivery:=true to wait for the Dashboard arrival button"
 echo "============================================"
 
 exec python3 \

@@ -93,9 +93,9 @@ RETURN_X_YAW = 0.0
 
 # About 3x faster on long local-drive segments. Keep the minimum creep speed
 # unchanged so the final precision docking does not overshoot.
-LOCAL_MAX_LINEAR_SPEED = 0.72
+LOCAL_MAX_LINEAR_SPEED = 2.16
 LOCAL_MIN_LINEAR_SPEED = 0.03
-RETURN_X_MAX_LINEAR_SPEED = 0.36
+RETURN_X_MAX_LINEAR_SPEED = 1.08
 ROTATE_MAX_SPEED = 0.50
 LOCAL_MAX_ANGULAR_SPEED = 0.35
 
@@ -221,8 +221,25 @@ class MissionIwHubAgent(IwHubAgent):
 
         return False
 
+    def get_lift_state(self):
+        """Return the physical lift state, including mission-controlled moves."""
+
+        joint_position = self._joint_position()
+        if joint_position >= 0.035:
+            return "UP"
+        if joint_position <= 0.005:
+            return "DOWN"
+
+        if self.mission_state in {"LOWER_AT_DELIVERY", "LOWER", "LOWERED_AT_DELIVERY"}:
+            return "MOVING_DOWN"
+        if self.mission_state == "IDLE":
+            return self._manual_lift_state
+        return "MOVING_UP"
+
     def get_manual_lift_state(self):
-        return self._manual_lift_state
+        # Backward-compatible alias. State reporting must reflect the physical
+        # joint even when the cargo mission FSM owns the lift.
+        return self.get_lift_state()
 
     def request_pickup(self):
         if self.mission_state == "PICKUP_DONE":

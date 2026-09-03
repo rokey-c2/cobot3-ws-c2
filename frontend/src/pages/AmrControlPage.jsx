@@ -14,6 +14,7 @@ function defaultCameraStreamUrl() {
 
 export default function AmrControlPage() {
   const [equipment, setEquipment] = useState([]);
+  const [mission, setMission] = useState(null);
   const [target, setTarget] = useState({ x: "1.30104", y: "-0.06065", yaw: "0.0" });
   const [command, setCommand] = useState(null);
   const [error, setError] = useState("");
@@ -36,8 +37,12 @@ export default function AmrControlPage() {
 
   const loadEquipment = useCallback(async () => {
     try {
-      const data = await api.getEquipment();
-      setEquipment(data.equipment || []);
+      const [equipmentData, missionData] = await Promise.all([
+        api.getEquipment(),
+        api.getCurrentMission(),
+      ]);
+      setEquipment(equipmentData.equipment || []);
+      setMission(missionData.mission || null);
       setError("");
     } catch (requestError) {
       setError(requestError.message);
@@ -80,8 +85,26 @@ export default function AmrControlPage() {
     () => equipment.find((item) => item.code === EQUIPMENT_CODE),
     [equipment],
   );
+  const missionRunning = Boolean(mission && !["COMPLETE", "FAILED", "CANCELED"].includes(mission.status));
+  const liftLocked = false;
   const poseSyncStatus = amr?.sync_status || "OFFLINE";
   const poseSynced = poseSyncStatus === "SYNCED";
+
+  async function waitForCommand(commandId, label) {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+      const result = await api.getMissionCommand(commandId);
+      const next = result?.command;
+      setCommand({ label, status: next?.status || "PENDING", id: commandId });
+      if (["SUCCESS", "FAILED", "CANCELED"].includes(next?.status)) {
+        if (next.status === "FAILED") {
+          setError(next.error_message || `${label} 명령에 실패했습니다.`);
+        }
+        return;
+      }
+    }
+    setError(`${label} 명령 결과를 기다리는 중입니다. 잠시 후 다시 확인해주세요.`);
+  }
 
   async function runAction(label, action) {
     stopManual();
@@ -90,6 +113,9 @@ export default function AmrControlPage() {
     try {
       const result = await action();
       setCommand({ label, status: result?.command?.status || result?.status || "PENDING", id: result?.command?.id });
+      if (result?.command?.id) {
+        await waitForCommand(result.command.id, label);
+      }
       window.setTimeout(loadEquipment, 600);
     } catch (requestError) {
       setError(requestError.message);
@@ -175,6 +201,10 @@ export default function AmrControlPage() {
   const direction = yawDegrees(amr?.yaw);
   const manualDisabled = busy || amr?.status !== "RUNNING";
   const navigationDisabled = busy || amr?.status !== "RUNNING" || !poseSynced;
+  const arrivalDisabled = (
+    busy || manualDirection !== "STOP" || amr?.status !== "RUNNING" ||
+    mission?.status !== "RUNNING" || mission?.current_stage !== "AMR_NAVIGATION"
+  );
 
   return (
     <div className="stack-lg">
@@ -388,6 +418,26 @@ export default function AmrControlPage() {
               LIFT DOWN
             </button>
           </div>
+          <p className="panel-help">수동 주행 중 리프트를 조작할 수 있습니다.</p>
+        </div>
+
+        <div className="panel action-panel">
+          <div>
+            <span className="section-label">MANUAL HANDOFF</span>
+            <h3>P3020 도착 확인</h3>
+            <small>
+              {mission?.status === "RUNNING"
+                ? `현재 단계: ${mission.current_stage || "-"}`
+                : "진행 중인 Mission이 필요합니다."}
+            </small>
+          </div>
+          <button
+            className="button button-primary"
+            disabled={arrivalDisabled}
+            onClick={() => runAction("P3020 ARRIVAL", api.confirmP3020Arrival)}
+          >
+            P3020 도착 완료
+          </button>
         </div>
 
         <div className="panel command-panel">

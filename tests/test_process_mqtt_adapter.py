@@ -160,6 +160,29 @@ class ProcessMqttAdapterTest(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["equipment_code"], "P3020_IN")
 
+    def test_p3020_arrival_command_waits_for_mission_ack(self):
+        payload = {
+            "command_id": 601, "mission_id": 9,
+            "mission_code": "MISSION-9", "equipment_code": "AMR_IN",
+        }
+        self.adapter.process_p3020_arrival_command(payload)
+        sent = json.loads(self.adapter.p3020_arrival_publisher.messages[-1].data)
+        self.assertEqual(sent, payload)
+        self.assertEqual(self.result_payloads()[-1]["status"], "RUNNING")
+
+        state = FakeString()
+        state.data = "REQUEST_CONVEYOR_DOCK"
+        self.adapter._on_mission_state(state)
+        self.assertEqual(self.result_payloads()[-1]["status"], "SUCCESS")
+        self.assertIsNone(self.adapter.pending_arrival_command)
+
+    def test_duplicate_p3020_arrival_is_busy(self):
+        first = {"command_id": 601, "mission_id": 9, "mission_code": "M-9"}
+        second = {"command_id": 602, "mission_id": 9, "mission_code": "M-9"}
+        self.adapter.process_p3020_arrival_command(first)
+        self.adapter.process_p3020_arrival_command(second)
+        self.assertEqual(self.result_payloads()[-1]["status"], "BUSY")
+
 
 if __name__ == "__main__":
     unittest.main()
