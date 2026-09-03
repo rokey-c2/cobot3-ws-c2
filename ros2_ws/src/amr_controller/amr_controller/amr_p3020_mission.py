@@ -56,6 +56,7 @@ class AmrP3020Mission(Node):
             "/p3020/pick_place",
         )
         self.declare_parameter("simulate_p3020", True)
+        self.declare_parameter("manual_delivery", False)
         self.declare_parameter("simulated_p3020_duration", 3.0)
         self.declare_parameter("object_id", "box")
 
@@ -109,6 +110,12 @@ class AmrP3020Mission(Node):
             self._pickup_state_callback,
             10,
         )
+        self.create_subscription(
+            String,
+            "/amr_a/p3020_arrival_confirm",
+            self._manual_arrival_callback,
+            10,
+        )
 
         self.state = "WAIT_READY"
         self.pickup_state = "UNKNOWN"
@@ -143,6 +150,18 @@ class AmrP3020Mission(Node):
 
     def _pickup_state_callback(self, message):
         self.pickup_state = message.data.strip().upper()
+
+    def _manual_arrival_callback(self, message):
+        del message
+        if self.state != "WAIT_MANUAL_P3020_ARRIVAL":
+            self.get_logger().warning(
+                f"P3020 arrival confirmation ignored in state {self.state}"
+            )
+            return
+        self.get_logger().info(
+            "manual P3020 arrival confirmed; joining automatic dock flow"
+        )
+        self._set_state("REQUEST_CONVEYOR_DOCK")
 
     def _pose_from_parameters(self, prefix):
         pose = Pose()
@@ -322,7 +341,8 @@ class AmrP3020Mission(Node):
     def _tick(self):
         if self.state == "WAIT_READY":
             if (
-                self.navigate_client.server_is_ready()
+                (bool(self.get_parameter("manual_delivery").value)
+                 or self.navigate_client.server_is_ready())
                 and self.pickup_state != "UNKNOWN"
             ):
                 self._set_state("REQUEST_PICKUP")
@@ -333,9 +353,12 @@ class AmrP3020Mission(Node):
 
             if self.pickup_state == "PICKUP_DONE":
                 self.get_logger().info(
-                    "cargo lift confirmed; Nav2 starts now"
+                    "cargo lift confirmed; starting delivery stage"
                 )
-                self._set_state("NAV_TO_DELIVERY")
+                if bool(self.get_parameter("manual_delivery").value):
+                    self._set_state("WAIT_MANUAL_P3020_ARRIVAL")
+                else:
+                    self._set_state("NAV_TO_DELIVERY")
             elif self.pickup_state == "ERROR":
                 self._fail(
                     "Isaac local pickup/lift controller reported ERROR"
@@ -348,6 +371,13 @@ class AmrP3020Mission(Node):
                 float(self.get_parameter("delivery_x").value),
                 float(self.get_parameter("delivery_y").value),
                 float(self.get_parameter("delivery_yaw").value),
+            )
+            return
+
+        if self.state == "WAIT_MANUAL_P3020_ARRIVAL":
+            self.get_logger().info(
+                "waiting for Dashboard P3020 arrival confirmation",
+                throttle_duration_sec=5.0,
             )
             return
 

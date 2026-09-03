@@ -156,6 +156,19 @@ class BackendControlTest(unittest.TestCase):
         self.assertEqual(executions[1][1], ("STOPPED", 1))
         self.assertEqual(connection.commits, 1)
 
+    def test_p3020_arrival_publish_uses_mission_topic(self):
+        self.module.publish_p3020_arrival_command(
+            command_id=77, mission_id=12, mission_code="MISSION-12"
+        )
+        topic, raw_payload, qos, retain = self.module.mqtt_client.publications[-1]
+        self.assertEqual(topic, "controltower/command/mission/p3020-arrival")
+        self.assertEqual(json.loads(raw_payload), {
+            "command_id": 77, "mission_id": 12,
+            "mission_code": "MISSION-12", "equipment_code": "AMR_IN",
+        })
+        self.assertEqual(qos, 1)
+        self.assertFalse(retain)
+
 
 if __name__ == "__main__":
     unittest.main()

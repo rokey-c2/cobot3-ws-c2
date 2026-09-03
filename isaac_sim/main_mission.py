@@ -313,7 +313,7 @@ class AmrMissionBridge(Node):
             self.get_logger().info(f"pickup state: {state}")
             self.last_state = state
 
-        lift_state = self.agent.get_manual_lift_state()
+        lift_state = self.agent.get_lift_state()
         lift_msg = String()
         lift_msg.data = lift_state
         self.lift_state_pub.publish(lift_msg)

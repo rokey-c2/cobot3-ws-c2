@@ -303,6 +303,23 @@ def publish_lift_command(
     _publish_command(topic, payload, "LIFT")
 
 
+def publish_p3020_arrival_command(
+    command_id: int,
+    mission_id: int,
+    mission_code: str,
+    equipment_code: str = "AMR_IN",
+):
+    """Ask the ROS2 mission to continue from a manually confirmed arrival."""
+    topic = "controltower/command/mission/p3020-arrival"
+    payload = {
+        "command_id": int(command_id),
+        "mission_id": int(mission_id),
+        "mission_code": str(mission_code),
+        "equipment_code": str(equipment_code),
+    }
+    _publish_command(topic, payload, "CONFIRM_P3020_ARRIVAL")
+
+
 def publish_equipment_control_command(
     equipment_code: str,
     command_id: int,
