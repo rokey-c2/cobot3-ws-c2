@@ -1,10 +1,11 @@
 """ROS 2 box detector and web video stream for the P3020 camera.
 
 Subscribes:
-    /rgb                                (sensor_msgs/msg/Image)
+    /arm_a/rgb                          (sensor_msgs/msg/Image)
 
 Publishes:
     /box_pixel                          (geometry_msgs/msg/PointStamped)
+    /box_pixel/result                   (std_msgs/String, JSON: stamp_ns/detection)
     /p3020/vision/image_annotated       (sensor_msgs/msg/Image)
 
 Web stream:
@@ -17,6 +18,7 @@ contain a green laser HUD drawn around the highest-confidence parcel box.
 import json
 import math
 import os
+import queue
 import sys
 import threading
 import time
@@ -33,11 +35,12 @@ from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
+from std_msgs.msg import String
 
 from object_detector import ObjectDetector
 
 MODEL_PATH = os.path.join(_REPO_ROOT, "models", "parcel_box_yolo_model", "best.onnx")
-IMAGE_TOPIC = "/rgb"
+IMAGE_TOPIC = "/arm_a/rgb"
 BOX_PIXEL_TOPIC = "/box_pixel"
 ANNOTATED_IMAGE_TOPIC = "/p3020/vision/image_annotated"
 STREAM_HOST = "0.0.0.0"
@@ -114,8 +117,10 @@ class _MjpegHandler(BaseHTTPRequestHandler):
 class BoxDetectorNode(Node):
     def __init__(self):
         super().__init__("p3020_box_detector")
+        cv2.setNumThreads(1)
 
         self.declare_parameter("image_topic", IMAGE_TOPIC)
+        self.declare_parameter("stream_image_topic", "")
         self.declare_parameter("box_pixel_topic", BOX_PIXEL_TOPIC)
         self.declare_parameter("annotated_image_topic", ANNOTATED_IMAGE_TOPIC)
         self.declare_parameter("model_path", MODEL_PATH)
@@ -138,10 +143,20 @@ class BoxDetectorNode(Node):
         self.jpeg_quality = int(np.clip(self.get_parameter("jpeg_quality").value, 40, 95))
 
         self.detector = ObjectDetector(model_path, conf_threshold=conf_threshold)
+        # Stream incoming frames immediately; run CPU-bound inference separately.
+        self._inference_queue = queue.Queue(maxsize=1)
+        self._detection_lock = threading.Lock()
+        self._latest_detection = None
+        self._latest_detection_time = 0.0
+        self._inference_thread = threading.Thread(
+            target=self._inference_worker, name="p3020-yolo", daemon=True
+        )
+        self._inference_thread.start()
         self.image_sub = self.create_subscription(
             Image, image_topic, self.image_callback, qos_profile_sensor_data
         )
         self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
+        self.result_pub = self.create_publisher(String, pixel_topic + "/result", 10)
         self.annotated_pub = self.create_publisher(Image, annotated_topic, 10)
 
         self._frame_condition = threading.Condition()
@@ -150,6 +165,11 @@ class BoxDetectorNode(Node):
         self._stream_server = None
         self._stream_thread = None
         self._start_stream_server()
+        stream_topic = str(self.get_parameter("stream_image_topic").value)
+        self.preview_sub = (
+            self.create_subscription(Image, stream_topic, self.preview_callback, qos_profile_sensor_data)
+            if stream_topic else None
+        )
 
         self.get_logger().info(
             f"listening: {image_topic} | detection: {pixel_topic} | "
@@ -223,19 +243,69 @@ class BoxDetectorNode(Node):
             )
             return
 
-        detection = self.detector.detect(rgb)
-        if detection is not None:
-            stamped = PointStamped()
-            stamped.header.stamp = msg.header.stamp
-            stamped.header.frame_id = msg.header.frame_id
-            stamped.point.x = detection["cx"]
-            stamped.point.y = detection["cy"]
-            stamped.point.z = detection["conf"]
-            self.pixel_pub.publish(stamped)
-
-        annotated_rgb = self.draw_laser_hud(rgb, detection, time.monotonic())
-        self._publish_annotated(msg, annotated_rgb)
+        received_at = time.monotonic()
+        with self._detection_lock:
+            detection = self._latest_detection
+            if received_at - self._latest_detection_time > 1.0:
+                detection = None
+        annotated_rgb = self.draw_laser_hud(rgb, detection, received_at)
         self._update_web_stream(annotated_rgb)
+        self._publish_annotated(msg, annotated_rgb)
+
+        try:
+            self._inference_queue.put_nowait((msg, rgb))
+        except queue.Full:
+            try:
+                self._inference_queue.get_nowait()
+            except queue.Empty:
+                pass
+            self._inference_queue.put_nowait((msg, rgb))
+
+    def preview_callback(self, msg: Image):
+        """Keep web video live without displacing an exact-frame inference request."""
+        rgb = self.imgmsg_to_rgb(msg)
+        if rgb is None:
+            return
+        now = time.monotonic()
+        with self._detection_lock:
+            detection = self._latest_detection if now - self._latest_detection_time <= 1.0 else None
+        annotated = self.draw_laser_hud(rgb, detection, now)
+        self._update_web_stream(annotated)
+        self._publish_annotated(msg, annotated)
+
+    def _inference_worker(self):
+        while rclpy.ok():
+            item = self._inference_queue.get()
+            if item is None:
+                return
+            msg, rgb = item
+            try:
+                candidates = self.detector.detect_candidates(rgb)
+            except Exception as error:
+                self.get_logger().error(f"YOLO inference failed: {error}")
+                continue
+
+            # An explicit negative result proves inference ran on this exact image.
+            # Silence (missing camera/detector) must never mean "empty cargo".
+            result = String()
+            result.data = json.dumps({
+                "stamp_ns": msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec,
+                "candidates": candidates,
+                "detection": candidates[0] if candidates else None,
+            })
+            self.result_pub.publish(result)
+            detection = candidates[0] if candidates else None
+            if candidates:
+                stamped = PointStamped()
+                stamped.header.stamp = msg.header.stamp
+                stamped.header.frame_id = msg.header.frame_id
+                stamped.point.x = detection["cx"]
+                stamped.point.y = detection["cy"]
+                stamped.point.z = detection["conf"]
+                self.pixel_pub.publish(stamped)
+            with self._detection_lock:
+                self._latest_detection = detection
+                self._latest_detection_time = time.monotonic()
 
     @staticmethod
     def draw_laser_hud(rgb, detection, now):
@@ -370,6 +440,16 @@ class BoxDetectorNode(Node):
             self._frame_condition.notify_all()
 
     def destroy_node(self):
+        try:
+            self._inference_queue.put_nowait(None)
+        except queue.Full:
+            try:
+                self._inference_queue.get_nowait()
+            except queue.Empty:
+                pass
+            self._inference_queue.put_nowait(None)
+        if self._inference_thread.is_alive():
+            self._inference_thread.join(timeout=2.0)
         if self._stream_server is not None:
             self._stream_server.shutdown()
             self._stream_server.server_close()

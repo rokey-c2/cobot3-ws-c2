@@ -39,6 +39,8 @@ class ContactGripper:
         self._local_pos = local_pos
         self._threshold = contact_threshold
         self._attached_to = None
+        self.last_distance = float("inf")
+        self.minimum_distance = float("inf")
         # 콜리전을 꺼놨기 때문에, 붙는 순간의 우연한(겹친) 위치 그대로 잡으면
         # 시각적으로 박스가 그리퍼를 뚫고 겹쳐 보인다. 그래서 잡는 순간 박스를
         # 흡착 컵 바로 아래(local_pos에서 local_down_dir 방향으로 snap_distance
@@ -64,10 +66,16 @@ class ContactGripper:
         그 순간 잡는다. 붙었는지 여부를 반환한다."""
         if self._attached_to is not None:
             return True
-        if self.distance_to(object_prim_path) <= self._threshold:
+        self.last_distance = self.distance_to(object_prim_path)
+        self.minimum_distance = min(self.minimum_distance, self.last_distance)
+        if self.last_distance <= self._threshold:
             self._attach(object_prim_path)
             return True
         return False
+
+    def reset_contact_stats(self):
+        self.last_distance = float("inf")
+        self.minimum_distance = float("inf")
 
     def _local_snap_target(self) -> Gf.Vec3d:
         """vgp20 로컬 좌표계 기준, 흡착 컵 바로 아래(박스 원점이 있어야 할) 지점."""

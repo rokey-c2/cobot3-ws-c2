@@ -37,6 +37,13 @@ if ! ros2 pkg prefix iw_hub_navigation >/dev/null 2>&1; then
     exit 1
 fi
 
+# The Isaac Jazzy workspace setup can re-export the workstation's DDS
+# whitelist after the early cleanup above. Keep Nav2 on the same unrestricted
+# local discovery used by the Isaac bridge and the other run scripts.
+if [ "${USE_FASTDDS_WHITELIST:-0}" != "1" ]; then
+    unset FASTRTPS_DEFAULT_PROFILES_FILE
+fi
+
 if [ ! -f "$MAP_FILE" ]; then
     echo "[ERROR] map not found: $MAP_FILE"
     exit 1
@@ -46,7 +53,7 @@ wait_for_publisher() {
     local topic_name="$1"
     echo "[ROS2] waiting for $topic_name"
     for _ in $(seq 1 60); do
-        if ros2 topic info "$topic_name" 2>/dev/null | \
+        if timeout 8 ros2 topic info "$topic_name" --no-daemon --spin-time 2 2>/dev/null | \
             grep -Eq 'Publisher count: [1-9][0-9]*'; then
             return 0
         fi

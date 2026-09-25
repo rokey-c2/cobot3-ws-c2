@@ -291,6 +291,9 @@ class P3020UnloadToBinAgent:
         self.gripper = None
         self.camera = None
         self.home_q = None
+        self._detected_parcel_path = None
+        self.camera_enabled = False
+        self._camera_initialized = False
         self.planner = OutboundLoadPlanner(REJECT_BIN_PLANNER_CONFIG)
         self.bin_pose = REJECT_BIN_POSE
 
@@ -349,7 +352,16 @@ class P3020UnloadToBinAgent:
         )
 
         self.camera = CameraInterface(prim_path=CAMERA_PRIM_PATH, resolution=(640, 480))
-        self.camera.initialize()
+
+    def enable_camera(self):
+        """Initialize OUT camera only after a sorter detects a D parcel."""
+        if self.camera_enabled:
+            return
+        if not self._camera_initialized:
+            self.camera.initialize()
+            self._camera_initialized = True
+        self.camera_enabled = True
+        print("[P3020_OUT] D detected by sorter; OUT camera and vision enabled")
 
     def post_reset(self):
         self._configure_arm_drives()
@@ -400,8 +412,13 @@ class P3020UnloadToBinAgent:
             pixel = ros_node.take_pixel_after(not_before)
             if pixel is not None and depth_map is not None:
                 world_xy = pixel_to_world_xy(pixel, depth_map, self.camera, last_frame)
-                if world_xy is not None:
+                if world_xy is not None and is_within_reach(world_xy[:2]):
                     return world_xy
+                if world_xy is not None:
+                    print(
+                        "   [p3020_out] detected parcel is outside arm reach; "
+                        "keep belt moving and wait"
+                    )
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
@@ -430,12 +447,41 @@ class P3020UnloadToBinAgent:
     def _locate_box_and_descend(self, ros_node, tick_others, dt):
         box_xy = self._wait_for_detection(ros_node, IDLE_SCAN_TIMEOUT_STEPS, tick_others, dt)
         if box_xy is None:
+            self._detected_parcel_path = None
             return None
+        # Use vision to identify the parcel, then use its simulated world pose
+        # for the grasp target. The camera back-projection is useful for finding
+        # the parcel; the previous attempt left a 0.329 m gripper gap, so log
+        # the vision error and use the parcel's authoritative pose for grasping.
+        self._detected_parcel_path = find_nearest_parcel(self.stage, box_xy[:2])
+        if self._detected_parcel_path is not None:
+            prim = self.stage.GetPrimAtPath(self._detected_parcel_path)
+            matrix = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+            center = matrix.ExtractTranslation()
+            actual_xy = np.array([float(center[0]), float(center[1])])
+            planar_distance = float(np.linalg.norm(base_relative(actual_xy)))
+            vision_error = float(np.linalg.norm(actual_xy - box_xy[:2]))
+            print(
+                f"   [p3020_out] grasp target  parcel=({actual_xy[0]:.3f}, "
+                f"{actual_xy[1]:.3f}, {float(center[2]):.3f}) "
+                f"vision_error={vision_error:.3f}m base_distance={planar_distance:.3f}m"
+            )
+            # Parcel prim origins are at their geometric centers; the pick
+            # waypoint expects the top surface, matching pixel_to_world_xy().
+            box_xy = np.array([
+                actual_xy[0], actual_xy[1], float(center[2]) + PARCEL_HALF_HEIGHT
+            ])
+            UsdPhysics.RigidBodyAPI(prim).CreateKinematicEnabledAttr().Set(True)
+            print(
+                f"   [p3020_out] conveyor parcel held at visual lock: "
+                f"{self._detected_parcel_path}"
+            )
         current_height = float(get_tcp_pose(self.ee_frame)[2])
         self._move_to(box_xy, current_height, SCAN_MID_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         refined = self._wait_for_detection(ros_node, REFINE_WAIT_TIMEOUT_STEPS, tick_others, dt)
         if refined is not None:
-            box_xy = refined
+            error = float(np.linalg.norm(refined[:2] - box_xy[:2]))
+            print(f"   [p3020_out] refine check  vision_to_parcel_error={error:.3f}m; keep world-pose target")
         self._move_to(box_xy, SCAN_MID_HEIGHT, APPROACH_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         return box_xy
 
@@ -446,12 +492,16 @@ class P3020UnloadToBinAgent:
         기다리다 실패 리턴하므로, 다음 tick에 다시 시도하는 형태로 계속
         지켜보는 효과를 낸다."""
 
+        if not self.camera_enabled:
+            return False, "소터에서 D 박스를 감지하기 전까지 OUT 카메라는 대기합니다."
+
         if self.planner.is_full:
             ros_node.publish_status("BIN_FULL")
             capacity = self.planner.config.capacity
             return False, f"적재함이 가득 찼습니다 ({capacity}/{capacity}) -- 비우기/교체 절차 필요"
 
         self.gripper.detach()
+        self.gripper.reset_contact_stats()
         self.set_ready_pose()
 
         ros_node.publish_status("SCANNING")
@@ -470,7 +520,7 @@ class P3020UnloadToBinAgent:
             ros_node.publish_status(f"DONE_FAIL:{message}")
             return False, message
 
-        target_box_path = find_nearest_parcel(self.stage, pick_xy)
+        target_box_path = self._detected_parcel_path or find_nearest_parcel(self.stage, pick_xy)
         if target_box_path is None:
             self._return_to_ready_pose(tick_others=tick_others, dt=dt)
             message = f"{PARCEL_PARENT_PATH} 밑에서 파라셀 프림을 찾지 못했습니다."
@@ -519,7 +569,10 @@ class P3020UnloadToBinAgent:
             if fsm.gripper == "close":
                 just_attached = self.gripper.try_attach(target_box_path) and not gripper_was_attached
                 if just_attached:
-                    print(f"      [p3020_out][gripper] 접촉 감지 -> 부착 (step={step})")
+                    print(
+                        "      [p3020_out][gripper] 접촉 감지 -> 부착 "
+                        f"(step={step}, gap={self.gripper.last_distance:.3f}m)"
+                    )
             if self.gripper.is_attached():
                 self.gripper.update()
                 ever_attached = True
@@ -559,6 +612,10 @@ class P3020UnloadToBinAgent:
             return True, message
 
         self.planner.cancel_placement(plan.slot_id)
-        message = f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다."
+        message = (
+            f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다. "
+            f"minimum_gap={self.gripper.minimum_distance:.3f}m, "
+            f"threshold={self.gripper._threshold:.3f}m"
+        )
         ros_node.publish_status(f"DONE_FAIL:{message}")
         return False, message

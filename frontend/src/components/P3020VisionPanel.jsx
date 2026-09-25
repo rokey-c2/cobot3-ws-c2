@@ -49,7 +49,7 @@ export default function P3020VisionPanel() {
           String(import.meta.env.VITE_P3020_OUT_CAMERA_STREAM_URL || "").trim() ||
           defaultStreamUrl(8093),
         kind: "vision",
-        waitingText: "P3020 OUT Vision MJPEG 포트 8093 연결을 기다리는 중입니다.",
+        waitingText: "P3020 OUT 영상은 sorter가 D 박스를 검출하면 시작됩니다.",
       },
     ],
     [],

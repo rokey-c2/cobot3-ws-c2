@@ -105,7 +105,7 @@ class WheelSorterController:
     """
 
     TRACK_IDS = ("01", "02", "03")
-    SPEED_TARGET = -1.0
+    SPEED_TARGET = -2.0  # double the previous magnitude so diverted parcels reach the OUT conveyor end sooner
     REGION_TO_TRACK = {"A": "01", "B": "02", "C": "03"}
 
     def __init__(
@@ -138,6 +138,12 @@ class WheelSorterController:
         self._triggered_pairs = set()
         self._completed_pairs = set()
         self._process_events = []
+        self._destination_d_detected = False
+
+    @property
+    def destination_d_detected(self):
+        """Whether a D parcel has reached a sorter in this simulation run."""
+        return self._destination_d_detected
 
     def setup(self):
         stage = omni.usd.get_context().get_stage()
@@ -244,6 +250,17 @@ class WheelSorterController:
 
                 sorter_xy = unit.get_world_xy()
                 distance = math.hypot(box_xy[0] - sorter_xy[0], box_xy[1] - sorter_xy[1])
+
+                if (
+                    box_id == 4
+                    and distance <= self.approach_threshold
+                    and not self._destination_d_detected
+                ):
+                    self._destination_d_detected = True
+                    print(
+                        f"[SORTER] destination D detected at track={track_id}; "
+                        "enabling P3020_OUT camera"
+                    )
 
                 if pair not in self._triggered_pairs:
                     if distance > self.approach_threshold:

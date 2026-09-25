@@ -2,6 +2,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from unittest.mock import Mock
 from pathlib import Path
 
 
@@ -70,6 +71,24 @@ class ProcessEventMappingTest(unittest.TestCase):
         )
         self.assertTrue(result["failed"])
         self.assertEqual(result["zone_code"], "P3020_IN")
+
+    def test_empty_check_and_retry_are_not_failure_or_completion(self):
+        for state in ("CHECKING_EMPTY", "CARGO_EMPTY", "RETRYING:1/3:grasp failed"):
+            with self.subTest(state=state):
+                result = self.module.interpret_process_event({"event_type": "P3020_STATE", "state": state})
+                self.assertFalse(result["failed"])
+                self.assertFalse(result["complete"])
+                self.assertIsNone(result["zone_code"])
+
+    def test_batch_status_does_not_invent_package_after_completion(self):
+        for state in ("CHECKING_EMPTY", "CARGO_EMPTY", "RETRYING:1/3:grasp failed"):
+            cursor = Mock()
+            cursor.fetchone.return_value = None
+            result = self.module._find_or_create_active_tracking(
+                cursor, {"event_type": "P3020_STATE", "state": state}
+            )
+            self.assertIsNone(result)
+            self.assertEqual(cursor.execute.call_count, 1)
 
 
 if __name__ == "__main__":

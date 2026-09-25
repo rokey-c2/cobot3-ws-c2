@@ -16,6 +16,7 @@ robots/iw_hub/iw_hub_mission_agent.py. Map final layout still WIP.
 """
 
 import random
+import json
 import sys
 from pathlib import Path
 
@@ -32,6 +33,9 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
+from sensor_msgs.msg import Image
+from std_msgs.msg import String
+from rclpy.qos import qos_profile_sensor_data
 
 from pxr import Sdf, UsdGeom
 
@@ -86,6 +90,17 @@ class FakeBoxDetectorNode(Node):
         self.cargo_prim_path = cargo_prim_path
         self.parent_path = parent_path
         self.pub = self.create_publisher(PointStamped, "/box_pixel", 10)
+        self.result_pub = self.create_publisher(String, "/box_pixel/result", 10)
+        self.create_subscription(Image, "/arm_a/rgb", self._on_image, qos_profile_sensor_data)
+
+    def _on_image(self, image):
+        detection = self.publish_once(image.header.stamp)
+        result = String()
+        result.data = json.dumps({
+            "stamp_ns": image.header.stamp.sec * 1_000_000_000 + image.header.stamp.nanosec,
+            "detection": detection,
+        })
+        self.result_pub.publish(result)
 
     def _cargo_pod_position(self):
         cargo_prim = self.stage.GetPrimAtPath(self.cargo_prim_path)
@@ -94,7 +109,7 @@ class FakeBoxDetectorNode(Node):
         xf = UsdGeom.Xformable(cargo_prim).ComputeLocalToWorldTransform(0)
         return xf.Transform((0, 0, 0))
 
-    def publish_once(self):
+    def publish_once(self, stamp):
         parent = self.stage.GetPrimAtPath(self.parent_path)
         if not parent.IsValid():
             return
@@ -125,12 +140,13 @@ class FakeBoxDetectorNode(Node):
         px, py = self.camera.world_to_pixel((pos[0], pos[1], pos[2]))
 
         msg = PointStamped()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = stamp
         msg.header.frame_id = "p3020_rsd455"
         msg.point.x = px
         msg.point.y = py
         msg.point.z = 1.0  # confidence
         self.pub.publish(msg)
+        return {"cx": float(px), "cy": float(py), "conf": 1.0}
 
 
 def spawn_cargo_and_parcels(stage):
@@ -213,7 +229,6 @@ def main():
 
     def tick_all(step_dt):
         agent.on_physics_step(step_dt)
-        fake_detector.publish_once()
 
     print("\n[TEST] Phase 1: AMR docks at cargo, lifts")
     agent.request_pickup()
@@ -257,14 +272,15 @@ def main():
 
     print("\n[TEST] Phase 2: P3020 arm #1 picks every box by vision and "
           "sorts it (fake detector standing in for YOLO)")
-    p3020_agent.run_until_cargo_empty(
+    success = p3020_agent.run_until_cargo_empty(
         p3020_bridge,
         place_xy_world=CONVEYOR_PLACE_XY,
         amr_agent=agent,
         tick_others=tick_all,
         dt=dt,
-        sorter=sorter,
     )
+    if not success:
+        raise RuntimeError("P3020 batch failed; inspect the terminal DONE_FAIL status")
     print(f"[TEST] AMR state after unload: {agent.mission_state}")
 
     print("\n[TEST] done. Letting the conveyor run a bit longer so sorted "

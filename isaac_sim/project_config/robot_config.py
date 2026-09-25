@@ -93,6 +93,8 @@ PARCEL_Z = 0.4518 + _PARCEL_SETTLE_CLEARANCE_Z
 PARCEL_REGISTRY = [
     {
         "name": "parcel_box_01",
+        "box_id": 4,
+        "destination": "D",
         "usd": CARD_BOX_USD,
         "spawn_xyz": (9.0, -3.0, PARCEL_Z),
         "scale_xyz": PARCEL_SCALE_XYZ,
