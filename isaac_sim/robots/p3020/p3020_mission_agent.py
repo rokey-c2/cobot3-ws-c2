@@ -32,6 +32,7 @@ scripts/p3020_pick_place_poc.py에서 이번 세션에 검증 완료된 FSM/비�
     /arm_a/pick_place_status  (String): 이 에이전트 -> 액션 서버.
         "SCANNING" | "APPROACHING" | "GRASPING" | "MOVING" | "PLACING"
         | "DONE_SUCCESS" | "DONE_FAIL:<사유>"
+        | "RETRYING:<시도>:<사유>" | "CHECKING_EMPTY" | "CARGO_EMPTY"
 """
 
 import json
@@ -173,18 +174,23 @@ APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 AMR_DELIVERY_POSE_WORLD = np.array([1.7009891271591187, -1.369241714477539])
 
 MIN_VALID_SCAN_DEPTH = 0.4
-# AMR 몸체(섀시)의 실측 world Z는 약 0.03~0.23m, 적재함 위에 놓인 박스는
-# 약 0.30m 이상(실측 드롭테스트 기준, 박스 바닥=포드 표면=0.2768m)이라 이
-# 둘 사이에 확실한 간격이 있다 -- 노란 AMR 몸체를 박스로 오탐지하는 문제를
-# 색상 대신 높이로 걸러낸다(색상 체크는 "R>B"만 보는데 노란색도 이 조건을
-# 만족해서 갈색 박스랑 구분이 안 됐었다).
-MIN_BOX_WORLD_Z = 0.30
+# 이전 실행에서 반복된 바닥/AMR 가장자리 오탐의 월드 좌표. 역투영 노이즈를
+# 고려해 중심 20cm 이내 후보는 높이 추정값과 무관하게 항상 제외한다.
+KNOWN_LOW_FALSE_POSITIVE_XY = np.array([2.265, -1.396])
+KNOWN_LOW_FALSE_POSITIVE_RADIUS = 0.20
+# AMR 몸체/바닥 가장자리에서 역투영된 점은 Z=0.30~0.32m까지 올라와
+# 박스 후보로 통과하는 것이 클린 런에서 재현됐다. 실제 박스는 포드 표면
+# (Z=0.2768m)에 놓이고 반높이가 0.175m이므로 윗면이 최소 약 0.45m다.
+# 깊이 오차 여유를 남기면서 재현된 저높이 배경 후보를 제외한다.
+MIN_BOX_WORLD_Z = 0.40
 SCAN_DESCEND_STEPS = 150
 SCAN_MID_HEIGHT = (SCAN_HEIGHT + APPROACH_HEIGHT) / 2.0
 VISION_WAIT_TIMEOUT_STEPS = 300
 REFINE_WAIT_TIMEOUT_STEPS = 100
 
-IMAGE_TOPIC = "/rgb"
+# Keep the manipulator camera isolated from the warehouse USD's Replicator
+# writers, which also publish /rgb with simulation-clock stamps.
+IMAGE_TOPIC = "/arm_a/rgb"
 DEPTH_TOPIC = "/depth"
 BOX_PIXEL_TOPIC = "/box_pixel"
 COMMAND_TOPIC = "/arm_a/pick_place_command"
@@ -197,8 +203,17 @@ MAX_STEPS = 600
 
 # 적재함이 완전히 비었다고 확정하기 전, 기본(스캔) 자세에서 박스 미인식
 # 상태를 얼마나 기다릴지. 박스 개수를 고정하지 않고(지금 4개, 나중에
-# 늘어나도 됨) "더 이상 안 보인다"로만 판단한다.
+# 늘어나도 됨) 정상 영상의 명시적 미검출 응답을 시뮬레이션 시간 동안 확인한다.
 NO_BOX_CONFIRM_TIMEOUT_S = 5.0
+VISION_RESPONSE_TIMEOUT_S = 10.0
+MIN_EMPTY_FRAMES = 3
+MAX_PICK_ATTEMPTS = 3
+PLACE_XY_TOLERANCE = 0.15
+PLACE_Z_TOLERANCE = 0.10
+
+
+class VisionError(RuntimeError):
+    """No trustworthy observation; this is never evidence of empty cargo."""
 
 APPROACH_ROLL_DEG = 180.0
 APPROACH_PITCH_DEG = 0.0
@@ -463,12 +478,35 @@ class P3020RosBridge:
         self.pixel_sub = node.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
         self.latest_pixel = None
 
+        self.detection_results = {}
+        self.result_sub = node.create_subscription(
+            String, BOX_PIXEL_TOPIC + "/result", self._on_detection_result, 10
+        )
+
         self.status_pub = node.create_publisher(String, STATUS_TOPIC, 10)
         self.command_sub = node.create_subscription(String, COMMAND_TOPIC, self._on_command, 10)
         self.pending_command = None
 
     def get_clock(self):
         return self._node.get_clock()
+
+    def _on_detection_result(self, msg):
+        try:
+            result = json.loads(msg.data)
+            stamp = int(result["stamp_ns"])
+            detection = result["detection"]
+            if detection is not None:
+                values = [float(detection[key]) for key in ("cx", "cy", "conf")]
+                if not all(np.isfinite(value) for value in values):
+                    return
+            self.detection_results[stamp] = result
+            while len(self.detection_results) > 32:
+                del self.detection_results[next(iter(self.detection_results))]
+        except (ValueError, TypeError, KeyError):
+            return
+
+    def take_detection_result(self, stamp):
+        return self.detection_results.pop(stamp, None)
 
     def _on_pixel(self, msg: PointStamped):
         stamp = Time.from_msg(msg.header.stamp)
@@ -515,12 +553,14 @@ class P3020RosBridge:
         self.status_pub.publish(msg)
         self._node.get_logger().info(f"status: {status}")
 
-    def publish_image(self, rgba):
+    def publish_image(self, rgba, stamp_ns=None):
         rgb = np.ascontiguousarray(rgba[:, :, :3])
         if rgb.mean() < 1.0:
             return
         msg = Image()
         msg.header.stamp = self._node.get_clock().now().to_msg()
+        if stamp_ns is not None:
+            msg.header.stamp.sec, msg.header.stamp.nanosec = divmod(int(stamp_ns), 1_000_000_000)
         msg.header.frame_id = "p3020_rsd455"
         msg.height, msg.width = rgb.shape[:2]
         msg.encoding = "rgb8"
@@ -528,6 +568,7 @@ class P3020RosBridge:
         msg.step = msg.width * 3
         msg.data = rgb.tobytes()
         self.image_pub.publish(msg)
+        return msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec
 
     def publish_depth(self, depth_map):
         d = np.ascontiguousarray(depth_map, dtype=np.float32)
@@ -567,10 +608,20 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
         print(f"   scanning     [warn] 탐지 지점이 카메라에 너무 가깝습니다"
               f"(depth={depth_val:.3f}m) -- 그리퍼/팔 자신을 오탐지, 무시.")
         return None
+    world_pos = camera.pixel_to_world(cx, cy, depth_val)
+    false_positive_xy_error = float(
+        np.linalg.norm(world_pos[:2] - KNOWN_LOW_FALSE_POSITIVE_XY)
+    )
+    if false_positive_xy_error <= KNOWN_LOW_FALSE_POSITIVE_RADIUS:
+        print(
+            "   scanning     [warn] 알려진 바닥/AMR 오탐 영역을 높이와 무관하게 제외합니다 "
+            f"(world=({world_pos[0]:.3f}, {world_pos[1]:.3f}, "
+            f"{world_pos[2]:.3f}), xy_error={false_positive_xy_error:.3f}m)."
+        )
+        return None
     if not _looks_like_box_color(frame, cx, cy):
         print("   scanning     [warn] 색이 박스 같지 않습니다 -- 그림자로 보고 무시.")
         return None
-    world_pos = camera.pixel_to_world(cx, cy, depth_val)
     if world_pos[2] < MIN_BOX_WORLD_Z:
         print(f"   scanning     [warn] 실측 높이가 너무 낮습니다"
               f"(z={world_pos[2]:.3f}m) -- AMR 몸체(노란색)를 오탐지, 무시.")
@@ -587,12 +638,8 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
 def _disable_baked_camera_graph(stage):
     """P3020 원본 애셋(P3020_mount_vgp20_rsd455_1)에는 /World/Graph/camra_graph
     라는 OmniGraph가 이미 박혀 있어서(GUI로 예전에 만들어졌던 게 애셋에 그대로
-    남은 것으로 보임), 이 그래프의 RGBPublish/DepthPublish 노드가 우리
-    P3020RosBridge와 똑같이 /rgb, /depth 에 발행한다 -- 두 발행자가 번갈아
-    도착해서 화면이 깜빡이거나(카메라 두 개가 "충돌"하는 것처럼 보임) rqt로
-    아예 안 보이는 원인이 될 수 있다. p3020_pick_place_poc.py(단독 스크립트)
-    에서 이미 겪고 고쳤던 문제인데, 통합 맵으로 포팅할 때 이 수정을 옮기는
-    걸 빠뜨렸었다. 통합 맵에서는 이 그래프가 /World/Graph가 아니라
+    남은 것으로 보임), 이 그래프의 RGBPublish/DepthPublish 노드가
+    카메라용 ROS 토픽을 발행할 수 있다. 통합 맵에서는 /World/Graph가 아니라
     /World/World1/Graph 밑에 있다(P3020 전체가 World1 하위에 참조돼 있어서).
 
     SetActive(False)만으로는 안 꺼지는 게 확인된 적이 있어서(OmniGraph 평가가
@@ -786,26 +833,91 @@ class P3020PickPlaceAgent:
             self.world.step(render=True)
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
-        not_before = ros_node.get_clock().now()
-        depth_map = None
-        last_frame = None
-        for _ in range(timeout_steps):
-            frame = self.camera.get_frame()
-            if frame is not None:
-                last_frame = frame
-                ros_node.publish_image(frame)
-                depth_map = self.camera.get_depth()
-                ros_node.publish_depth(depth_map)
-            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
-            pixel = ros_node.take_pixel_after(not_before)
-            if pixel is not None and depth_map is not None:
-                world_xy = pixel_to_world_xy(pixel, depth_map, self.camera, last_frame)
-                if world_xy is not None:
-                    return world_xy
+        # Only one image in flight: match its inference to its saved RGB/depth.
+        # Never combine a delayed pixel with the current camera frame.
+        pending = None
+        last_frame_id = self.camera.get_frame_id()
+        last_response = time.monotonic()
+        last_publish = last_response
+        empty_frames = 0
+        empty_since = None
+        rejected_frames = 0
+        elapsed = 0.0
+        while True:
+            now = time.monotonic()
+            if now - last_response > VISION_RESPONSE_TIMEOUT_S:
+                reason = "no fresh RGB/depth frame" if pending is None else f"no detector response for frame {pending[0]}"
+                raise VisionError(f"camera/detector stopped or response timed out: {reason}")
+            if pending is not None and now - last_publish >= 1.0:
+                # Sensor-data QoS is best effort. Retry the identical image and
+                # timestamp so a dropped packet cannot strand a scan, while
+                # retaining the original depth used for back-projection.
+                ros_node.publish_image(pending[1], stamp_ns=pending[0])
+                last_publish = now
+            if pending is None:
+                frame_id = self.camera.get_frame_id()
+                frame = self.camera.get_frame()
+                depth = self.camera.get_depth()
+                if (frame_id != last_frame_id and frame is not None
+                        and depth is not None and depth.size
+                        and depth.shape == frame.shape[:2]
+                        and np.any(np.isfinite(depth) & (depth > 0))):
+                    stamp = ros_node.publish_image(frame)
+                    if stamp is not None:
+                        pending = (stamp, frame.copy(), depth.copy())
+                        last_publish = now
+                        last_frame_id = frame_id
+                        ros_node.publish_depth(depth)
+            for _ in range(20):
+                rclpy.spin_once(ros_node._node, timeout_sec=0.0)
+            result = None if pending is None else ros_node.take_detection_result(pending[0])
+            if result is not None:
+                last_response = time.monotonic()
+                _, frame, depth = pending
+                pending = None
+                candidates = result.get("candidates")
+                if candidates is None:
+                    detection = result.get("detection")
+                    candidates = [] if detection is None else [detection]
+                if candidates:
+                    accepted = None
+                    for detection in candidates:
+                        pixel = tuple(detection[key] for key in ("cx", "cy", "conf"))
+                        world_xy = pixel_to_world_xy(pixel, depth, self.camera, frame)
+                        if world_xy is not None:
+                            accepted = world_xy
+                            break
+                    if accepted is not None:
+                        return accepted
+                    # A detector candidate rejected by RGB/depth/height checks
+                    # is a negative observation, not a camera failure. Floor and
+                    # AMR-body false positives used to keep this branch active
+                    # forever and turn a genuinely empty cargo pod into
+                    # VISION_ERROR, preventing the AMR from returning. Accumulate
+                    # these alongside explicit no-detection frames; a real box
+                    # that passes validation still returns immediately above.
+                    rejected_frames += 1
+                    empty_frames += 1
+                    if empty_since is None:
+                        empty_since = elapsed
+                    if (empty_frames >= MIN_EMPTY_FRAMES
+                            and elapsed - empty_since >= timeout_steps * dt):
+                        print(
+                            "   scanning     validated candidates absent; "
+                            f"ignored {rejected_frames} false-positive frames"
+                        )
+                        return None
+                else:
+                    empty_frames += 1
+                    if empty_since is None:
+                        empty_since = elapsed
+                    if (empty_frames >= MIN_EMPTY_FRAMES
+                            and elapsed - empty_since >= timeout_steps * dt):
+                        return None
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
-        return None
+            elapsed += dt
 
     def _move_to(self, xy_world, height_from, height_to, steps, tick_others, dt):
         xy_rel = base_relative(xy_world)
@@ -844,6 +956,18 @@ class P3020PickPlaceAgent:
         self._move_to(box_xy, SCAN_MID_HEIGHT, APPROACH_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         return box_xy
 
+    def _parcel_at_place(self, path, place_xy, xy_tolerance):
+        prim = self.stage.GetPrimAtPath(path)
+        if not prim.IsValid():
+            return False
+        pos = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(
+            Usd.TimeCode.Default()
+        ).ExtractTranslation()
+        return (
+            np.linalg.norm(np.array([pos[0], pos[1]]) - place_xy) <= xy_tolerance
+            and abs(pos[2] - PARCEL_HALF_HEIGHT - CONVEYOR_SURFACE_Z) <= PLACE_Z_TOLERANCE
+        )
+
     def run_pick_place(self, ros_node, place_xy_world, scan_xy_world=None,
                         tick_others=None, dt=1 / 60.0):
         """스캔(인식) -> 흡착 -> 컨베이어 위로 이동 -> 놓기, 한 사이클 전체.
@@ -868,9 +992,7 @@ class P3020PickPlaceAgent:
         pick_xyz = self._locate_box_and_descend(ros_node, scan_xy_world, tick_others, dt)
         if pick_xyz is None:
             self._return_to_ready_pose(tick_others=tick_others, dt=dt)
-            message = "카메라로 박스를 찾지 못했습니다."
-            ros_node.publish_status(f"DONE_FAIL:{message}")
-            return False, message
+            return False, "NO_BOX"
 
         pick_xy = pick_xyz[:2]
         # depth 역투영으로 실측한 박스 윗면의 실제 world Z -- 카고 포드 위
@@ -882,14 +1004,12 @@ class P3020PickPlaceAgent:
         if not is_within_reach(pick_xy):
             self._return_to_ready_pose(tick_others=tick_others, dt=dt)
             message = f"박스가 가동범위 밖입니다 ({pick_xy[0]:.3f}, {pick_xy[1]:.3f})."
-            ros_node.publish_status(f"DONE_FAIL:{message}")
             return False, message
 
         target_box_path = find_nearest_parcel(self.stage, pick_xy)
         if target_box_path is None:
             self._return_to_ready_pose(tick_others=tick_others, dt=dt)
             message = f"{PARCEL_PARENT_PATH} 밑에서 파라셀 프림을 찾지 못했습니다."
-            ros_node.publish_status(f"DONE_FAIL:{message}")
             return False, message
         print(f"   scanning     target parcel prim: {target_box_path}")
 
@@ -905,10 +1025,19 @@ class P3020PickPlaceAgent:
                             pick_z=detected_pick_z)
         gripper_was_attached = False
         ever_attached = False
+        release_verified = False
+        released_at_step = None
+        landing_verified = False
 
         def on_gripper_change(new_state):
+            nonlocal release_verified, released_at_step
             if new_state == "open":
+                if self.gripper.gripped_object() == target_box_path:
+                    release_verified = self._parcel_at_place(
+                        target_box_path, place_xy_world, PLACE_XY_TOLERANCE
+                    )
                 self.gripper.detach()
+                released_at_step = step
             elif new_state == "close":
                 ros_node.publish_status("GRASPING")
 
@@ -949,6 +1078,11 @@ class P3020PickPlaceAgent:
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
+            if released_at_step is not None and step - released_at_step == 6:
+                # Check just after release, allowing 1 m/s belt travel.
+                landing_verified = self._parcel_at_place(
+                    target_box_path, place_xy_world, PLACE_XY_TOLERANCE + 6 * dt
+                ) and not self.gripper.is_attached()
             step += 1
 
         # P3020's job ends at placing the box on the conveyor. Physical
@@ -960,35 +1094,52 @@ class P3020PickPlaceAgent:
 
         self._return_to_ready_pose(tick_others=tick_others, dt=dt)
 
-        if ever_attached:
+        if ever_attached and release_verified and landing_verified and not self.gripper.is_attached():
             message = f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) -> place({place_xy_world[0]:.3f}, {place_xy_world[1]:.3f}) 완료"
             ros_node.publish_status("DONE_SUCCESS")
             return True, message
 
-        message = f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다."
-        ros_node.publish_status(f"DONE_FAIL:{message}")
+        message = ("컨베이어 위 정상 해제를 확인하지 못했습니다." if ever_attached else
+                   f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다.")
         return False, message
 
     def run_until_cargo_empty(self, ros_node, place_xy_world, amr_agent,
                                scan_xy_world=None, tick_others=None, dt=1 / 60.0,
                                on_box_placed=None):
-        """적재함의 박스를 하나씩 찾아서 컨베이어 위로 옮기고, 기본(스캔)
-        자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 박스가 안 보이면 적재함이
-        빈 것으로 확정하고 amr_agent에 복귀 신호를 보낸다. 박스 개수는
-        가정하지 않는다 -- run_pick_place가 실패할 때마다(=기본 자세에서
-        박스를 못 찾음) 재확인 대기만 하고, 그래도 안 보이면 종료한다.
-        on_box_placed(message)는 박스 하나를 성공적으로 옮길 때마다 호출된다
-        (관제타워 PACKAGE_ENTERED 이벤트처럼, 호출 쪽이 박스 단위 후크가
-        필요할 때 쓴다)."""
+        """Confirm healthy empty observations; abort unresolved work errors.
+
+        DONE_SUCCESS is per box, RETRYING is nonterminal, DONE_FAIL is fatal.
+        Only CARGO_EMPTY completes the batch. Durations use simulation time.
+        """
+        failures = 0
+        last_error = None
         while True:
-            success, message = self.run_pick_place(
-                ros_node, place_xy_world, scan_xy_world=scan_xy_world,
-                tick_others=tick_others, dt=dt,
-            )
+            try:
+                success, message = self.run_pick_place(
+                    ros_node, place_xy_world, scan_xy_world=scan_xy_world,
+                    tick_others=tick_others, dt=dt,
+                )
+            except VisionError as error:
+                ros_node.publish_status(f"DONE_FAIL:VISION_ERROR:{error}")
+                return False
             if success:
+                failures = 0
+                last_error = None
                 print(f"[P3020] {message} -- 다음 박스 확인")
                 if on_box_placed:
                     on_box_placed(message)
+                continue
+
+            # An unresolved grasp/reach/place error cannot be converted into
+            # success just because the dropped/occluded box is no longer seen.
+            if message != "NO_BOX" or last_error is not None:
+                failures += 1
+                if message != "NO_BOX":
+                    last_error = message
+                if failures >= MAX_PICK_ATTEMPTS:
+                    ros_node.publish_status(f"DONE_FAIL:{last_error}")
+                    return False
+                ros_node.publish_status(f"RETRYING:{failures}/{MAX_PICK_ATTEMPTS}:{last_error}")
                 continue
 
             print(
@@ -997,9 +1148,13 @@ class P3020PickPlaceAgent:
             )
             ros_node.publish_status("CHECKING_EMPTY")
             confirm_steps = max(1, int(NO_BOX_CONFIRM_TIMEOUT_S / dt))
-            still_there = self._wait_for_detection(
-                ros_node, confirm_steps, tick_others, dt
-            )
+            try:
+                still_there = self._wait_for_detection(
+                    ros_node, confirm_steps, tick_others, dt
+                )
+            except VisionError as error:
+                ros_node.publish_status(f"DONE_FAIL:VISION_ERROR:{error}")
+                return False
             if still_there is not None:
                 print("[P3020] 재확인 중 박스 발견 -- 픽업 재시도")
                 continue
@@ -1009,5 +1164,5 @@ class P3020PickPlaceAgent:
                 "적재함 비움 확정, AMR 복귀 요청"
             )
             ros_node.publish_status("CARGO_EMPTY")
-            amr_agent.request_return_dock()
-            return
+            # The AMR mission owns the raise / Nav2 return / docking sequence.
+            return True

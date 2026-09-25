@@ -18,11 +18,9 @@ p3020_mission_agent.py)과 표준 타입(std_msgs/String)만 쓰는 토픽 두
 
     한 번의 PickPlace 골(goal)은 박스 한 개가 아니라 "적재함이 빌 때까지"를
     뜻한다 (p3020_mission_agent.py의 run_until_cargo_empty 참고 -- 박스를
-    하나 찾을 때마다 DONE_SUCCESS/DONE_FAIL을 찍고 다음 박스로 넘어가고,
-    5초간 더 이상 안 보이면 그때만 CARGO_EMPTY를 찍는다). 그래서
-    DONE_SUCCESS/DONE_FAIL은 박스 1개짜리 중간 피드백일 뿐이고, 이 액션의
-    진짜 종료 신호는 CARGO_EMPTY뿐이다 -- 예전엔 DONE_SUCCESS를 종료
-    신호로 잘못 쓰고 있어서, 박스 1개만 옮겨도 AMR이 곧바로 복귀했었다.
+    DONE_SUCCESS는 박스 1개 완료, RETRYING/CHECKING_EMPTY는 중간 상태다.
+    CARGO_EMPTY만 전체 성공이며 DONE_FAIL은 복구하지 못한 작업/비전 오류로
+    즉시 액션을 실패시킨다. 미검출만으로 DONE_FAIL을 발행하지 않는다.
 
 실행:
     ros2 run arm_controller pick_place_action_server
@@ -77,6 +75,7 @@ class PickPlaceActionServer(Node):
             callback_group=callback_group,
         )
         self.latest_status = None
+        self.terminal_status = None
 
         self._action_server = ActionServer(
             self,
@@ -91,6 +90,12 @@ class PickPlaceActionServer(Node):
 
     def _on_status(self, msg: String):
         self.latest_status = msg.data
+        if self.terminal_status is None and (
+            msg.data == "CARGO_EMPTY" or msg.data.startswith("DONE_FAIL:")
+        ):
+            # A later SCANNING/idle update must not overwrite a fatal result
+            # before the execute thread polls it.
+            self.terminal_status = msg.data
 
     def _execute_callback(self, goal_handle):
         goal = goal_handle.request
@@ -107,6 +112,7 @@ class PickPlaceActionServer(Node):
             "scan_hint_y": float(goal.pickup_pose.position.y),
         }
         self.latest_status = None
+        self.terminal_status = None
         msg = String()
         msg.data = json.dumps(command)
         self.command_pub.publish(msg)
@@ -120,16 +126,17 @@ class PickPlaceActionServer(Node):
             time.sleep(poll_period)
             elapsed += poll_period
 
-            status = self.latest_status
+            status = self.terminal_status or self.latest_status
             if status is None:
                 continue
 
-            # CARGO_EMPTY is the only real terminal signal for this action
-            # (see module docstring) -- run_until_cargo_empty keeps looping
-            # through DONE_SUCCESS/DONE_FAIL per box until it publishes
-            # this. Treating DONE_SUCCESS itself as terminal was the bug
-            # that made the AMR return after just one box.
-            if status.startswith("CARGO_EMPTY"):
+            if status.startswith("DONE_FAIL:"):
+                goal_handle.abort()
+                result.success = False
+                result.message = status.partition(":")[2]
+                return result
+
+            if status == "CARGO_EMPTY":
                 goal_handle.succeed()
                 result.success = True
                 result.message = "cargo pod emptied"

@@ -4,7 +4,7 @@ action:
 
 vision:
   p3020_in:
-    rgb: /rgb
+    rgb: /arm_a/rgb
     box_pixel: /box_pixel
   p3020_out:
     topic_prefix: /arm_b

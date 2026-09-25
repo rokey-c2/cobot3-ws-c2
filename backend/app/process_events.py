@@ -230,6 +230,14 @@ def _find_or_create_active_tracking(cursor, payload):
     if active is not None and active["package_id"] is not None:
         return active
 
+    # Batch housekeeping is not a new physical parcel. In particular the
+    # empty check after the last sorter arrival must not invent a new package.
+    state = str(payload.get("state", "")).strip().upper().partition(":")[0]
+    if str(payload.get("event_type", "")).strip().upper() == "P3020_STATE" and state in {
+        "CHECKING_EMPTY", "CARGO_EMPTY", "RETRYING"
+    }:
+        return None
+
     mission, package = _create_tracking_records(
         cursor,
         payload.get("package_code"),
@@ -276,6 +284,8 @@ def handle_process_event(payload):
     with get_db_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cursor:
             active = _find_or_create_active_tracking(cursor, payload)
+            if active is None:
+                return {"ignored": True, "reason": "batch status without active package"}
             region = normalize_region(active["region"])
             if payload.get("region") is None:
                 payload = dict(payload, region=region)

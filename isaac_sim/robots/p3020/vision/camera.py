@@ -33,6 +33,10 @@ class CameraInterface:
         """(H, W) float32, 미터 단위 거리(distance_to_image_plane)."""
         return self._camera.get_depth()
 
+    def get_frame_id(self):
+        """Renderer sequence, so a frozen image cannot confirm an empty pod."""
+        return self._camera.get_current_frame().get("rendering_time", 0)
+
     def pixel_to_world(self, px: float, py: float, depth_value: float) -> np.ndarray:
         """이미지 픽셀 좌표(px, py) + 그 지점의 depth 값을 3D 월드 좌표로 변환한다."""
         points_2d = np.array([[px, py]])

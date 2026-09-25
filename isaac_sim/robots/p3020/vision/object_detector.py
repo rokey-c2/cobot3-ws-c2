@@ -13,7 +13,18 @@ import onnxruntime as ort
 
 class ObjectDetector:
     def __init__(self, model_path: str, input_size: int = 640, conf_threshold: float = 0.5):
-        self._session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+        # ONNX Runtime otherwise allocates a large worker pool per detector
+        # process. Two live cameras then oversubscribe the CPU and delay
+        # subsequent results long enough to trip the mission timeout.
+        session_options = ort.SessionOptions()
+        session_options.intra_op_num_threads = 2
+        session_options.inter_op_num_threads = 1
+        session_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        self._session = ort.InferenceSession(
+            model_path,
+            sess_options=session_options,
+            providers=["CPUExecutionProvider"],
+        )
         self._input_name = self._session.get_inputs()[0].name
         self._input_size = input_size
         self._conf_threshold = conf_threshold
@@ -41,38 +52,49 @@ class ObjectDetector:
         blob = blob.transpose(2, 0, 1)[None, ...]  # HWC -> NCHW
         return blob, scale, pad_x, pad_y
 
-    def detect(self, image_rgba: np.ndarray):
-        """가장 confidence 높은 박스 하나를 반환한다.
+    @staticmethod
+    def _iou(a, b):
+        ax0, ay0 = a[0] - a[2] / 2, a[1] - a[3] / 2
+        ax1, ay1 = a[0] + a[2] / 2, a[1] + a[3] / 2
+        bx0, by0 = b[0] - b[2] / 2, b[1] - b[3] / 2
+        bx1, by1 = b[0] + b[2] / 2, b[1] + b[3] / 2
+        iw = max(0.0, min(ax1, bx1) - max(ax0, bx0))
+        ih = max(0.0, min(ay1, by1) - max(ay0, by0))
+        intersection = iw * ih
+        union = max(0.0, a[2] * a[3]) + max(0.0, b[2] * b[3]) - intersection
+        return intersection / union if union > 0 else 0.0
 
-        Returns:
-            dict(cx, cy, w, h, conf) -- 전부 원본 image_rgba 픽셀 좌표계 기준.
-            검출 실패 시 None.
-        """
+    def detect_candidates(self, image_rgba: np.ndarray, max_candidates: int = 20):
+        """Return confidence-ranked, non-duplicate boxes in source pixels."""
         if image_rgba is None or image_rgba.size == 0:
-            return None
+            return []
 
         blob, scale, pad_x, pad_y = self._preprocess(image_rgba)
-        output = self._session.run(None, {self._input_name: blob})[0]  # [1, 5, 8400]
-        preds = output[0].T  # [8400, 5] -> (cx, cy, w, h, conf)
+        output = self._session.run(None, {self._input_name: blob})[0]
+        preds = output[0].T
+        mask = (preds[:, 4] >= self._conf_threshold) & np.isfinite(preds).all(axis=1)
+        ordered = preds[mask]
+        if len(ordered) == 0:
+            return []
 
-        mask = preds[:, 4] >= self._conf_threshold
-        preds = preds[mask]
-        if len(preds) == 0:
-            return None
+        ordered = ordered[np.argsort(ordered[:, 4])[::-1]]
+        kept = []
+        for pred in ordered:
+            if any(self._iou(pred, prior) > 0.45 for prior in kept):
+                continue
+            kept.append(pred)
+            if len(kept) >= max_candidates:
+                break
 
-        best = preds[np.argmax(preds[:, 4])]
-        cx, cy, w, h, conf = best
+        return [{
+            "cx": float((cx - pad_x) / scale),
+            "cy": float((cy - pad_y) / scale),
+            "w": float(width / scale),
+            "h": float(height / scale),
+            "conf": float(confidence),
+        } for cx, cy, width, height, confidence in kept]
 
-        # letterbox 역변환: 640x640 좌표 -> 원본 프레임 좌표
-        orig_cx = (cx - pad_x) / scale
-        orig_cy = (cy - pad_y) / scale
-        orig_w = w / scale
-        orig_h = h / scale
-
-        return {
-            "cx": float(orig_cx),
-            "cy": float(orig_cy),
-            "w": float(orig_w),
-            "h": float(orig_h),
-            "conf": float(conf),
-        }
+    def detect(self, image_rgba: np.ndarray):
+        """Backward-compatible highest-confidence candidate."""
+        candidates = self.detect_candidates(image_rgba, max_candidates=1)
+        return candidates[0] if candidates else None

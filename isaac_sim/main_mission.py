@@ -21,12 +21,14 @@ simulation_app = SimulationApp({"headless": HEADLESS})
 import omni.graph.core as og
 import omni.usd
 import rclpy
+import numpy as np
 
 from geometry_msgs.msg import PoseStamped
 from pxr import Sdf, UsdGeom
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import String
+from sensor_msgs.msg import Image
 
 from isaacsim.core.api import World
 from isaacsim.core.utils.extensions import enable_extension
@@ -127,6 +129,9 @@ def _spawn_parcels(parcel_configs):
     DESTINATIONS = ("A", "B", "C", "D")
 
     for config, box_id in zip(parcel_configs, box_ids):
+        box_id = int(config.get("box_id", box_id))
+        if box_id not in BOX_ID_TO_TRACK:
+            raise ValueError(f"Unsupported parcel box_id: {box_id}")
         prim_path = f"/World/Cargo/Parcels/{config['name']}"
         add_parcel_asset_scaled(
             stage,
@@ -351,42 +356,14 @@ class AmrMissionBridge(Node):
 
 
 class OptimizedP3020PickPlaceAgent(P3020PickPlaceAgent):
-    """Limit YOLO RGB publishing while keeping depth inside Isaac Sim."""
+    """Use fresh per-frame YOLO results; depth stays inside Isaac Sim."""
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
         not_before = ros_node.get_clock().now()
         ros_node._node.get_logger().info(
             f"[DIAG] _wait_for_detection start not_before={not_before.nanoseconds}"
         )
-        depth_map = None
-        last_frame = None
-
-        for step in range(timeout_steps):
-            if step % VISION_RGB_PUBLISH_INTERVAL_STEPS == 0:
-                frame = self.camera.get_frame()
-                if frame is not None:
-                    last_frame = frame
-                    ros_node.publish_image(frame)
-                    depth_map = self.camera.get_depth()
-
-            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
-            pixel = ros_node.take_pixel_after(not_before)
-
-            if pixel is not None and depth_map is not None:
-                world_xyz = pixel_to_world_xy(
-                    pixel,
-                    depth_map,
-                    self.camera,
-                    last_frame,
-                )
-                if world_xyz is not None:
-                    return world_xyz
-
-            if tick_others:
-                tick_others(dt)
-            self.world.step(render=True)
-
-        return None
+        return super()._wait_for_detection(ros_node, timeout_steps, tick_others, dt)
 
 
 class OptimizedP3020RosBridge(P3020RosBridge):
@@ -400,7 +377,7 @@ class OptimizedP3020RosBridge(P3020RosBridge):
             self.depth_pub = None
 
         self._node.get_logger().info(
-            "vision optimization: /rgb ~=10 Hz, /depth ROS2 publisher disabled"
+            "vision: exact-frame requests on /arm_a/rgb, continuous preview on /arm_a/preview; depth stays local"
         )
 
     def publish_depth(self, depth_map):
@@ -588,6 +565,8 @@ def main():
     p3020_bridge = OptimizedP3020RosBridge(bridge)
     p3020_out_bridge = P3020OutRosBridge(bridge)
     equipment_bridge = ProcessEquipmentBridge(bridge, conveyor, sorter)
+    preview_pub = bridge.create_publisher(Image, "/arm_a/preview", 1)
+    last_preview_at = 0.0
 
     print()
     print("============================================")
@@ -612,14 +591,15 @@ def main():
     print("[ROS2] /amr_a/pose_source_session")
     print("[ROS2] /amr_a/restore_pose")
     print("[P3020] one command = one Pick & Place cycle")
-    print("[P3020_OUT] watches conveyor end-of-line, loads reject bin via OutboundLoadPlanner")
+    print("[P3020_OUT] camera waits for a D parcel to be detected by a sorter")
     print("[ROS2] /arm_b/rgb, /arm_b/box_pixel, /arm_b/pick_place_status")
     print("[CONTROL] /controltower/equipment/command + status/event feedback")
-    print("[PERF] YOLO RGB publish: every 6 simulation steps (~10 Hz)")
+    print("[PERF] IN preview: up to 5 Hz; YOLO requests use matched RGB/depth frames")
     print("[PERF] /depth ROS2 publishing: disabled (local depth kept)")
     print("============================================")
 
     def tick_iw_hub_agents(step_dt):
+        nonlocal last_preview_at
         for agent in agents:
             agent.on_physics_step(step_dt)
         # P3020's pick/place loop blocks the outer while loop below by
@@ -629,6 +609,23 @@ def main():
         # conveyor while P3020 is mid-cycle (see SORTER_MERGE_PLAN.md
         # section 9).
         sorter.update_boxes(parcel_paths, BOX_ID_TO_TRACK)
+        if sorter.destination_d_detected and not p3020_out_agent.camera_enabled:
+            p3020_out_agent.enable_camera()
+        now = time.monotonic()
+        if now - last_preview_at >= 0.2:
+            last_preview_at = now
+            frame = p3020_agent.camera.get_frame()
+            if frame is not None:
+                # Preview has its own topic; it cannot replace a queued scan.
+                rgb = np.ascontiguousarray(frame[:, :, :3])
+                msg = Image()
+                msg.header.stamp = bridge.get_clock().now().to_msg()
+                msg.header.frame_id = "p3020_rsd455"
+                msg.height, msg.width = rgb.shape[:2]
+                msg.encoding = "rgb8"
+                msg.step = msg.width * 3
+                msg.data = rgb.tobytes()
+                preview_pub.publish(msg)
 
     try:
         while simulation_app.is_running():
@@ -668,10 +665,8 @@ def main():
                 )
 
                 # 액션 서버(pick_place_action_server.py)는 한 골(goal)을
-                # "적재함이 빌 때까지"로 취급하고 CARGO_EMPTY가 와야만
-                # 끝낸다 -- run_until_cargo_empty()가 박스를 하나씩 옮기다가
-                # 기본 자세에서 NO_BOX_CONFIRM_TIMEOUT_S초 동안 더 이상
-                # 안 보이면 CARGO_EMPTY를 찍고 AMR에 복귀 요청까지 보낸다.
+                # CARGO_EMPTY completes the batch; DONE_FAIL aborts it.
+                # The AMR mission owns the subsequent lift/return sequence.
                 def _on_box_placed(message):
                     equipment_bridge.publish_conveyor_event("PACKAGE_ENTERED")
                     print(f"[P3020] result: success=True message={message}")
@@ -686,7 +681,7 @@ def main():
                     on_box_placed=_on_box_placed,
                 )
 
-            if equipment_bridge.p3020_out_enabled:
+            if equipment_bridge.p3020_out_enabled and p3020_out_agent.camera_enabled:
                 out_success, out_message = p3020_out_agent.try_unload_cycle(
                     p3020_out_bridge,
                     tick_others=tick_iw_hub_agents,
