@@ -226,7 +226,7 @@ class OutParcelSelectionTest(unittest.TestCase):
         namespace.update(
             np=np, IDLE_SCAN_TIMEOUT_STEPS=90, REFINE_WAIT_TIMEOUT_STEPS=100,
             SCAN_DESCEND_STEPS=150, SCAN_MID_HEIGHT=1.4, APPROACH_HEIGHT=1.2,
-            PARCEL_HALF_HEIGHT=.175, find_nearest_parcel=lambda *args: "box",
+            PARCEL_HALF_HEIGHT=.175, MAX_VISION_PARCEL_DISTANCE=.4, find_nearest_parcel=lambda *args: "box",
             base_relative=lambda xy: np.asarray(xy) - [-15., -2.],
             is_within_reach=lambda xy: np.linalg.norm(np.asarray(xy) - [-15., -2.]) <= 2.,
             get_tcp_pose=lambda frame: [0., 0., 1.5],
@@ -234,6 +234,7 @@ class OutParcelSelectionTest(unittest.TestCase):
         cls = load_class(path, "P3020UnloadToBinAgent", {"_locate_box_and_descend"}, namespace)
         agent = cls()
         agent.stage = Mock()
+        agent._placed_parcel_paths = set()
         agent.ee_frame = Mock()
         agent._wait_for_detection = Mock(side_effect=[np.array([-15.446, -1.626, 1.126]), None])
         agent._move_to = Mock()
@@ -242,13 +243,53 @@ class OutParcelSelectionTest(unittest.TestCase):
         )
         self.assertEqual(agent._move_to.call_count, 2)
         # A visually reachable candidate must not freeze an actually distant box.
-        transform.ComputeLocalToWorldTransform.return_value.ExtractTranslation.return_value = (-18., -2., 1.)
+        transform.ComputeLocalToWorldTransform.return_value.ExtractTranslation.return_value = (-17.05, -2., 1.)
         agent._wait_for_detection = Mock(return_value=np.array([-16.9, -2., 1.]))
         agent._move_to.reset_mock()
         pxr.UsdPhysics.reset_mock()
         self.assertIsNone(agent._locate_box_and_descend(Mock(), None, 1 / 60))
         agent._move_to.assert_not_called()
         pxr.UsdPhysics.RigidBodyAPI.assert_not_called()
+
+        # Previously placed boxes must never start another approach.
+        agent._placed_parcel_paths.add("box")
+        transform.ComputeLocalToWorldTransform.return_value.ExtractTranslation.return_value = (-15.4, -1.6, 1.)
+        agent._wait_for_detection = Mock(return_value=np.array([-15.4, -1.6, 1.]))
+        self.assertIsNone(agent._locate_box_and_descend(Mock(), None, 1 / 60))
+        agent._move_to.assert_not_called()
+
+        cls = load_class(path, "P3020UnloadToBinAgent", {"_placement_verified"}, namespace)
+        verifier = cls()
+        verifier.stage = agent.stage
+        verifier.gripper = Mock()
+        verifier.gripper.is_attached.return_value = False
+        self.assertTrue(verifier._placement_verified("box", (-15.4, -1.6, 1.)))
+        self.assertFalse(verifier._placement_verified("box", (-15.4, -1.6, .5)))
+        verifier.gripper.is_attached.return_value = True
+        self.assertFalse(verifier._placement_verified("box", (-15.4, -1.6, 1.)))
+
+
+class OutHomeReturnTest(unittest.TestCase):
+    def test_return_requires_measured_home_pose(self):
+        path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"
+        cls = load_class(path, "P3020UnloadToBinAgent", {"_return_to_ready_pose"}, {
+            "np": np, "lerp": lambda a, b, t: a + (b - a) * t,
+            "ArticulationAction": SimpleNamespace,
+            "clamp_to_safe_limits": lambda action, names: action,
+        })
+        for reached in (True, False):
+            with self.subTest(reached=reached):
+                agent = cls()
+                agent.home_q = np.zeros(2)
+                agent._home_return_failed = False
+                agent.robot = Mock(dof_names=["a", "b"])
+                agent.robot.get_joint_positions.side_effect = (
+                    [np.ones(2), np.zeros(2)] if reached else None
+                )
+                agent.robot.get_joint_positions.return_value = np.ones(2)
+                agent.world = Mock()
+                self.assertEqual(agent._return_to_ready_pose(steps=1), reached)
+                self.assertEqual(agent._home_return_failed, not reached)
 
 
 class ActionOutcomeTest(unittest.TestCase):

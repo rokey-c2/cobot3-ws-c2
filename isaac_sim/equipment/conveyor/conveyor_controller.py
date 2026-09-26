@@ -20,8 +20,8 @@ class ConveyorController:
     SINGLE_GRAPH_TRACKS = ("04", "06", "07", "10", "11", "16", "17")
     EXCLUDED_TRACKS = ("05",)
 
-    MAIN_GRAPH_SPEED = 2.0
-    SORTER_SECOND_GRAPH_SPEED = -2.0
+    MAIN_GRAPH_SPEED = 1.5
+    SORTER_SECOND_GRAPH_SPEED = -1.5
 
     def __init__(self, speed=None):
         if speed is not None and float(speed) != self.MAIN_GRAPH_SPEED:
