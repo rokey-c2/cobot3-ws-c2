@@ -103,7 +103,8 @@ YAW_TOLERANCE = math.radians(0.7)
 RETURN_X_TOLERANCE = 0.01
 DOCK_X_TOLERANCE = 0.025
 DOCK_Y_TOLERANCE = 0.005
-SPAWN_POS_TOLERANCE = 0.025
+SPAWN_POS_TOLERANCE = 0.03
+SPAWN_X_ALIGNMENT_TOLERANCE = 0.03
 MIN_CARGO_LIFT = 0.005
 PICKUP_TIMEOUT = 8.0
 
@@ -494,7 +495,7 @@ class MissionIwHubAgent(IwHubAgent):
             self._set_state("ROTATE_TO_SPAWN_YAW")
             return
 
-        if abs(error_x) > DOCK_X_TOLERANCE:
+        if abs(error_x) > SPAWN_X_ALIGNMENT_TOLERANCE:
             self._fail(
                 f"spawn return x alignment lost: error={error_x:.4f} m"
             )
