@@ -270,6 +270,28 @@ class OutParcelSelectionTest(unittest.TestCase):
 
 
 class OutHomeReturnTest(unittest.TestCase):
+    def test_home_uses_authored_drive_target_instead_of_saved_transient_state(self):
+        path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"
+        joint = Mock()
+        joint.GetName.return_value = "joint_5"
+        attr = joint.GetAttribute.return_value
+        attr.HasAuthoredValueOpinion.return_value = True
+        attr.Get.return_value = 73.5
+        cls = load_class(path, "P3020UnloadToBinAgent", {"_set_home_pose"}, {
+            "np": np, "Usd": SimpleNamespace(PrimRange=lambda root: [joint]),
+            "ROBOT_PRIM_PATH": "/out", "ARM_JOINTS": ["joint_5"],
+            "ArticulationAction": SimpleNamespace,
+        })
+        agent = cls()
+        agent.stage = Mock()
+        agent.robot = Mock(dof_names=["joint_5"])
+        agent.robot.get_joint_positions.return_value = np.deg2rad([100.1033])
+        agent._set_home_pose()
+        np.testing.assert_allclose(agent.home_q, np.deg2rad([73.5]))
+        np.testing.assert_allclose(
+            agent.robot.apply_action.call_args.args[0].joint_positions, agent.home_q
+        )
+
     def test_return_requires_measured_home_pose(self):
         path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"
         cls = load_class(path, "P3020UnloadToBinAgent", {"_return_to_ready_pose"}, {

@@ -374,16 +374,33 @@ class P3020UnloadToBinAgent:
         self._set_home_pose()
 
     def _set_home_pose(self):
-        """p3020_mission_agent.P3020PickPlaceAgent._set_home_pose()와 같은
-        방식: initialize() 직후, 아직 아무것도 움직이기 전에 현재 관절
-        각도를 그대로 읽어 홈으로 삼는다. 사용자가 이미 맵에 저장해 둔(카메라가
-        컨베이어 끝단을 보도록 잡은) p3020_out의 자세를 좌표/각도를 몰라도,
-        재측정 없이 그대로 채택한다."""
+        """Use authored drive targets, not a saved transient physics pose.
 
+        The map's joint_5 physics state is 100.10 degrees while its drive
+        target is 73.5 degrees. Saving the former as home returned the arm
+        to a different pose than the one it settled into before picking.
+        USD angular targets are degrees; articulation commands are radians.
+        """
         self.home_q = np.array(self.robot.get_joint_positions(), dtype=float)
+        indices = {name: i for i, name in enumerate(self.robot.dof_names)}
+        for prim in Usd.PrimRange(self.stage.GetPrimAtPath(ROBOT_PRIM_PATH)):
+            if prim.GetName() not in ARM_JOINTS or prim.GetName() not in indices:
+                continue
+            target = prim.GetAttribute("drive:angular:physics:targetPosition")
+            if target and target.HasAuthoredValueOpinion():
+                value = target.Get()
+                if value is not None and np.isfinite(value):
+                    self.home_q[indices[prim.GetName()]] = np.deg2rad(float(value))
+        self.robot.apply_action(ArticulationAction(
+            joint_positions=self.home_q.copy(), joint_indices=np.arange(len(self.home_q))
+        ))
+        print(f"[P3020_OUT] authored home degrees={np.rad2deg(self.home_q).round(2)}")
 
     def set_ready_pose(self):
         self.robot.set_joint_positions(self.home_q)
+        self.robot.apply_action(ArticulationAction(
+            joint_positions=self.home_q.copy(), joint_indices=np.arange(len(self.home_q))
+        ))
 
     def on_physics_step(self, dt: float):
         pass
