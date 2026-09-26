@@ -166,12 +166,14 @@ REJECT_BIN_PLANNER_CONFIG = PlannerConfig(
     box_length=0.35,
     box_width=0.35,
     box_height=0.35,
+    place_clearance=0.02,
     gap_x=0.05,
     gap_y=0.05,
     guard_height=BASELINE_WALL_HEIGHT,
 )
 
 REJECT_BIN_SESSION_ID = "reject_bin_out_a"
+MAX_VISION_PARCEL_DISTANCE = 0.40
 
 # 컨베이어 끝단(불량 박스가 도착하는 위치)에서 박스 윗면 높이의 대략적인
 # 추정치 -- 정밀도가 필요한 게 아니라 카메라 시야 확보/홈 자세 계산용
@@ -292,6 +294,8 @@ class P3020UnloadToBinAgent:
         self.camera = None
         self.home_q = None
         self._detected_parcel_path = None
+        self._placed_parcel_paths = set()
+        self._home_return_failed = False
         self.camera_enabled = False
         self._camera_initialized = False
         self.planner = OutboundLoadPlanner(REJECT_BIN_PLANNER_CONFIG)
@@ -385,6 +389,7 @@ class P3020UnloadToBinAgent:
         pass
 
     def _return_to_ready_pose(self, steps=90, tick_others=None, dt=1 / 60.0):
+        print("[P3020_OUT] RETURNING_HOME")
         q_start = np.array(self.robot.get_joint_positions(), dtype=float)
         indices = np.arange(len(self.robot.dof_names))
         for i in range(steps):
@@ -396,6 +401,22 @@ class P3020UnloadToBinAgent:
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
+
+        # Hold the final drive target and verify measured joints, not elapsed steps.
+        for _ in range(120):
+            self.robot.apply_action(action)
+            measured = self.robot.get_joint_positions()
+            if measured is not None:
+                error = float(np.max(np.abs(np.asarray(measured) - self.home_q)))
+                if error <= np.deg2rad(3.0):
+                    print(f"[P3020_OUT] HOME_READY error={np.rad2deg(error):.2f}deg")
+                    return True
+            if tick_others:
+                tick_others(dt)
+            self.world.step(render=True)
+        self._home_return_failed = True
+        print("[P3020_OUT] HOME_RETURN_FAILED; automatic cycles paused")
+        return False
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
         not_before = ros_node.get_clock().now()
@@ -454,11 +475,18 @@ class P3020UnloadToBinAgent:
         # the parcel; the previous attempt left a 0.329 m gripper gap, so log
         # the vision error and use the parcel's authoritative pose for grasping.
         self._detected_parcel_path = find_nearest_parcel(self.stage, box_xy[:2])
+        if (self._detected_parcel_path is None
+                or self._detected_parcel_path in self._placed_parcel_paths):
+            self._detected_parcel_path = None
+            return None
         if self._detected_parcel_path is not None:
             prim = self.stage.GetPrimAtPath(self._detected_parcel_path)
             matrix = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
             center = matrix.ExtractTranslation()
             actual_xy = np.array([float(center[0]), float(center[1])])
+            if np.linalg.norm(actual_xy - box_xy[:2]) > MAX_VISION_PARCEL_DISTANCE:
+                self._detected_parcel_path = None
+                return None
             planar_distance = float(np.linalg.norm(base_relative(actual_xy)))
             if not is_within_reach(actual_xy):
                 print(
@@ -492,6 +520,16 @@ class P3020UnloadToBinAgent:
         self._move_to(box_xy, SCAN_MID_HEIGHT, APPROACH_HEIGHT, SCAN_DESCEND_STEPS // 2, tick_others, dt)
         return box_xy
 
+    def _placement_verified(self, path, target):
+        prim = self.stage.GetPrimAtPath(path)
+        if not prim.IsValid() or self.gripper.is_attached():
+            return False
+        center = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(
+            Usd.TimeCode.Default()
+        ).ExtractTranslation()
+        return (np.linalg.norm(np.asarray(center[:2]) - np.asarray(target[:2])) <= 0.15
+                and abs(float(center[2]) - float(target[2])) <= 0.10)
+
     def try_unload_cycle(self, ros_node, tick_others=None, dt=1 / 60.0):
         """컨베이어를 한 번 살펴서, 박스가 있으면 적재함 다음 칸에 놓는다.
         (success: bool, message: str) 반환. main_mission.py의 while 루프에서
@@ -502,6 +540,9 @@ class P3020UnloadToBinAgent:
         if not self.camera_enabled:
             return False, "소터에서 D 박스를 감지하기 전까지 OUT 카메라는 대기합니다."
 
+        if self._home_return_failed:
+            return False, "홈 복귀를 확인하지 못해 자동 작업이 중지되었습니다."
+
         if self.planner.is_full:
             ros_node.publish_status("BIN_FULL")
             capacity = self.planner.config.capacity
@@ -509,7 +550,6 @@ class P3020UnloadToBinAgent:
 
         self.gripper.detach()
         self.gripper.reset_contact_stats()
-        self.set_ready_pose()
 
         ros_node.publish_status("SCANNING")
         pick_xyz = self._locate_box_and_descend(ros_node, tick_others, dt)
@@ -536,7 +576,8 @@ class P3020UnloadToBinAgent:
 
         plan = self.planner.plan_next(self.bin_pose, arm_xy=(float(ROBOT_BASE_POS[0]), float(ROBOT_BASE_POS[1])))
         place_xy_world = (plan.place_position[0], plan.place_position[1])
-        place_z = plan.place_position[2]
+        # Planner Z is the box center; the FSM controls the suction TCP.
+        place_z = plan.place_position[2] + PARCEL_SNAP_DISTANCE
         print(
             f"   [p3020_out] planner      slot={plan.slot_id} "
             f"row={plan.row} col={plan.column} place={plan.place_position}"
@@ -568,6 +609,16 @@ class P3020UnloadToBinAgent:
             target_quat = pick_quat if fsm.state < 4 else place_quat
 
             fsm.advance(on_gripper_change, target_quat)
+            # GRASP must establish attachment before LIFT/MOVE/LOWER can run.
+            if 3 <= fsm.state < 6 and not self.gripper.is_attached():
+                self.gripper.detach()
+                prim = self.stage.GetPrimAtPath(target_box_path)
+                UsdPhysics.RigidBodyAPI(prim).CreateKinematicEnabledAttr().Set(False)
+                self.planner.cancel_placement(plan.slot_id)
+                message = "픽업 부착 실패 또는 이송 중 분리: PLACE를 취소합니다."
+                ros_node.publish_status(f"DONE_FAIL:{message}")
+                self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+                return False, message
             action, solved = fsm.current_action(target_quat)
             if solved:
                 action = clamp_to_safe_limits(action, self.robot.dof_names)
@@ -604,10 +655,15 @@ class P3020UnloadToBinAgent:
             self.world.step(render=True)
             step += 1
 
-        self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+        home_ready = self._return_to_ready_pose(tick_others=tick_others, dt=dt)
 
-        if ever_attached:
+        if ever_attached and self._placement_verified(target_box_path, plan.place_position):
+            # A completed parcel stays visible to the camera in the reject bin.
+            self._placed_parcel_paths.add(target_box_path)
             self.planner.confirm_placement(plan.slot_id)
+            if not home_ready:
+                ros_node.publish_status("DONE_FAIL:HOME_RETURN_FAILED")
+                return False, "박스 적재 완료, 홈 복귀 실패로 자동 작업 중지"
             message = (
                 f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) -> "
                 f"bin slot {plan.slot_id}(row={plan.row},col={plan.column}) 완료 "
@@ -619,6 +675,10 @@ class P3020UnloadToBinAgent:
             return True, message
 
         self.planner.cancel_placement(plan.slot_id)
+        if ever_attached:
+            message = "적재 위치 검증 실패: 박스가 목표 슬롯에 놓이지 않았습니다."
+            ros_node.publish_status(f"DONE_FAIL:{message}")
+            return False, message
         message = (
             f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) 위치에서 박스에 닿지 못했습니다. "
             f"minimum_gap={self.gripper.minimum_distance:.3f}m, "
