@@ -9,15 +9,12 @@ p3020_mission_agent.py의 P3020PickPlaceAgent(arm #1, p3020_in)는
 Arm #2" 주석 참고)에 도착하도록 되어 있다. 그래서 이 에이전트는:
     1) 홈 자세에서 카메라로 그 지점을 계속 지켜보다가 박스가 나타나면,
     2) 집어 올려서,
-    3) 적재함 안의 "다음으로 채울 칸"에 내려놓는다.
+    3) 적재함 중앙에 내려놓는다.
 
-"다음으로 채울 칸이 어디냐"는 cargo/outbound_load_planner_standalone.py의
-OutboundLoadPlanner를 그대로 쓴다 (그리드로 배치하되 팔에서 먼 칸부터
-채워서 이미 놓인 박스 위로 팔이 지나가지 않게 하는 순서). 그 모듈은 Isaac
-Sim/ROS2와 독립적으로 만들어져 좌표 계산 유닛테스트만 검증된 상태였고,
-실제 에이전트에 연결해 쓰는 건 이번이 처음이다. 그리드 크기(rows x columns)는
-아래 REJECT_BIN_PLANNER_CONFIG에서 정한다 -- 기본 3x3이 아니라, 이 적재함
-애셋에서 실제 검증된 2x2를 쓴다(아래 주석 참고).
+배치 좌표와 점유 상태는 cargo/outbound_load_planner_standalone.py의
+OutboundLoadPlanner를 쓴다. 아래 REJECT_BIN_PLANNER_CONFIG를 1x1로
+설정해 모서리 대신 중앙에 한 박스만 놓는다. 배치 성공 후에는 BIN_FULL로
+대기하므로 다음 박스를 중앙의 기존 박스와 겹쳐 놓지 않는다.
 
 p3020_mission_agent.py와 겹치는 로직(쿼터니언/IK 유틸, PickPlaceFSM, 파라셀
 탐색, 픽셀->world 역투영 등)은 새로 베끼지 않고 그대로 import한다 -- 같은
@@ -154,19 +151,16 @@ REJECT_BIN_POSE = CargoPose(
     yaw_deg=REJECT_BIN_SPAWN_YAW_DEG,
 )
 
-# 이 애셋에서 실제로 검증된 배치는 2x2(4박스, cargo_guard_clone.py의
-# resolve_parcel_layer() 및 robot_config.py CARGO_REGISTRY 주석 "4 boxes made
-# the pod rock -- spawn just 1 box instead" 참고)다. 3x3(9박스)는 이 코드가
-# 처음 만들어졌을 때 쓰던 표준 outbound_load_planner_standalone.py 기본값일
-# 뿐, 이 특정 애셋 크기로 실측 검증된 적은 없다 -- 더 채우고 싶으면 먼저
-# 이 grid로 박스가 서로 부딪히지 않는지 시뮬레이션에서 확인해야 한다.
+# 2x2 배치는 중앙에서 X/Y 각각 20cm 떨어진 칸에 놓게 된다.
+# 적재함 흔들림을 줄이도록 중앙 한 칸만 사용하고 박스 바닥의 여유를 1cm로 둔다.
+# 중앙 배치가 확인되면 BIN_FULL로 대기해 같은 위치에 추가 적재하지 않는다.
 REJECT_BIN_PLANNER_CONFIG = PlannerConfig(
-    rows=2,
-    columns=2,
+    rows=1,
+    columns=1,
     box_length=0.35,
     box_width=0.35,
     box_height=0.35,
-    place_clearance=0.02,
+    place_clearance=0.01,
     gap_x=0.05,
     gap_y=0.05,
     guard_height=BASELINE_WALL_HEIGHT,
@@ -174,6 +168,10 @@ REJECT_BIN_PLANNER_CONFIG = PlannerConfig(
 
 REJECT_BIN_SESSION_ID = "reject_bin_out_a"
 MAX_VISION_PARCEL_DISTANCE = 0.40
+RELEASE_RETREAT_HEIGHT = 0.20
+RELEASE_RETREAT_STEPS = 90
+RELEASE_RETREAT_SETTLE_STEPS = 120
+RELEASE_RETREAT_TOLERANCE = 0.05
 
 # 컨베이어 끝단(불량 박스가 도착하는 위치)에서 박스 윗면 높이의 대략적인
 # 추정치 -- 정밀도가 필요한 게 아니라 카메라 시야 확보/홈 자세 계산용
@@ -435,6 +433,64 @@ class P3020UnloadToBinAgent:
         print("[P3020_OUT] HOME_RETURN_FAILED; automatic cycles paused")
         return False
 
+    def _release_and_return_to_ready_pose(self, ros_node, target_quat, tick_others=None, dt=1 / 60.0):
+        """Release once, clear the box vertically, then return the joints home."""
+        self.gripper.detach()
+        ros_node.publish_status("PLACING")
+        print("[P3020_OUT] RELEASED")
+        start = np.asarray(get_tcp_pose(self.ee_frame), dtype=float).copy()
+        goal = start + np.array([0.0, 0.0, RELEASE_RETREAT_HEIGHT])
+        ros_node.publish_status("RETRACTING")
+        print(f"[P3020_OUT] RETRACTING start={start} goal={goal}")
+        reached = False
+        failure_reason = "position_timeout"
+        ik_solved = False
+        for step in range(RELEASE_RETREAT_STEPS + RELEASE_RETREAT_SETTLE_STEPS):
+            alpha = min((step + 1) / RELEASE_RETREAT_STEPS, 1.0)
+            tcp_target = lerp(start, goal, alpha)
+            action, solved = self.ik_solver.compute_inverse_kinematics(
+                target_position=tcp_to_flange(tcp_target, target_quat),
+                target_orientation=target_quat,
+                orientation_tolerance=0.15,
+            )
+            ik_solved = bool(solved)
+            if not solved:
+                failure_reason = "ik_failed"
+                break
+            self.robot.apply_action(clamp_to_safe_limits(action, self.robot.dof_names))
+            if tick_others:
+                tick_others(dt)
+            self.world.step(render=True)
+            if alpha == 1.0:
+                measured = np.asarray(get_tcp_pose(self.ee_frame), dtype=float)
+                if np.linalg.norm(measured - goal) <= RELEASE_RETREAT_TOLERANCE:
+                    reached = True
+                    break
+        measured = np.asarray(get_tcp_pose(self.ee_frame), dtype=float)
+        delta = measured - goal
+        print(
+            f"[P3020_OUT] RETREAT_RESULT result={'success' if reached else failure_reason} "
+            f"steps={step + 1} ik_solved={ik_solved} "
+            f"start={start.tolist()} target={goal.tolist()} actual={measured.tolist()} "
+            f"delta={delta.tolist()} xy_error={np.linalg.norm(delta[:2]):.4f}m "
+            f"z_error={abs(delta[2]):.4f}m total_error={np.linalg.norm(delta):.4f}m "
+            f"rise={measured[2] - start[2]:.4f}m tolerance={RELEASE_RETREAT_TOLERANCE:.4f}m"
+        )
+        if not reached:
+            # Hold the measured pose; do not sweep toward home near the bin.
+            self.robot.apply_action(ArticulationAction(
+                joint_positions=np.array(self.robot.get_joint_positions(), dtype=float),
+                joint_indices=np.arange(len(self.robot.dof_names)),
+            ))
+            self._home_return_failed = True
+            print("[P3020_OUT] RETREAT_FAILED; automatic cycles paused")
+            return "RETREAT_FAILED"
+        print("[P3020_OUT] RETREAT_READY")
+        ros_node.publish_status("RETURNING_HOME")
+        if not self._return_to_ready_pose(tick_others=tick_others, dt=dt):
+            return "HOME_RETURN_FAILED"
+        return None
+
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
         not_before = ros_node.get_clock().now()
         depth_map = None
@@ -626,6 +682,10 @@ class P3020UnloadToBinAgent:
             target_quat = pick_quat if fsm.state < 4 else place_quat
 
             fsm.advance(on_gripper_change, target_quat)
+            # OUT owns release and retreat. Skip the shared FSM's 90-step
+            # low-position RELEASE hold, which is still used by IN.
+            if fsm.state == 6:
+                break
             # GRASP must establish attachment before LIFT/MOVE/LOWER can run.
             if 3 <= fsm.state < 6 and not self.gripper.is_attached():
                 self.gripper.detach()
@@ -656,9 +716,6 @@ class P3020UnloadToBinAgent:
             if fsm.state == 4 and last_reported_state != "MOVING":
                 ros_node.publish_status("MOVING")
                 last_reported_state = "MOVING"
-            elif fsm.state == 6 and last_reported_state != "PLACING":
-                ros_node.publish_status("PLACING")
-                last_reported_state = "PLACING"
 
             if step % 6 == 0:
                 frame = self.camera.get_frame()
@@ -672,15 +729,22 @@ class P3020UnloadToBinAgent:
             self.world.step(render=True)
             step += 1
 
-        home_ready = self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+        return_error = self._release_and_return_to_ready_pose(
+            ros_node, place_quat, tick_others=tick_others, dt=dt
+        )
 
-        if ever_attached and self._placement_verified(target_box_path, plan.place_position):
+        placed = ever_attached and self._placement_verified(target_box_path, plan.place_position)
+        if placed:
             # A completed parcel stays visible to the camera in the reject bin.
             self._placed_parcel_paths.add(target_box_path)
             self.planner.confirm_placement(plan.slot_id)
-            if not home_ready:
-                ros_node.publish_status("DONE_FAIL:HOME_RETURN_FAILED")
-                return False, "박스 적재 완료, 홈 복귀 실패로 자동 작업 중지"
+            ros_node.publish_status("BIN_PLACED")
+        else:
+            self.planner.cancel_placement(plan.slot_id)
+        if return_error:
+            ros_node.publish_status(f"DONE_FAIL:{return_error}")
+            return False, f"해제 후 복귀 실패 ({return_error}): 자동 작업 중지"
+        if placed:
             message = (
                 f"pick({pick_xy[0]:.3f}, {pick_xy[1]:.3f}) -> "
                 f"bin slot {plan.slot_id}(row={plan.row},col={plan.column}) 완료 "
@@ -691,7 +755,6 @@ class P3020UnloadToBinAgent:
                 ros_node.publish_status("BIN_FULL")
             return True, message
 
-        self.planner.cancel_placement(plan.slot_id)
         if ever_attached:
             message = "적재 위치 검증 실패: 박스가 목표 슬롯에 놓이지 않았습니다."
             ros_node.publish_status(f"DONE_FAIL:{message}")

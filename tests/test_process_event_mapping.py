@@ -68,13 +68,46 @@ class ProcessEventMappingTest(unittest.TestCase):
         self.assertEqual(result["zone_code"], "MAIN_CONVEYOR")
         self.assertFalse(result["failed"])
 
-    def test_sorter_arrival_completes_mission_in_destination_zone(self):
+    def test_sorter_arrival_completes_destination_before_mission(self):
         result = self.module.interpret_process_event(
             {"event_type": "SORTER_STATE", "state": "ARRIVED:C"}
         )
-        self.assertEqual(result["stage_code"], "COMPLETE")
+        self.assertEqual(result["stage_code"], "REGION_C")
         self.assertEqual(result["zone_code"], "REGION_C")
-        self.assertTrue(result["complete"])
+        self.assertTrue(result["stage_completed"])
+        self.assertFalse(result["complete"])
+
+    def test_d_route_and_explicit_milestones(self):
+        self.assertEqual(self.module.normalize_region("D"), "D")
+        self.assertEqual(self.module.build_route("D")[-5:], ["SORTER_A", "SORTER_B", "SORTER_C", "EXCEPTION", "COMPLETE"])
+        cases = [
+            ("P3020_STATE", "PICK_CONFIRMED", "MANIPULATOR_PICK", True, False),
+            ("P3020_STATE", "MOVING", "MANIPULATOR_PLACE", False, False),
+            ("SORTER_STATE", "ENTERED:A", "SORTER_A", False, False),
+            ("SORTER_STATE", "PASSED:C", "SORTER_C", True, False),
+            ("P3020_OUT_STATE", "BIN_PLACED", "EXCEPTION", True, False),
+            ("P3020_OUT_STATE", "DONE_SUCCESS", "COMPLETE", True, True),
+        ]
+        for kind, state, code, done, complete in cases:
+            with self.subTest(state=state):
+                result = self.module.interpret_process_event({"event_type": kind, "state": state, "region": "D"})
+                self.assertEqual((result["stage_code"], result["stage_completed"], result["complete"]), (code, done, complete))
+
+    def test_rescan_and_return_error_cannot_rewind_conveyor(self):
+        stages = [{"stage_code": "MAIN_CONVEYOR", "sequence_no": 7, "status": "RUNNING"}]
+        for kind, state in [("P3020_STATE", "SCANNING"), ("AMR_STATE", "ERROR")]:
+            payload = {"event_type": kind, "state": state}
+            self.assertEqual(self.module.progress_ignore_reason(payload, self.module.interpret_process_event(payload), stages), "package already handed to conveyor")
+
+    def test_final_success_requires_every_physical_milestone(self):
+        stages = [{"stage_code": code, "sequence_no": i, "status": "COMPLETED"}
+                  for i, code in enumerate(self.module.build_route("D"), 1)]
+        stages[-1]["status"] = "WAITING"
+        payload = {"event_type": "P3020_OUT_STATE", "state": "DONE_SUCCESS"}
+        event = self.module.interpret_process_event(payload)
+        self.assertIsNone(self.module.progress_ignore_reason(payload, event, stages))
+        stages[4]["status"] = "RUNNING"
+        self.assertEqual(self.module.progress_ignore_reason(payload, event, stages), "physical completion milestones missing")
 
     def test_p3020_failure_marks_event_failed(self):
         result = self.module.interpret_process_event(

@@ -21,7 +21,7 @@ CODE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 
 def normalize_region(region):
     value = str(region or "A").strip().upper()
-    return value if value in VALID_REGIONS else "UNKNOWN"
+    return value if value in VALID_REGIONS | {"D"} else "UNKNOWN"
 
 
 def build_route(region):
@@ -56,61 +56,80 @@ def build_route(region):
     return route
 
 
-def interpret_process_event(payload):
-    """Map a bridge event to a mission stage and package zone."""
+def _stage(code, zone=None, *, done=False, complete=False, failed=False, completed=()):
+    return {"stage_code": code, "zone_code": zone, "stage_completed": done,
+            "failed": failed, "complete": complete, "completed_stages": list(completed)}
 
+
+def interpret_process_event(payload):
+    """Only verified physical milestones complete stages 5 through 10."""
     event_type = str(payload.get("event_type", "")).strip().upper()
     state = str(payload.get("state", "")).strip().upper()
     region = normalize_region(payload.get("region"))
-
-    explicit_stage = str(payload.get("stage_code", "")).strip().upper()
-    explicit_zone = str(payload.get("zone_code", "")).strip().upper()
-    if explicit_stage:
-        return {
-            "stage_code": explicit_stage,
-            "zone_code": explicit_zone or None,
-            "failed": bool(payload.get("failed", False)),
-            "complete": explicit_stage == "COMPLETE",
-        }
-
+    if event_type == "PACKAGE_REGISTERED":
+        return _stage("INPUT_ZONE", "INPUT_ZONE")
     if event_type == "AMR_STATE":
         if state == "ERROR":
-            return {"stage_code": None, "zone_code": "AMR_IN", "failed": True, "complete": False}
+            return _stage(None, "AMR_IN", failed=True)
         if state in {"ROTATE_TO_DOCK", "ENTER_CARGO", "LIFTING"}:
-            return {"stage_code": "AMR_PICKUP", "zone_code": "AMR_IN", "failed": False, "complete": False}
+            return _stage("AMR_PICKUP", "AMR_IN")
         if state == "PICKUP_DONE":
-            return {"stage_code": "AMR_NAVIGATION", "zone_code": "AMR_IN", "failed": False, "complete": False}
+            return _stage("AMR_NAVIGATION", "AMR_IN")
         if state == "CONVEYOR_DOCK_DONE":
-            return {"stage_code": "AMR_ARRIVAL", "zone_code": "P3020_IN", "failed": False, "complete": False}
-
+            return _stage("AMR_ARRIVAL", "P3020_IN")
     if event_type == "P3020_STATE":
         if state.startswith("DONE_FAIL"):
-            return {"stage_code": None, "zone_code": "P3020_IN", "failed": True, "complete": False}
+            return _stage(None, "P3020_IN", failed=True)
         if state in {"SCANNING", "APPROACHING", "GRASPING"}:
-            return {"stage_code": "MANIPULATOR_PICK", "zone_code": "P3020_IN", "failed": False, "complete": False}
+            return _stage("MANIPULATOR_PICK", "P3020_IN")
+        if state == "PICK_CONFIRMED":
+            return _stage("MANIPULATOR_PICK", "P3020_IN", done=True)
         if state in {"MOVING", "PLACING"}:
-            return {"stage_code": "MANIPULATOR_PLACE", "zone_code": "P3020_IN", "failed": False, "complete": False}
-        if state == "DONE_SUCCESS":
-            return {"stage_code": "MAIN_CONVEYOR", "zone_code": "MAIN_CONVEYOR", "failed": False, "complete": False}
-
+            return _stage("MANIPULATOR_PLACE", "P3020_IN")
+        if state in {"PLACE_CONFIRMED", "DONE_SUCCESS"}:
+            return _stage("MAIN_CONVEYOR", "MAIN_CONVEYOR", completed=("MANIPULATOR_PLACE",))
     if event_type == "CONVEYOR_STATE" and state in {"PACKAGE_ENTERED", "TRANSPORTING"}:
-        return {"stage_code": "MAIN_CONVEYOR", "zone_code": "MAIN_CONVEYOR", "failed": False, "complete": False}
-
+        return _stage("MAIN_CONVEYOR", "MAIN_CONVEYOR")
     if event_type == "SORTER_STATE":
-        state_name, separator, state_region = state.partition(":")
-        route_region = normalize_region(state_region or region)
-        if state_name == "ROUTING":
-            return {
-                "stage_code": f"SORTER_{route_region}" if route_region in VALID_REGIONS else "SORTER_C",
-                "zone_code": f"SORTER_{route_region}" if route_region in VALID_REGIONS else "SORTER_C",
-                "failed": False,
-                "complete": False,
-            }
-        if state_name == "ARRIVED":
-            destination = f"REGION_{route_region}" if route_region in VALID_REGIONS else "EXCEPTION"
-            return {"stage_code": "COMPLETE", "zone_code": destination, "failed": False, "complete": True}
+        name, _, sorter = state.partition(":")
+        if name in {"ENTERED", "ROUTING", "PASSED"} and sorter in VALID_REGIONS:
+            return _stage(f"SORTER_{sorter}", f"SORTER_{sorter}",
+                          done=name == "PASSED",
+                          completed=("MAIN_CONVEYOR",) if name == "ENTERED" and sorter == "A" else ())
+        if name == "ARRIVED" and sorter in VALID_REGIONS:
+            return _stage(f"REGION_{sorter}", f"REGION_{sorter}", done=True)
+        if state == "SORTING_COMPLETE" and region in VALID_REGIONS:
+            return _stage("COMPLETE", f"REGION_{region}", done=True, complete=True)
+    if event_type == "P3020_OUT_STATE":
+        if state == "BIN_PLACED":
+            return _stage("EXCEPTION", "EXCEPTION", done=True)
+        if state == "DONE_SUCCESS":
+            return _stage("COMPLETE", "EXCEPTION", done=True, complete=True)
+        if state in {"DONE_FAIL:RETREAT_FAILED", "DONE_FAIL:HOME_RETURN_FAILED"}:
+            return _stage("COMPLETE", "EXCEPTION", failed=True)
+    return _stage(None)
 
-    return {"stage_code": None, "zone_code": explicit_zone or None, "failed": False, "complete": False}
+
+def progress_ignore_reason(payload, interpretation, stages):
+    """Prevent rescans/return failures from rewriting a delivered package."""
+    by_code = {row["stage_code"]: row for row in stages}
+    conveyor = by_code.get("MAIN_CONVEYOR", {})
+    handed_off = conveyor.get("status") != "WAITING" and bool(conveyor)
+    if handed_off and payload["event_type"] in {"AMR_STATE", "P3020_STATE"}:
+        return "package already handed to conveyor"
+    target = by_code.get(interpretation["stage_code"])
+    if interpretation["stage_code"] and target is None:
+        return "event stage is outside package route"
+    if target and target["status"] == "COMPLETED" and not interpretation["failed"]:
+        return "stage already completed"
+    latest = max((s["sequence_no"] for s in stages if s["status"] != "WAITING"), default=0)
+    if target and target["sequence_no"] < latest:
+        return "stale stage event"
+    if interpretation["complete"] and any(
+        s["stage_code"] != "COMPLETE" and s["status"] != "COMPLETED" for s in stages
+    ):
+        return "physical completion milestones missing"
+    return None
 
 
 def _generated_code(prefix):
@@ -223,20 +242,22 @@ def _find_or_create_active_tracking(cursor, payload):
         FROM mission m
         LEFT JOIN package p ON p.mission_id = m.id
         WHERE m.status IN ('READY', 'RUNNING', 'PAUSED')
+          AND (%s::text IS NULL OR p.package_code = %s)
         ORDER BY m.created_at DESC, p.created_at ASC
         LIMIT 1;
-        """
+        """,
+        (payload.get("package_code"), payload.get("package_code")),
     )
     active = cursor.fetchone()
     if active is not None and active["package_id"] is not None:
         return active
 
-    # Batch housekeeping is not a new physical parcel. In particular the
-    # empty check after the last sorter arrival must not invent a new package.
-    state = str(payload.get("state", "")).strip().upper().partition(":")[0]
-    if str(payload.get("event_type", "")).strip().upper() == "P3020_STATE" and state in {
-        "CHECKING_EMPTY", "CARGO_EMPTY", "RETRYING"
-    }:
+    # Only registration or initial AMR pickup may create a package. Late
+    # rescan, OUT completion and AMR return events must not invent missions.
+    if payload.get("event_type") != "PACKAGE_REGISTERED" and not (
+        payload.get("event_type") == "AMR_STATE"
+        and payload.get("state") in {"ROTATE_TO_DOCK", "ENTER_CARGO", "LIFTING"}
+    ):
         return None
 
     mission, package = _create_tracking_records(
@@ -279,11 +300,17 @@ def handle_process_event(payload):
         raise ValueError("event_type is required")
 
     interpretation = interpret_process_event(payload)
+    if interpretation["stage_code"] is None and not interpretation["failed"]:
+        return {"ignored": True, "reason": "no package milestone"}
     event_key = str(payload.get("event_key", "")).strip() or None
     equipment_code = str(payload.get("equipment_code", "")).strip().upper() or None
 
     with get_db_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cursor:
+            if event_key:
+                cursor.execute("SELECT id FROM package_event WHERE event_key = %s;", (event_key,))
+                if cursor.fetchone() is not None:
+                    return {"duplicate": True, "event_key": event_key}
             active = _find_or_create_active_tracking(cursor, payload)
             if active is None:
                 return {"ignored": True, "reason": "batch status without active package"}
@@ -291,14 +318,6 @@ def handle_process_event(payload):
             if payload.get("region") is None:
                 payload = dict(payload, region=region)
                 interpretation = interpret_process_event(payload)
-
-            if event_key:
-                cursor.execute(
-                    "SELECT id FROM package_event WHERE event_key = %s;",
-                    (event_key,),
-                )
-                if cursor.fetchone() is not None:
-                    return {"duplicate": True, "event_key": event_key}
 
             zone_id = None
             zone_code = interpretation["zone_code"]
@@ -318,6 +337,16 @@ def handle_process_event(payload):
                     """,
                     (_equipment_status_from_event(payload, interpretation), equipment_code),
                 )
+
+            cursor.execute(
+                "SELECT stage_code, sequence_no, status FROM mission_stage WHERE mission_id = %s ORDER BY sequence_no;",
+                (active["id"],),
+            )
+            stages = cursor.fetchall()
+            ignored = progress_ignore_reason(payload, interpretation, stages)
+            if ignored:
+                conn.commit()  # Keep equipment errors even when package progress is unaffected.
+                return {"ignored": True, "reason": ignored}
 
             mission_status = "RUNNING"
             package_status = "IN_PROGRESS"
@@ -363,9 +392,10 @@ def handle_process_event(payload):
                             started_at = COALESCE(started_at, NOW()),
                             completed_at = COALESCE(completed_at, NOW())
                         WHERE mission_id = %s AND sequence_no < %s
+                          AND (sequence_no <= 4 OR stage_code = ANY(%s))
                           AND status <> 'FAILED';
                         """,
-                        (active["id"], sequence_no),
+                        (active["id"], sequence_no, interpretation["completed_stages"]),
                     )
                     cursor.execute(
                         """
@@ -379,10 +409,10 @@ def handle_process_event(payload):
                         """,
                         (
                             "FAILED" if interpretation["failed"] else (
-                                "COMPLETED" if interpretation["complete"] else "RUNNING"
+                                "COMPLETED" if interpretation["stage_completed"] else "RUNNING"
                             ),
                             "FAILED" if interpretation["failed"] else (
-                                "COMPLETED" if interpretation["complete"] else "RUNNING"
+                                "COMPLETED" if interpretation["stage_completed"] else "RUNNING"
                             ),
                             active["id"],
                             sequence_no,

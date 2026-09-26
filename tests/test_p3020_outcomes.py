@@ -269,6 +269,124 @@ class OutParcelSelectionTest(unittest.TestCase):
         self.assertFalse(verifier._placement_verified("box", (-15.4, -1.6, 1.)))
 
 
+class OutReleaseRetreatTest(unittest.TestCase):
+    def make_agent(self, follows=True, ik_solved=True):
+        path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"
+        self.position = np.array([-15.5, -3.5, .67])
+        self.events = []
+        self.targets = []
+        cls = load_class(path, "P3020UnloadToBinAgent", {"_release_and_return_to_ready_pose"}, {
+            "np": np, "lerp": lambda a, b, t: a + (b - a) * t,
+            "get_tcp_pose": lambda frame: self.position.copy(),
+            "tcp_to_flange": lambda target, quat: target,
+            "clamp_to_safe_limits": lambda action, names: action,
+            "ArticulationAction": SimpleNamespace,
+            "RELEASE_RETREAT_HEIGHT": .20, "RELEASE_RETREAT_STEPS": 3,
+            "RELEASE_RETREAT_SETTLE_STEPS": 2, "RELEASE_RETREAT_TOLERANCE": .05,
+        })
+        agent = cls()
+        agent.ee_frame = Mock()
+        agent._home_return_failed = False
+        agent.gripper = Mock()
+        agent.gripper.detach.side_effect = lambda: self.events.append("release")
+        agent.robot = Mock(dof_names=["joint"])
+        agent.robot.get_joint_positions.return_value = [.4]
+        def solve(**kwargs):
+            self.events.append("rise")
+            self.targets.append(kwargs["target_position"].copy())
+            return SimpleNamespace(target=kwargs["target_position"]), ik_solved
+        agent.ik_solver = Mock()
+        agent.ik_solver.compute_inverse_kinematics.side_effect = solve
+        def apply(action):
+            if follows and hasattr(action, "target"):
+                self.position = action.target.copy()
+        agent.robot.apply_action.side_effect = apply
+        agent.world = Mock()
+        agent._return_to_ready_pose = Mock(side_effect=lambda **kwargs: self.events.append("home") or True)
+        return agent
+
+    def test_release_then_vertical_clearance_before_home(self):
+        agent = self.make_agent()
+        tick = Mock()
+        self.assertIsNone(agent._release_and_return_to_ready_pose(Mock(), [1, 0, 0, 0], tick))
+        self.assertEqual(self.events, ["release", "rise", "rise", "rise", "home"])
+        np.testing.assert_allclose(np.array(self.targets)[:, :2], [[-15.5, -3.5]] * 3)
+        self.assertTrue(np.all(np.diff(np.array(self.targets)[:, 2]) > 0))
+        self.assertAlmostEqual(self.position[2], .87)
+        self.assertEqual(tick.call_count, 3)
+        agent.gripper.detach.assert_called_once()
+
+    def test_unreached_retreat_blocks_home_and_future_cycles(self):
+        for follows, solved in [(False, True), (True, False)]:
+            with self.subTest(follows=follows, solved=solved):
+                agent = self.make_agent(follows=follows, ik_solved=solved)
+                self.assertEqual(agent._release_and_return_to_ready_pose(Mock(), [1, 0, 0, 0]), "RETREAT_FAILED")
+                agent._return_to_ready_pose.assert_not_called()
+                self.assertTrue(agent._home_return_failed)
+                np.testing.assert_allclose(agent.robot.apply_action.call_args.args[0].joint_positions, [.4])
+
+    def test_home_failure_is_preserved_after_successful_retreat(self):
+        agent = self.make_agent()
+        agent._return_to_ready_pose.side_effect = None
+        agent._return_to_ready_pose.return_value = False
+        self.assertEqual(agent._release_and_return_to_ready_pose(Mock(), [1, 0, 0, 0]), "HOME_RETURN_FAILED")
+
+    def test_five_centimetre_retreat_tolerance(self):
+        for error, expected in [(.045, None), (.055, "RETREAT_FAILED")]:
+            with self.subTest(error=error):
+                agent = self.make_agent()
+                def apply(action):
+                    if hasattr(action, "target"):
+                        self.position = action.target + np.array([0., 0., -error])
+                agent.robot.apply_action.side_effect = apply
+                self.assertEqual(agent._release_and_return_to_ready_pose(Mock(), [1, 0, 0, 0]), expected)
+                self.assertEqual(agent._return_to_ready_pose.call_count, int(expected is None))
+
+    def test_cycle_skips_low_release_hold_and_uses_retreat(self):
+        fsm = SimpleNamespace(state=0, DONE_STATE=7, gripper="close")
+        transitions = iter([2, 6])
+        fsm.advance = lambda *args: setattr(fsm, "state", next(transitions))
+        fsm.current_action = Mock(return_value=(SimpleNamespace(), True))
+        path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"
+        cls = load_class(path, "P3020UnloadToBinAgent", {"try_unload_cycle"}, {
+            "np": np, "PickPlaceFSM": lambda *args, **kwargs: fsm,
+            "PARCEL_SNAP_DISTANCE": .185, "ROBOT_BASE_POS": [-14.2, -2.6, 0],
+            "base_relative": lambda xy: xy, "is_within_reach": lambda xy: True,
+            "make_target_quat": lambda *args: [1, 0, 0, 0], "yaw_toward": lambda xy: 0,
+            "APPROACH_ROLL_DEG": 180, "APPROACH_PITCH_DEG": 0,
+            "clamp_to_safe_limits": lambda action, names: action, "rclpy": Mock(),
+        })
+        agent = cls()
+        agent.camera_enabled = True
+        agent._home_return_failed = False
+        agent._placed_parcel_paths = set()
+        agent._detected_parcel_path = "box"
+        agent.planner = Mock(is_full=False, occupied_count=1)
+        agent.planner.config.capacity = 1
+        agent.planner.plan_next.return_value = SimpleNamespace(
+            place_position=(-15.5, -3.5, .485), slot_id=0, row=0, column=0,
+        )
+        agent.bin_pose = Mock()
+        agent.gripper = Mock(last_distance=.1)
+        agent.gripper.is_attached.return_value = True
+        agent.robot = Mock(dof_names=["joint"])
+        agent.ee_frame = Mock()
+        agent.ik_solver = Mock()
+        agent.world = Mock()
+        agent.camera = Mock()
+        agent.camera.get_frame.return_value = None
+        agent._locate_box_and_descend = Mock(return_value=np.array([-15., -1., 1.]))
+        agent._release_and_return_to_ready_pose = Mock(return_value=None)
+        agent._placement_verified = Mock(return_value=True)
+        success, _ = agent.try_unload_cycle(Mock())
+        self.assertTrue(success)
+        # Only GRASP requested an action; RELEASE must not command the low pose.
+        fsm.current_action.assert_called_once()
+        agent._release_and_return_to_ready_pose.assert_called_once()
+        agent.planner.confirm_placement.assert_called_once_with(0)
+        self.assertIn("box", agent._placed_parcel_paths)
+
+
 class OutHomeReturnTest(unittest.TestCase):
     def test_home_uses_authored_drive_target_instead_of_saved_transient_state(self):
         path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"

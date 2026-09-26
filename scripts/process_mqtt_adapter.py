@@ -71,6 +71,9 @@ class Ros2ProcessMqttAdapter(Node):
         self.create_subscription(
             String, "/arm_a/pick_place_status", self._on_p3020_state, 10
         )
+        self.create_subscription(
+            String, "/arm_b/pick_place_status", self._on_out_state, 10
+        )
 
         self.mqtt_client = mqtt.Client(
             client_id=f"process-ros2-adapter-{os.getpid()}",
@@ -269,6 +272,15 @@ class Ros2ProcessMqttAdapter(Node):
         self._publish_state_change(
             "p3020", state,
             {"event_type": "P3020_STATE", "equipment_code": "P3020_IN"},
+        )
+
+    def _on_out_state(self, message):
+        state = message.data.strip()
+        if state not in {"BIN_PLACED", "DONE_SUCCESS", "DONE_FAIL:RETREAT_FAILED", "DONE_FAIL:HOME_RETURN_FAILED"}:
+            return
+        self._publish_state_change(
+            "p3020_out", state,
+            {"event_type": "P3020_OUT_STATE", "equipment_code": "P3020_OUT", "region": "D"},
         )
 
     def publish_process_event(self, payload):

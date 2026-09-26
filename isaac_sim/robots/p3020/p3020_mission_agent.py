@@ -1046,6 +1046,10 @@ class P3020PickPlaceAgent:
         release_verified = False
         released_at_step = None
         landing_verified = False
+        pick_confirmed = False
+        pick_center_z = float(UsdGeom.Xformable(self.stage.GetPrimAtPath(target_box_path)).ComputeLocalToWorldTransform(
+            Usd.TimeCode.Default()
+        ).ExtractTranslation()[2])
 
         def on_gripper_change(new_state):
             nonlocal release_verified, released_at_step
@@ -1077,6 +1081,13 @@ class P3020PickPlaceAgent:
             if self.gripper.is_attached():
                 self.gripper.update()
                 ever_attached = True
+                if not pick_confirmed and 3 <= fsm.state <= 4:
+                    center = UsdGeom.Xformable(self.stage.GetPrimAtPath(target_box_path)).ComputeLocalToWorldTransform(
+                        Usd.TimeCode.Default()
+                    ).ExtractTranslation()
+                    if float(center[2]) >= pick_center_z + 0.05:
+                        pick_confirmed = True
+                        ros_node.publish_status("PICK_CONFIRMED")
             gripper_was_attached = self.gripper.is_attached()
 
             if fsm.state == 4 and last_reported_state != "MOVING":
@@ -1101,6 +1112,8 @@ class P3020PickPlaceAgent:
                 landing_verified = self._parcel_at_place(
                     target_box_path, place_xy_world, PLACE_XY_TOLERANCE + 6 * dt
                 ) and not self.gripper.is_attached()
+                if ever_attached and release_verified and landing_verified:
+                    ros_node.publish_status("PLACE_CONFIRMED")
             step += 1
 
         # P3020's job ends at placing the box on the conveyor. Physical

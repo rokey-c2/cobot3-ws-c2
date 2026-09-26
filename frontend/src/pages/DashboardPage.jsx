@@ -156,6 +156,7 @@ export default function DashboardPage() {
             <option value="A">A</option>
             <option value="B">B</option>
             <option value="C">C</option>
+            <option value="D">D (OUT)</option>
             <option value="UNKNOWN">Exception</option>
           </select>
         </label>
