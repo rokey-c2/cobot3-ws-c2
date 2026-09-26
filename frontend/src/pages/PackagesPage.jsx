@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api";
 import StatusPill from "../components/StatusPill";
+import { zoneLabel } from "../utils/missionLabels";
 
 const plannedZones = [
   "INPUT_ZONE",
@@ -157,7 +158,7 @@ export default function PackagesPage() {
                 >
                   <td><strong>{item.package_code}</strong></td>
                   <td>{item.region || "-"}</td>
-                  <td>{item.current_zone || "NOT ASSIGNED"}</td>
+                  <td>{zoneLabel(item.current_zone)}</td>
                   <td>{item.mission_code || "-"}</td>
                   <td><StatusPill value={item.status} /></td>
                   <td>{formatDateTime(item.updated_at)}</td>
@@ -185,15 +186,15 @@ export default function PackagesPage() {
             <div>
               <div className="detail-stats">
                 <Info label="Region" value={detail.package.region} />
-                <Info label="Current Zone" value={detail.package.current_zone} />
+                <Info label="Current Zone" value={zoneLabel(detail.package.current_zone)} />
                 <Info label="Mission" value={detail.package.mission_code} />
               </div>
-              <h4 className="subheading">Planned Route</h4>
+              <h4 className="subheading">Route Areas</h4>
               <div className="route-strip">
                 {plannedZones.map((zone, index) => (
                   <div className="route-step" key={zone}>
                     <span className={matchesCurrentZone(detail.package.current_zone, zone) ? "active" : ""}>
-                      {zone.replaceAll("_", " ")}
+                      {zoneLabel(zone)}
                     </span>
                     {index < plannedZones.length - 1 && <b>→</b>}
                   </div>
@@ -209,7 +210,7 @@ export default function PackagesPage() {
                     <span className="timeline-dot" />
                     <div>
                       <strong>{event.event_type}</strong>
-                      <p>{event.zone_code || "No zone"}</p>
+                      <p>{zoneLabel(event.zone_code)}</p>
                     </div>
                     <small>{formatDateTime(event.occurred_at)}</small>
                   </div>

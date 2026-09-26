@@ -5,15 +5,7 @@ import { api } from "../api";
 import StatusPill from "../components/StatusPill";
 import P3020VisionPanel from "../components/P3020VisionPanel";
 
-const pipeline = [
-  "INPUT_ZONE",
-  "AMR_IN",
-  "P3020_IN",
-  "MAIN_CONVEYOR",
-  "SORTER",
-  "REGION",
-  "COMPLETE",
-];
+import { defaultMissionStages, missionStageInfo, groupMissionStages, progressStageCode } from "../utils/missionLabels";
 
 export default function DashboardPage() {
   const [equipment, setEquipment] = useState([]);
@@ -61,8 +53,8 @@ export default function DashboardPage() {
   const visiblePipeline = useMemo(
     () =>
       missionStages.length
-        ? missionStages
-        : pipeline.map((stage_code) => ({ stage_code, status: "WAITING" })),
+        ? groupMissionStages(missionStages)
+        : defaultMissionStages.map((stage_code) => ({ stage_code, status: "WAITING" })),
     [missionStages],
   );
   const missionActive = ["READY", "RUNNING", "PAUSED"].includes(mission?.status);
@@ -197,15 +189,17 @@ export default function DashboardPage() {
           <div className="pipeline">
             {visiblePipeline.map((stageItem, index) => {
               const stage = stageItem.stage_code;
+              const stageInfo = missionStageInfo(stage);
               const current = matchesStage(mission?.current_stage, stage);
               const stateClass = String(stageItem.status || "").toLowerCase();
               return (
                 <div className="pipeline-item" key={stage}>
                   <div
                     className={`stage-node ${current ? "current" : ""} ${stateClass}`}
+                    title={stageInfo.description}
                   >
                     <span>{String(index + 1).padStart(2, "0")}</span>
-                    <strong>{stage.replaceAll("_", " ")}</strong>
+                    <strong>{stageInfo.label}</strong>
                   </div>
                   {index < visiblePipeline.length - 1 && (
                     <span className="pipeline-arrow">→</span>
@@ -216,7 +210,7 @@ export default function DashboardPage() {
           </div>
           <div className="panel-footnote">
             <span>Current stage</span>
-            <strong>{mission?.current_stage || "Waiting for mission events"}</strong>
+            <strong>{missionStageInfo(mission?.current_stage).label}</strong>
           </div>
         </div>
 
@@ -366,11 +360,7 @@ function PanelTitle({ eyebrow, title, meta }) {
 }
 
 function matchesStage(currentStage, pipelineStage) {
-  if (!currentStage) return false;
-  const current = String(currentStage).toUpperCase();
-  if (pipelineStage === "SORTER") return current.startsWith("SORTER");
-  if (pipelineStage === "REGION") return current.startsWith("REGION");
-  return current === pipelineStage;
+  return Boolean(currentStage) && progressStageCode(currentStage) === pipelineStage;
 }
 
 function yawDegrees(yaw) {
