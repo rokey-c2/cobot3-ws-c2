@@ -138,6 +138,7 @@ class WheelSorterController:
         self._triggered_pairs = set()
         self._completed_pairs = set()
         self._process_events = []
+        self._diverted_pairs = set()
         self._destination_d_detected = False
 
     @property
@@ -236,6 +237,8 @@ class WheelSorterController:
                 continue
 
             target_track = box_id_to_track.get(box_id)
+            package_code = box_path.rsplit("/", 1)[-1]
+            destination = {1: "A", 2: "B", 3: "C", 4: "D"}.get(box_id, "UNKNOWN")
             if target_track is not None:
                 target_track = str(target_track).zfill(2)
                 if target_track not in self.units:
@@ -267,6 +270,9 @@ class WheelSorterController:
                         continue
 
                     should_divert = self.enabled.get(track_id, True) and target_track == track_id
+                    sorter_region = next(r for r, t in self.REGION_TO_TRACK.items() if t == track_id)
+                    event_context = {"package_code": package_code, "region": destination}
+                    self._process_events.append({**event_context, "state": f"ENTERED:{sorter_region}"})
                     unit.set_state(should_divert)
                     self._triggered_pairs.add(pair)
                     print(
@@ -275,11 +281,12 @@ class WheelSorterController:
                         f"state={int(should_divert)}"
                     )
                     if should_divert:
+                        self._diverted_pairs.add(pair)
                         region = next(
                             (r for r, t in self.REGION_TO_TRACK.items() if t == track_id),
                             track_id,
                         )
-                        self._process_events.append({"state": f"ROUTING:{region}"})
+                        self._process_events.append({**event_context, "state": f"ROUTING:{region}"})
                     continue
 
                 if distance >= self.reset_threshold:
@@ -289,12 +296,16 @@ class WheelSorterController:
                         f"[SORTER] box={box_path} passed track={track_id}; "
                         "direction reset to (1, 0, 0)"
                     )
-                    if target_track == track_id:
+                    sorter_region = next(r for r, t in self.REGION_TO_TRACK.items() if t == track_id)
+                    event_context = {"package_code": package_code, "region": destination}
+                    self._process_events.append({**event_context, "state": f"PASSED:{sorter_region}"})
+                    if pair in self._diverted_pairs:
                         region = next(
                             (r for r, t in self.REGION_TO_TRACK.items() if t == track_id),
                             track_id,
                         )
-                        self._process_events.append({"state": f"ARRIVED:{region}"})
+                        self._process_events.append({**event_context, "state": f"ARRIVED:{region}"})
+                        self._process_events.append({**event_context, "state": "SORTING_COMPLETE"})
 
     def route_box(self, destination: str):
         """Compatibility shim for old destination-based callers -- no

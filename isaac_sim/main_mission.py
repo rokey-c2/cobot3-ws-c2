@@ -484,10 +484,11 @@ class ProcessEquipmentBridge:
             message = String()
             message.data = json.dumps(
                 {
+                    **event,
                     "event_type": "SORTER_STATE",
                     "equipment_code": f"SORTER_{equipment_region}",
                     "state": state,
-                    "region": region,
+                    "region": event.get("region", region),
                 }
             )
             self.process_pub.publish(message)
@@ -566,6 +567,22 @@ def main():
     p3020_bridge = OptimizedP3020RosBridge(bridge)
     p3020_out_bridge = P3020OutRosBridge(bridge)
     equipment_bridge = ProcessEquipmentBridge(bridge, conveyor, sorter)
+    # Register the actual spawned destination before any AMR/IN state can
+    # create a default Region-A mission for a physical Region-D parcel.
+    stage = omni.usd.get_context().get_stage()
+    for parcel_path in parcel_paths:
+        box_id = int(stage.GetPrimAtPath(parcel_path).GetAttribute("box_id").Get())
+        registration = String()
+        registration.data = json.dumps({
+            "event_type": "PACKAGE_REGISTERED", "state": "REGISTERED",
+            "package_code": parcel_path.rsplit("/", 1)[-1],
+            "region": {1: "A", 2: "B", 3: "C", 4: "D"}[box_id],
+            "event_key": f"register:{bridge.pose_source_session_id}:{parcel_path}",
+        })
+        equipment_bridge.process_pub.publish(registration)
+        # ROS discovery may not be ready for the initial publish. Retrying the
+        # same event key is idempotent, including after the mission completes.
+        bridge.create_timer(2.0, lambda msg=registration: equipment_bridge.process_pub.publish(msg))
     preview_pub = bridge.create_publisher(Image, "/arm_a/preview", 1)
     last_preview_at = 0.0
 
