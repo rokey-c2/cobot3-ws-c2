@@ -9,10 +9,10 @@ class ConveyorController:
     """Control the existing conveyor OmniGraphs in the current parcel map.
 
     No OmniGraph nodes are created here -- this only changes values on
-    graphs that already exist in the USD stage. Per-graph speeds come from
-    hwi_new_sorter's verified Demo2 run: a single speed applied to every
+    graphs that already exist in the USD stage. Per-graph directions come from
+    hwi_new_sorter's verified Demo2 run: a single signed speed applied to every
     ConveyorBeltGraph is wrong, because ConveyorTrack_01/02/03's second
-    graph must run at -1.0 (not +1.0), and ConveyorTrack_05 must not be
+    graph must run in reverse, and ConveyorTrack_05 must not be
     touched at all (role not confirmed yet).
     """
 
@@ -20,8 +20,8 @@ class ConveyorController:
     SINGLE_GRAPH_TRACKS = ("04", "06", "07", "10", "11", "16", "17")
     EXCLUDED_TRACKS = ("05",)
 
-    MAIN_GRAPH_SPEED = 1.0
-    SORTER_SECOND_GRAPH_SPEED = -1.0
+    MAIN_GRAPH_SPEED = 2.0
+    SORTER_SECOND_GRAPH_SPEED = -2.0
 
     def __init__(self, speed=None):
         if speed is not None and float(speed) != self.MAIN_GRAPH_SPEED:

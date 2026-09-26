@@ -37,6 +37,7 @@ def build_route(region):
         "INPUT_ZONE",
         "AMR_PICKUP",
         "AMR_NAVIGATION",
+        "AMR_ARRIVAL",
         "MANIPULATOR_PICK",
         "MANIPULATOR_PLACE",
         "MAIN_CONVEYOR",
@@ -80,7 +81,7 @@ def interpret_process_event(payload):
         if state == "PICKUP_DONE":
             return {"stage_code": "AMR_NAVIGATION", "zone_code": "AMR_IN", "failed": False, "complete": False}
         if state == "CONVEYOR_DOCK_DONE":
-            return {"stage_code": "MANIPULATOR_PICK", "zone_code": "P3020_IN", "failed": False, "complete": False}
+            return {"stage_code": "AMR_ARRIVAL", "zone_code": "P3020_IN", "failed": False, "complete": False}
 
     if event_type == "P3020_STATE":
         if state.startswith("DONE_FAIL"):

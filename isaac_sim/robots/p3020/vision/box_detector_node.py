@@ -8,6 +8,9 @@ Publishes:
     /box_pixel/result                   (std_msgs/String, JSON: stamp_ns/detection)
     /p3020/vision/image_annotated       (sensor_msgs/msg/Image)
 
+Subscribes:
+    /box_pixel/validated                (std_msgs/msg/String, mission-validated HUD target)
+
 Web stream:
     http://<vision-pc-ip>:8091/stream.mjpg
 
@@ -129,6 +132,11 @@ class BoxDetectorNode(Node):
         self.declare_parameter("stream_port", STREAM_PORT)
         self.declare_parameter("stream_path", STREAM_PATH)
         self.declare_parameter("jpeg_quality", 82)
+        # Optional image-space exclusion for fixed background false positives.
+        # Disabled by default; configured only for the P3020 IN camera.
+        self.declare_parameter("ignore_region_x", -1.0)
+        self.declare_parameter("ignore_region_y", -1.0)
+        self.declare_parameter("ignore_region_radius", 0.0)
 
         image_topic = str(self.get_parameter("image_topic").value)
         pixel_topic = str(self.get_parameter("box_pixel_topic").value)
@@ -141,6 +149,11 @@ class BoxDetectorNode(Node):
             str(self.get_parameter("stream_path").value)
         )
         self.jpeg_quality = int(np.clip(self.get_parameter("jpeg_quality").value, 40, 95))
+        self.ignore_region_x = float(self.get_parameter("ignore_region_x").value)
+        self.ignore_region_y = float(self.get_parameter("ignore_region_y").value)
+        self.ignore_region_radius = max(
+            0.0, float(self.get_parameter("ignore_region_radius").value)
+        )
 
         self.detector = ObjectDetector(model_path, conf_threshold=conf_threshold)
         # Stream incoming frames immediately; run CPU-bound inference separately.
@@ -158,6 +171,11 @@ class BoxDetectorNode(Node):
         self.pixel_pub = self.create_publisher(PointStamped, pixel_topic, 10)
         self.result_pub = self.create_publisher(String, pixel_topic + "/result", 10)
         self.annotated_pub = self.create_publisher(Image, annotated_topic, 10)
+        # Raw YOLO candidates are intentionally not shown in the HUD. The
+        # mission agent publishes a target here only after depth/world checks.
+        self.validated_sub = self.create_subscription(
+            String, pixel_topic + "/validated", self._on_validated_detection, 10
+        )
 
         self._frame_condition = threading.Condition()
         self._latest_jpeg = None
@@ -273,6 +291,26 @@ class BoxDetectorNode(Node):
         self._update_web_stream(annotated)
         self._publish_annotated(msg, annotated)
 
+    def _on_validated_detection(self, msg: String):
+        """Show only a candidate accepted by P3020's depth/world validation."""
+        try:
+            payload = json.loads(msg.data)
+            detection = payload.get("detection")
+            if detection is not None:
+                keys = ("cx", "cy", "w", "h", "conf")
+                detection = {key: float(detection[key]) for key in keys}
+                if not all(np.isfinite(value) for value in detection.values()):
+                    return
+                if detection["w"] <= 0 or detection["h"] <= 0:
+                    return
+        except (json.JSONDecodeError, TypeError, ValueError, KeyError):
+            self.get_logger().warning("invalid validated HUD detection payload")
+            return
+
+        with self._detection_lock:
+            self._latest_detection = detection
+            self._latest_detection_time = time.monotonic()
+
     def _inference_worker(self):
         while rclpy.ok():
             item = self._inference_queue.get()
@@ -284,6 +322,30 @@ class BoxDetectorNode(Node):
             except Exception as error:
                 self.get_logger().error(f"YOLO inference failed: {error}")
                 continue
+
+            # P3020 IN repeatedly sees the same floor/AMR-edge patch at about
+            # (354, 435), corresponding to the known world false positive
+            # (2.265, -1.396, z~=0.31m). Suppress it before publishing either
+            # the HUD target or detection results, so it cannot look locked
+            # in the frontend or keep the empty-cargo scan alive. OUT leaves
+            # these parameters disabled and is unaffected.
+            ignore_radius = float(getattr(self, "ignore_region_radius", 0.0))
+            ignore_x = float(getattr(self, "ignore_region_x", -1.0))
+            ignore_y = float(getattr(self, "ignore_region_y", -1.0))
+            if ignore_radius > 0.0 and ignore_x >= 0.0 and ignore_y >= 0.0:
+                radius_sq = ignore_radius ** 2
+                filtered = [
+                    candidate for candidate in candidates
+                    if ((candidate["cx"] - ignore_x) ** 2
+                        + (candidate["cy"] - ignore_y) ** 2) > radius_sq
+                ]
+                ignored_count = len(candidates) - len(filtered)
+                if ignored_count:
+                    self.get_logger().warning(
+                        f"ignored {ignored_count} candidate(s) in configured floor false-positive region",
+                        throttle_duration_sec=5.0,
+                    )
+                candidates = filtered
 
             # An explicit negative result proves inference ran on this exact image.
             # Silence (missing camera/detector) must never mean "empty cargo".
@@ -303,9 +365,7 @@ class BoxDetectorNode(Node):
                 stamped.point.y = detection["cy"]
                 stamped.point.z = detection["conf"]
                 self.pixel_pub.publish(stamped)
-            with self._detection_lock:
-                self._latest_detection = detection
-                self._latest_detection_time = time.monotonic()
+            # Raw model results drive the mission validator, but never the HUD.
 
     @staticmethod
     def draw_laser_hud(rgb, detection, now):

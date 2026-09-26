@@ -122,7 +122,10 @@ start_node "P3020 IN laser vision :8091" \
     -p stream_image_topic:=/arm_a/preview \
     -p box_pixel_topic:=/box_pixel \
     -p annotated_image_topic:=/p3020/in/vision/image_annotated \
-    -p stream_port:=8091
+    -p stream_port:=8091 \
+    -p ignore_region_x:=354.0 \
+    -p ignore_region_y:=435.0 \
+    -p ignore_region_radius:=48.0
 
 start_node "P3020 OUT laser vision :8093" \
     "$PYTHON_BIN" isaac_sim/robots/p3020/vision/box_detector_node.py \

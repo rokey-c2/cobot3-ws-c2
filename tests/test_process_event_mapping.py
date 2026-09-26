@@ -43,11 +43,22 @@ class ProcessEventMappingTest(unittest.TestCase):
         self.assertEqual(
             route,
             [
-                "INPUT_ZONE", "AMR_PICKUP", "AMR_NAVIGATION",
+                "INPUT_ZONE", "AMR_PICKUP", "AMR_NAVIGATION", "AMR_ARRIVAL",
                 "MANIPULATOR_PICK", "MANIPULATOR_PLACE", "MAIN_CONVEYOR",
                 "SORTER_A", "SORTER_B", "REGION_B", "COMPLETE",
             ],
         )
+
+    def test_amr_arrival_is_separate_from_in_pick(self):
+        arrival = self.module.interpret_process_event(
+            {"event_type": "AMR_STATE", "state": "CONVEYOR_DOCK_DONE"}
+        )
+        picking = self.module.interpret_process_event(
+            {"event_type": "P3020_STATE", "state": "SCANNING"}
+        )
+        self.assertEqual(arrival["stage_code"], "AMR_ARRIVAL")
+        self.assertEqual(picking["stage_code"], "MANIPULATOR_PICK")
+        self.assertFalse(arrival["complete"])
 
     def test_p3020_success_advances_package_to_main_conveyor(self):
         result = self.module.interpret_process_event(

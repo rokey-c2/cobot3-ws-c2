@@ -203,7 +203,7 @@ MAX_STEPS = 600
 
 # 적재함이 완전히 비었다고 확정하기 전, 기본(스캔) 자세에서 박스 미인식
 # 상태를 얼마나 기다릴지. 박스 개수를 고정하지 않고(지금 4개, 나중에
-# 늘어나도 됨) 정상 영상의 명시적 미검출 응답을 시뮬레이션 시간 동안 확인한다.
+# 늘어나도 됨) 정상 영상의 미검출 응답을 실제 경과 시간 동안 확인한다.
 NO_BOX_CONFIRM_TIMEOUT_S = 5.0
 VISION_RESPONSE_TIMEOUT_S = 10.0
 MIN_EMPTY_FRAMES = 3
@@ -484,6 +484,9 @@ class P3020RosBridge:
         )
 
         self.status_pub = node.create_publisher(String, STATUS_TOPIC, 10)
+        self.validated_detection_pub = node.create_publisher(
+            String, BOX_PIXEL_TOPIC + "/validated", 10
+        )
         self.command_sub = node.create_subscription(String, COMMAND_TOPIC, self._on_command, 10)
         self.pending_command = None
 
@@ -552,6 +555,12 @@ class P3020RosBridge:
         msg.data = status
         self.status_pub.publish(msg)
         self._node.get_logger().info(f"status: {status}")
+
+    def publish_validated_detection(self, stamp_ns, detection):
+        """Update the web HUD after the matching RGB/depth frame is validated."""
+        msg = String()
+        msg.data = json.dumps({"stamp_ns": int(stamp_ns), "detection": detection})
+        self.validated_detection_pub.publish(msg)
 
     def publish_image(self, rgba, stamp_ns=None):
         rgb = np.ascontiguousarray(rgba[:, :, :3])
@@ -842,7 +851,9 @@ class P3020PickPlaceAgent:
         empty_frames = 0
         empty_since = None
         rejected_frames = 0
-        elapsed = 0.0
+        # Convert the caller's step budget to seconds, but measure wall time:
+        # slow rendering must not stretch a 5-second check into 40 seconds.
+        timeout_s = timeout_steps * dt
         while True:
             now = time.monotonic()
             if now - last_response > VISION_RESPONSE_TIMEOUT_S:
@@ -873,7 +884,7 @@ class P3020PickPlaceAgent:
             result = None if pending is None else ros_node.take_detection_result(pending[0])
             if result is not None:
                 last_response = time.monotonic()
-                _, frame, depth = pending
+                frame_stamp, frame, depth = pending
                 pending = None
                 candidates = result.get("candidates")
                 if candidates is None:
@@ -881,12 +892,17 @@ class P3020PickPlaceAgent:
                     candidates = [] if detection is None else [detection]
                 if candidates:
                     accepted = None
+                    accepted_detection = None
                     for detection in candidates:
                         pixel = tuple(detection[key] for key in ("cx", "cy", "conf"))
                         world_xy = pixel_to_world_xy(pixel, depth, self.camera, frame)
                         if world_xy is not None:
                             accepted = world_xy
+                            accepted_detection = detection
                             break
+                    publish_validated = getattr(ros_node, "publish_validated_detection", None)
+                    if publish_validated is not None:
+                        publish_validated(frame_stamp, accepted_detection)
                     if accepted is not None:
                         return accepted
                     # A detector candidate rejected by RGB/depth/height checks
@@ -899,25 +915,27 @@ class P3020PickPlaceAgent:
                     rejected_frames += 1
                     empty_frames += 1
                     if empty_since is None:
-                        empty_since = elapsed
+                        empty_since = last_response
                     if (empty_frames >= MIN_EMPTY_FRAMES
-                            and elapsed - empty_since >= timeout_steps * dt):
+                            and last_response - empty_since >= timeout_s):
                         print(
                             "   scanning     validated candidates absent; "
                             f"ignored {rejected_frames} false-positive frames"
                         )
                         return None
                 else:
+                    publish_validated = getattr(ros_node, "publish_validated_detection", None)
+                    if publish_validated is not None:
+                        publish_validated(frame_stamp, None)
                     empty_frames += 1
                     if empty_since is None:
-                        empty_since = elapsed
+                        empty_since = last_response
                     if (empty_frames >= MIN_EMPTY_FRAMES
-                            and elapsed - empty_since >= timeout_steps * dt):
+                            and last_response - empty_since >= timeout_s):
                         return None
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
-            elapsed += dt
 
     def _move_to(self, xy_world, height_from, height_to, steps, tick_others, dt):
         xy_rel = base_relative(xy_world)
@@ -991,7 +1009,7 @@ class P3020PickPlaceAgent:
         ros_node.publish_status("SCANNING")
         pick_xyz = self._locate_box_and_descend(ros_node, scan_xy_world, tick_others, dt)
         if pick_xyz is None:
-            self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+            # No detection means descent never started; we are still at home.
             return False, "NO_BOX"
 
         pick_xy = pick_xyz[:2]
@@ -1109,7 +1127,7 @@ class P3020PickPlaceAgent:
         """Confirm healthy empty observations; abort unresolved work errors.
 
         DONE_SUCCESS is per box, RETRYING is nonterminal, DONE_FAIL is fatal.
-        Only CARGO_EMPTY completes the batch. Durations use simulation time.
+        Only CARGO_EMPTY completes the batch. Vision waits use wall time.
         """
         failures = 0
         last_error = None

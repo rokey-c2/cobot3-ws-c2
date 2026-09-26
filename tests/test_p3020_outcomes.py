@@ -142,6 +142,22 @@ class DetectionTest(unittest.TestCase):
         self.assertGreaterEqual(self.bridge.publish_image.call_count, 3)
         self.assertGreaterEqual(self.clock, 5)
 
+    def test_slow_simulation_does_not_stretch_empty_confirmation(self):
+        # Each render takes one wall second but advances only 1/60 sim second.
+        self.assertIsNone(self.agent._wait_for_detection(self.bridge, 300, None, 1 / 60))
+        self.assertGreaterEqual(self.clock, 5)
+        self.assertLessEqual(self.clock, 7)
+        self.assertGreaterEqual(self.bridge.publish_image.call_count, 3)
+
+    def test_valid_box_during_confirmation_prevents_empty(self):
+        self.bridge.take_detection_result.side_effect = lambda stamp: (
+            {"detection": {"cx": 1, "cy": 1, "conf": .9}}
+            if self.clock >= 4 else {"detection": None}
+        )
+        np.testing.assert_equal(
+            self.agent._wait_for_detection(self.bridge, 300, None, 1 / 60), [1, 2, 3]
+        )
+
     def test_missing_result_never_means_empty(self):
         self.bridge.take_detection_result.return_value = None
         self.bridge.take_detection_result.side_effect = None
@@ -189,6 +205,50 @@ class DetectionTest(unittest.TestCase):
         self.bridge.take_detection_result.side_effect = reply
         np.testing.assert_equal(self.scan(), [1, 2, 3])
         np.testing.assert_equal(self.convert.call_args.args[1], np.ones((2, 2)))
+
+
+class OutParcelSelectionTest(unittest.TestCase):
+    def test_detected_parcel_reaches_world_pose_target(self):
+        path = ROOT / "isaac_sim/robots/p3020/p3020_out_mission_agent.py"
+        transform = Mock()
+        transform.ComputeLocalToWorldTransform.return_value.ExtractTranslation.return_value = (-15.4, -1.6, 1.)
+        pxr = SimpleNamespace(
+            Gf=Mock(), Usd=SimpleNamespace(TimeCode=SimpleNamespace(Default=lambda: 0)),
+            UsdGeom=SimpleNamespace(Xformable=lambda prim: transform), UsdPhysics=Mock(),
+        )
+        # Honor the production imports so missing USD bindings fail on this path.
+        namespace = {
+            alias.asname or alias.name: getattr(pxr, alias.name)
+            for node in ast.parse(path.read_text()).body
+            if isinstance(node, ast.ImportFrom) and node.module == "pxr"
+            for alias in node.names
+        }
+        namespace.update(
+            np=np, IDLE_SCAN_TIMEOUT_STEPS=90, REFINE_WAIT_TIMEOUT_STEPS=100,
+            SCAN_DESCEND_STEPS=150, SCAN_MID_HEIGHT=1.4, APPROACH_HEIGHT=1.2,
+            PARCEL_HALF_HEIGHT=.175, find_nearest_parcel=lambda *args: "box",
+            base_relative=lambda xy: np.asarray(xy) - [-15., -2.],
+            is_within_reach=lambda xy: np.linalg.norm(np.asarray(xy) - [-15., -2.]) <= 2.,
+            get_tcp_pose=lambda frame: [0., 0., 1.5],
+        )
+        cls = load_class(path, "P3020UnloadToBinAgent", {"_locate_box_and_descend"}, namespace)
+        agent = cls()
+        agent.stage = Mock()
+        agent.ee_frame = Mock()
+        agent._wait_for_detection = Mock(side_effect=[np.array([-15.446, -1.626, 1.126]), None])
+        agent._move_to = Mock()
+        np.testing.assert_allclose(
+            agent._locate_box_and_descend(Mock(), None, 1 / 60), [-15.4, -1.6, 1.175]
+        )
+        self.assertEqual(agent._move_to.call_count, 2)
+        # A visually reachable candidate must not freeze an actually distant box.
+        transform.ComputeLocalToWorldTransform.return_value.ExtractTranslation.return_value = (-18., -2., 1.)
+        agent._wait_for_detection = Mock(return_value=np.array([-16.9, -2., 1.]))
+        agent._move_to.reset_mock()
+        pxr.UsdPhysics.reset_mock()
+        self.assertIsNone(agent._locate_box_and_descend(Mock(), None, 1 / 60))
+        agent._move_to.assert_not_called()
+        pxr.UsdPhysics.RigidBodyAPI.assert_not_called()
 
 
 class ActionOutcomeTest(unittest.TestCase):

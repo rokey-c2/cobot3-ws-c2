@@ -9,6 +9,7 @@ import json
 import math
 import random
 import time
+import traceback
 import uuid
 from pathlib import Path
 
@@ -694,6 +695,12 @@ def main():
 
     except KeyboardInterrupt:
         print("\n[SYSTEM] Ctrl+C received")
+
+    except Exception:
+        # Kit shutdown may exit before Python prints an uncaught exception.
+        # Preserve the original failure before entering simulator cleanup.
+        traceback.print_exc()
+        raise
 
     finally:
         # p3020_bridge/p3020_out_bridge/equipment_bridge are no longer

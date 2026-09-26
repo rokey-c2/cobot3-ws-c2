@@ -46,7 +46,7 @@ import sys
 
 import numpy as np
 import omni.usd
-from pxr import Gf, Usd, UsdPhysics
+from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
@@ -460,6 +460,13 @@ class P3020UnloadToBinAgent:
             center = matrix.ExtractTranslation()
             actual_xy = np.array([float(center[0]), float(center[1])])
             planar_distance = float(np.linalg.norm(base_relative(actual_xy)))
+            if not is_within_reach(actual_xy):
+                print(
+                    "   [p3020_out] actual parcel is outside arm reach; "
+                    f"distance={planar_distance:.3f}m; keep belt moving"
+                )
+                self._detected_parcel_path = None
+                return None
             vision_error = float(np.linalg.norm(actual_xy - box_xy[:2]))
             print(
                 f"   [p3020_out] grasp target  parcel=({actual_xy[0]:.3f}, "
