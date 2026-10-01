@@ -332,9 +332,9 @@ flowchart TD
 | Backend | FastAPI |
 | Message Broker | Eclipse Mosquitto MQTT |
 | Database | PostgreSQL 16 |
-| Frontend | React 18 / Vite 5 |
+| Frontend | React 18 / Vite 7 |
 | Container | Docker + Docker Compose plugin |
-| Node.js | 18+ |
+| Node.js | 20.19+ 또는 22.12+ (24 LTS 권장) |
 | npm | 9+ |
 
 Isaac Sim 실행 PC는 NVIDIA RTX GPU가 필요합니다.
@@ -523,7 +523,7 @@ iw_hub_navigation
 - NVIDIA Isaac Sim ROS Jazzy workspace + `iw_hub_navigation`
 - Git
 - Python 3.12 (Host / ROS2; Isaac Sim embedded Python 3.11은 Isaac Sim에 포함)
-- Node.js 18+
+- Node.js 20.19+ 또는 22.12+ (24 LTS 권장)
 - npm 9+
 
 Ubuntu helper package:
@@ -534,10 +534,10 @@ sudo apt install -y \
   python3.12-venv \
   python3-opencv \
   python3-rosdep \
-  python3-colcon-common-extensions \
-  nodejs \
-  npm
+  python3-colcon-common-extensions
 ```
+
+Node.js/npm은 별도로 설치합니다. Ubuntu 기본 `nodejs` 패키지는 필요한 버전보다 낮을 수 있으므로 `node -v`로 확인하세요. nvm이 설치되어 있다면 `nvm install 24 && nvm use 24`로 Node.js와 npm을 함께 준비할 수 있습니다.
 
 ## 8.2 프로젝트 준비
 
