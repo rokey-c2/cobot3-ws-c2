@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api";
 import StatusPill from "../components/StatusPill";
+import ManualJoystick from "../components/ManualJoystick";
 
 const EQUIPMENT_CODE = "AMR_IN";
 const MANUAL_HEARTBEAT_MS = 180;
@@ -98,12 +99,12 @@ export default function AmrControlPage() {
       setCommand({ label, status: next?.status || "PENDING", id: commandId });
       if (["SUCCESS", "FAILED", "CANCELED"].includes(next?.status)) {
         if (next.status === "FAILED") {
-          setError(next.error_message || `${label} 명령에 실패했습니다.`);
+          setError(next.error_message || `${label} command failed.`);
         }
         return;
       }
     }
-    setError(`${label} 명령 결과를 기다리는 중입니다. 잠시 후 다시 확인해주세요.`);
+    setError(`Waiting for the ${label} command result. Please check again shortly.`);
   }
 
   async function runAction(label, action) {
@@ -133,7 +134,7 @@ export default function AmrControlPage() {
     };
 
     if (![parsed.x, parsed.y, parsed.yaw].every(Number.isFinite)) {
-      setError("X, Y, Yaw에 올바른 숫자를 입력해주세요.");
+      setError("Please enter valid numbers for X, Y, and Yaw.");
       return;
     }
 
@@ -192,10 +193,9 @@ export default function AmrControlPage() {
     });
   }
 
-  function manualPointerDown(event, direction) {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    startManual(direction);
+  function changeManualDirection(nextDirection) {
+    if (nextDirection === "STOP") stopManual();
+    else if (nextDirection !== manualDirectionRef.current) startManual(nextDirection);
   }
 
   const direction = yawDegrees(amr?.yaw);
@@ -213,7 +213,7 @@ export default function AmrControlPage() {
           <p className="eyebrow">Robot Operation</p>
           <h2>AMR Control</h2>
           <p className="muted">
-            AMR_IN의 실제 Start/Stop, Navigate, Lift, Manual Jog 명령을 실행합니다.
+            Control AMR_IN with Start/Stop, Navigation, Lift, and Manual Jog commands.
           </p>
         </div>
         <div className="amr-header-state">
@@ -226,11 +226,6 @@ export default function AmrControlPage() {
       </section>
 
       {error && <div className="alert">{error}</div>}
-      {amr && !poseSynced && (
-        <div className="alert">
-          Pose Sync {poseSyncStatus}: Auto Navigation은 사용할 수 없습니다. Manual Jog는 START AMR 후 사용할 수 있습니다.
-        </div>
-      )}
 
       <section className="amr-control-grid">
         <div className="panel camera-panel">
@@ -260,7 +255,7 @@ export default function AmrControlPage() {
                   {cameraStreamState === "OFFLINE" ? "AMR CAMERA OFFLINE" : "AMR CAMERA CONNECTING"}
                 </strong>
                 <span>
-                  IW Hub front stereo camera → ROS2 Image → MJPEG :8090 연결을 기다리는 중입니다.
+                  Waiting for the IW Hub front stereo camera stream via ROS2 Image and MJPEG on port 8090.
                 </span>
               </div>
             )}
@@ -318,55 +313,14 @@ export default function AmrControlPage() {
               <span>MANUAL</span>
               <h3>Jog Control</h3>
             </div>
-            <small>{manualDirection === "STOP" ? "PRESS & HOLD" : manualDirection}</small>
+            <small>{manualDirection === "STOP" ? "DRAG TO DRIVE" : manualDirection}</small>
           </div>
-          <div className="dpad" aria-label="AMR manual jog control">
-            <ManualButton
-              className="dpad-up"
-              label="↑"
-              direction="FORWARD"
-              activeDirection={manualDirection}
-              disabled={manualDisabled}
-              onPointerDown={manualPointerDown}
-              onStop={stopManual}
-            />
-            <ManualButton
-              className="dpad-left"
-              label="←"
-              direction="LEFT"
-              activeDirection={manualDirection}
-              disabled={manualDisabled}
-              onPointerDown={manualPointerDown}
-              onStop={stopManual}
-            />
-            <button
-              type="button"
-              className="dpad-stop"
-              onClick={stopManual}
-            >
-              STOP
-            </button>
-            <ManualButton
-              className="dpad-right"
-              label="→"
-              direction="RIGHT"
-              activeDirection={manualDirection}
-              disabled={manualDisabled}
-              onPointerDown={manualPointerDown}
-              onStop={stopManual}
-            />
-            <ManualButton
-              className="dpad-down"
-              label="↓"
-              direction="BACKWARD"
-              activeDirection={manualDirection}
-              disabled={manualDisabled}
-              onPointerDown={manualPointerDown}
-              onStop={stopManual}
-            />
-          </div>
+          <ManualJoystick
+            disabled={manualDisabled}
+            onDirectionChange={changeManualDirection}
+          />
           <p className="panel-help">
-            화살표를 누르고 있는 동안만 주행합니다. 버튼을 놓거나 창 포커스를 잃으면 STOP을 전송하며, Adapter의 deadman timeout도 자동 정지시킵니다.
+            Drag the L stick up or down to drive, or left or right to turn. Return to the center to stop. Releasing the button or switching away from this window sends STOP. The adapter also stops the AMR automatically when its deadman timeout expires.
           </p>
         </div>
 
@@ -378,6 +332,15 @@ export default function AmrControlPage() {
             </div>
             <small>Nav2</small>
           </div>
+          {amr && !poseSynced && (
+            <div className="alert pose-sync-notice" role="status">
+              <div className="pose-sync-notice-heading">
+                <strong>Pose Sync</strong>
+                <span className="pose-sync-notice-status">{poseSyncStatus}</span>
+              </div>
+              <p>Auto Navigation is unavailable until pose synchronization is restored.</p>
+            </div>
+          )}
           <div className="target-form">
             <CoordinateInput label="Target X" unit="m" value={target.x} onChange={(value) => setTarget((current) => ({ ...current, x: value }))} />
             <CoordinateInput label="Target Y" unit="m" value={target.y} onChange={(value) => setTarget((current) => ({ ...current, y: value }))} />
@@ -418,17 +381,17 @@ export default function AmrControlPage() {
               LIFT DOWN
             </button>
           </div>
-          <p className="panel-help">수동 주행 중 리프트를 조작할 수 있습니다.</p>
+          <p className="panel-help">You can operate the lift while driving manually.</p>
         </div>
 
         <div className="panel action-panel">
           <div>
             <span className="section-label">MANUAL HANDOFF</span>
-            <h3>P3020 도착 확인</h3>
+            <h3>P3020 Arrival Confirmation</h3>
             <small>
               {mission?.status === "RUNNING"
-                ? `현재 단계: ${mission.current_stage || "-"}`
-                : "진행 중인 Mission이 필요합니다."}
+                ? `Current stage: ${mission.current_stage || "-"}`
+                : "A running mission is required."}
             </small>
           </div>
           <button
@@ -436,7 +399,7 @@ export default function AmrControlPage() {
             disabled={arrivalDisabled}
             onClick={() => runAction("P3020 ARRIVAL", api.confirmP3020Arrival)}
           >
-            P3020 도착 완료
+            CONFIRM P3020 ARRIVAL
           </button>
         </div>
 
@@ -450,35 +413,6 @@ export default function AmrControlPage() {
         </div>
       </section>
     </div>
-  );
-}
-
-function ManualButton({
-  className,
-  label,
-  direction,
-  activeDirection,
-  disabled,
-  onPointerDown,
-  onStop,
-}) {
-  const active = activeDirection === direction;
-
-  return (
-    <button
-      type="button"
-      className={className}
-      disabled={disabled}
-      aria-label={direction}
-      aria-pressed={active}
-      style={active ? { background: "#3978f6", borderColor: "#3978f6", color: "#fff" } : undefined}
-      onPointerDown={(event) => onPointerDown(event, direction)}
-      onPointerUp={onStop}
-      onPointerCancel={onStop}
-      onLostPointerCapture={onStop}
-    >
-      {label}
-    </button>
   );
 }
 
@@ -529,7 +463,7 @@ function formatTime(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "-"
-    : date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    : date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function formatDateTime(value) {
@@ -537,5 +471,5 @@ function formatDateTime(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "-"
-    : date.toLocaleString("ko-KR");
+    : date.toLocaleString("en-US");
 }

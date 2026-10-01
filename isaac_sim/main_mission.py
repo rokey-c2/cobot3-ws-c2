@@ -197,6 +197,9 @@ class AmrMissionBridge(Node):
             "/amr_a/lift_state",
             10,
         )
+        self.lift_result_pub = self.create_publisher(
+            String, "/amr_a/lift_result", 10,
+        )
         self.map_pose_pub = self.create_publisher(
             PoseStamped,
             "/amr_a/map_pose",
@@ -241,7 +244,19 @@ class AmrMissionBridge(Node):
             )
 
     def _lift_command_callback(self, message):
-        action = message.data.strip().upper()
+        # Keep plain UP/DOWN compatible with ROS2 CLI and older publishers.
+        raw = message.data.strip()
+        command_id = None
+        if raw.startswith("{"):
+            try:
+                payload = json.loads(raw)
+                command_id = payload.get("command_id")
+                action = str(payload.get("action", "")).strip().upper()
+            except (ValueError, AttributeError):
+                self.get_logger().warning("invalid lift command payload")
+                return
+        else:
+            action = raw.upper()
         accepted = self.agent.request_manual_lift(action)
 
         if accepted:
@@ -249,9 +264,21 @@ class AmrMissionBridge(Node):
                 f"lift command accepted: {action}"
             )
         else:
-            self.get_logger().warning(
-                f"lift command rejected: {action}"
+            reason = (
+                f"Manual lift {action} rejected: "
+                f"mission_state={self.agent.get_mission_state()}"
             )
+            self.get_logger().warning(
+                reason
+            )
+            result = String()
+            result.data = json.dumps({
+                "command_id": command_id,
+                "action": action,
+                "status": "REJECTED",
+                "error_message": reason,
+            })
+            self.lift_result_pub.publish(result)
 
     def _restore_pose_callback(self, message):
         if message.header.frame_id != "map":

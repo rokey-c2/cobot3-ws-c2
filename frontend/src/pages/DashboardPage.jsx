@@ -110,7 +110,7 @@ export default function DashboardPage() {
           <p className="eyebrow">Overview</p>
           <h2>Dashboard</h2>
           <p className="muted">
-            장비 상태, 물류 진행 단계와 최근 이벤트를 한 화면에서 확인합니다.
+            Monitor equipment status, logistics progress, and recent events in one place.
           </p>
         </div>
         <div className="button-row">
@@ -167,7 +167,7 @@ export default function DashboardPage() {
 
       <section className="equipment-grid">
         {equipment.length === 0 ? (
-          <EmptyCard text="장비 데이터를 기다리는 중입니다." />
+          <EmptyCard text="Waiting for equipment data." />
         ) : (
           equipment.map((item) => (
             <EquipmentCard
@@ -264,7 +264,7 @@ export default function DashboardPage() {
               </Link>
             ))}
             {packages.length === 0 && (
-              <div className="empty-state">Package 데이터가 아직 없습니다.</div>
+              <div className="empty-state">No package data yet.</div>
             )}
           </div>
         </div>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
               </div>
             ))}
             {events.length === 0 && (
-              <div className="empty-state">이벤트 연동을 기다리는 중입니다.</div>
+              <div className="empty-state">Waiting for event data.</div>
             )}
           </div>
         </div>
@@ -380,5 +380,5 @@ function formatTime(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "--:--"
-    : date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    : date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }

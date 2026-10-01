@@ -234,6 +234,38 @@ class AdapterControlTest(unittest.TestCase):
         )
         self.assertTrue(goal_handle.cancel_called)
 
+    def test_lift_rejection_fails_immediately_with_mission_reason(self):
+        self.adapter.process_lift_command({"command_id": 6, "action": "UP"})
+        command = self.adapter.lift_command_publisher.messages[-1]
+        self.assertEqual(json.loads(command.data), {"command_id": 6, "action": "UP"})
+        message = FakeString()
+        message.data = json.dumps({
+            "command_id": 6, "action": "UP", "status": "REJECTED",
+            "error_message": "Manual lift UP rejected: mission_state=LIFTING",
+        })
+        self.adapter.lift_result_callback(message)
+        self.assertFalse(self.adapter.lift_in_progress)
+        self.assertEqual(self.result_payloads()[-1]["status"], "FAILED")
+        self.assertIn("mission_state=LIFTING", self.result_payloads()[-1]["error_message"])
+        self.adapter.check_lift_timeout()
+        self.assertEqual(len(self.result_payloads()), 2)
+
+    def test_stale_lift_rejection_does_not_fail_new_command(self):
+        self.adapter.process_lift_command({"command_id": 7, "action": "UP"})
+        message = FakeString()
+        message.data = json.dumps({"command_id": 6, "action": "UP", "status": "REJECTED"})
+        self.adapter.lift_result_callback(message)
+        self.assertTrue(self.adapter.lift_in_progress)
+        message.data = "UP"
+        self.adapter.lift_state_callback(message)
+        self.assertEqual(self.result_payloads()[-1]["status"], "SUCCESS")
+
+    def test_stop_blocks_manual_lift(self):
+        self.adapter.process_control_command({"command_id": 8, "action": "STOP"})
+        self.adapter.process_lift_command({"command_id": 9, "action": "UP"})
+        self.assertFalse(self.adapter.lift_command_publisher.messages)
+        self.assertEqual(self.result_payloads()[-1]["error_message"], "Equipment is STOPPED")
+
 
 if __name__ == "__main__":
     unittest.main()
