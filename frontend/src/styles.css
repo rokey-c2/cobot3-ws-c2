@@ -180,15 +180,55 @@ input:focus, select:focus { border-color: #7fa7f7; box-shadow: 0 0 0 3px #3978f6
 .pose-value small { color: #8d99aa; font-size: 9px; }
 .three-col { margin-top: 16px; }
 .disabled-panel { background: #fbfcfe; }
-.dpad { width: 228px; height: 174px; margin: 6px auto 10px; display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 48px); gap: 7px; justify-content: center; }
-.dpad button { border: 1px solid #d5deea; border-radius: 9px; background: #eef2f7; color: #7d8b9e; font-weight: 900; }
-.dpad-up { grid-column: 2; grid-row: 1; }
-.dpad-left { grid-column: 1; grid-row: 2; }
-.dpad-stop { grid-column: 2; grid-row: 2; font-size: 9px; }
-.dpad-right { grid-column: 3; grid-row: 2; }
-.dpad-down { grid-column: 2; grid-row: 3; }
+.joystick-control { display: grid; justify-items: center; gap: 12px; margin: 6px auto 14px; }
+.joystick-base {
+  position: relative;
+  width: 208px;
+  height: 208px;
+  max-width: 100%;
+  border: 1px solid #c7d1df;
+  border-radius: 50%;
+  background: radial-gradient(circle, #17202d 0 34%, #323f51 35% 46%, #dce4ee 47% 57%, #edf2f7 58%);
+  box-shadow: inset 0 2px 6px #17233720, 0 2px 0 #fff;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.joystick-base.dragging { cursor: grabbing; }
+.joystick-base:focus-visible { outline: 3px solid #3978f6; outline-offset: 4px; }
+.joystick-base[aria-disabled="true"] { opacity: .4; cursor: not-allowed; }
+.joystick-knob {
+  position: absolute;
+  left: calc(50% - 38px);
+  top: calc(50% - 38px);
+  width: 76px;
+  height: 76px;
+  border: 2px solid #17202d;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 40% 30%, #526075, #293445 65%);
+  color: #cbd5e1;
+  box-shadow: inset 0 0 0 5px #354255, inset 0 0 0 7px #ffffff12, 0 7px 10px #0006;
+  font-size: 20px;
+  font-weight: 900;
+  pointer-events: none;
+  transition: transform .15s ease-out;
+}
+.joystick-base.dragging .joystick-knob { transition: none; }
+.joystick-base.moving .joystick-knob { border-color: #3978f6; color: #fff; box-shadow: inset 0 0 0 5px #354255, 0 0 0 3px #3978f633, 0 7px 10px #0006; }
+.joystick-mark { position: absolute; color: #7d8b9e; font-size: 16px; pointer-events: none; }
+.joystick-mark.up { top: 9px; left: calc(50% - 6px); }
+.joystick-mark.down { bottom: 9px; left: calc(50% - 6px); }
+.joystick-mark.left { left: 12px; top: calc(50% - 9px); }
+.joystick-mark.right { right: 12px; top: calc(50% - 9px); }
+.joystick-stop { min-width: 90px; }
 .panel-help { margin: 0; color: #8a97a9; font-size: 9px; line-height: 1.55; }
 .target-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pose-sync-notice { margin-bottom: 18px; text-align: left; line-height: 1.5; }
+.pose-sync-notice-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pose-sync-notice-status { padding: 2px 7px; border: 1px solid #f1b2b7; border-radius: 5px; font-size: 10px; line-height: 1.4; }
+.pose-sync-notice p { margin: 6px 0 0; font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
 .coordinate-input > div { position: relative; }
 .coordinate-input input { padding-right: 39px; font-variant-numeric: tabular-nums; }
 .coordinate-input small { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #8d99aa; font-size: 8px; }

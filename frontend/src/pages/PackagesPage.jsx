@@ -91,7 +91,7 @@ export default function PackagesPage() {
           <p className="eyebrow">Tracking</p>
           <h2>Packages</h2>
           <p className="muted">
-            ROS2 장비 이벤트로 자동 갱신되는 Package 현재 Zone과 이력을 조회합니다.
+            Track current package zones and history, updated automatically by ROS2 equipment events.
           </p>
         </div>
         <div className="metric-box">
@@ -167,7 +167,7 @@ export default function PackagesPage() {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <div className="empty-state table-empty">표시할 Package가 없습니다.</div>
+            <div className="empty-state table-empty">No packages to display.</div>
           )}
         </div>
       </section>
@@ -216,14 +216,14 @@ export default function PackagesPage() {
                   </div>
                 ))}
                 {detail.events.length === 0 && (
-                  <div className="empty-state">아직 Package Event가 없습니다.</div>
+                  <div className="empty-state">No package events yet.</div>
                 )}
               </div>
             </div>
           </div>
         ) : (
           <div className="empty-state large-empty">
-            위 목록에서 Package를 선택하면 이동 경로와 이벤트 이력을 표시합니다.
+            Select a package from the list above to view its route and event history.
           </div>
         )}
       </section>
@@ -251,5 +251,5 @@ function matchesCurrentZone(currentZone, planned) {
 function formatDateTime(value) {
   if (!value) return "-";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("ko-KR");
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("en-US");
 }

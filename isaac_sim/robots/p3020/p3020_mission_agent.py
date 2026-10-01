@@ -36,6 +36,7 @@ scripts/p3020_pick_place_poc.py에서 이번 세션에 검증 완료된 FSM/비�
 """
 
 import json
+import math
 import os
 import sys
 import time
@@ -165,6 +166,8 @@ MIN_TRANSIT_Z_FOR_POD = (
 # 추정치를 기준으로 삼는다 -- 정밀도가 필요한 게 아니라 카메라 시야 확보용.
 _APPROX_PICK_Z_FOR_SCAN = 0.45 + PARCEL_HALF_HEIGHT
 APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여유
+PICK_CONTACT_CLEARANCE = 0.01
+PICK_DESCENT_DURATION_SCALE = 2.0
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
@@ -343,7 +346,7 @@ class PickPlaceFSM:
     DONE_STATE = 7
 
     def __init__(self, ee_frame, robot, ik_solver, pick_xy, place_xy,
-                 pick_z, place_z=PLACE_Z):
+                 pick_z, place_z=PLACE_Z, descent_duration_scale=1.0):
         """pick_z: depth 카메라로 실측한 박스 윗면의 실제 world Z (고정 상수가
         아니라 매 사이클 라이브로 측정한 값을 넘겨받는다 -- 모듈 상단 설명
         참고). place_z는 기본적으로 컨베이어 표면 실측치 기반 상수를 쓴다."""
@@ -354,6 +357,7 @@ class PickPlaceFSM:
         self.place_xy = place_xy
         self.pick_z = float(pick_z)
         self.place_z = float(place_z)
+        self.descent_duration_scale = float(descent_duration_scale)
         self._build_waypoints()
         self.reset()
 
@@ -421,6 +425,9 @@ class PickPlaceFSM:
         else:
             self.n_steps, dist = steps_for(self.start, self.goal)
             self.mode = "cartesian"
+
+        if self.state == 1:
+            self.n_steps = int(math.ceil(self.n_steps * self.descent_duration_scale))
 
         print(f"   [{self.state}] {self.NAMES[self.state]:9s}"
               f" goal {self.goal}  {dist:.4f} m  {self.n_steps} steps"
@@ -1040,7 +1047,8 @@ class P3020PickPlaceAgent:
         ros_node.publish_status("APPROACHING")
         fsm = PickPlaceFSM(self.ee_frame, self.robot, self.ik_solver,
                             pick_xy=pick_xy, place_xy=place_xy_world,
-                            pick_z=detected_pick_z)
+                            pick_z=detected_pick_z + PICK_CONTACT_CLEARANCE,
+                            descent_duration_scale=PICK_DESCENT_DURATION_SCALE)
         gripper_was_attached = False
         ever_attached = False
         release_verified = False

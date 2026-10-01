@@ -17,19 +17,19 @@ export default function P3020VisionPanel() {
         tab: "TOP VIEW",
         eyebrow: "WAREHOUSE LIVE",
         title: "Warehouse Top View",
-        description: "Isaac Sim 전체 물류 공정을 고정 탑뷰 카메라로 실시간 확인합니다.",
+        description: "Monitor the entire Isaac Sim logistics process live from a fixed overhead camera.",
         streamUrl:
           String(import.meta.env.VITE_TOP_VIEW_STREAM_URL || "").trim() ||
           defaultStreamUrl(8092),
         kind: "top",
-        waitingText: "Top View MJPEG 포트 8092 연결을 기다리는 중입니다.",
+        waitingText: "Waiting for the Top View MJPEG stream on port 8092.",
       },
       {
         id: "p3020-in",
         tab: "P3020 IN",
         eyebrow: "P3020 IN VISION",
         title: "Inbound P3020 Laser Detection",
-        description: "입고 P3020 카메라에서 검출된 박스의 중심과 경계를 레이저 HUD로 표시합니다.",
+        description: "View the centers and boundaries of boxes detected by the inbound P3020 camera in the laser HUD.",
         streamUrl:
           String(
             import.meta.env.VITE_P3020_IN_CAMERA_STREAM_URL ||
@@ -37,19 +37,19 @@ export default function P3020VisionPanel() {
               "",
           ).trim() || defaultStreamUrl(8091),
         kind: "vision",
-        waitingText: "P3020 IN Vision MJPEG 포트 8091 연결을 기다리는 중입니다.",
+        waitingText: "Waiting for the P3020 IN Vision MJPEG stream on port 8091.",
       },
       {
         id: "p3020-out",
         tab: "P3020 OUT",
         eyebrow: "P3020 OUT VISION",
         title: "Outbound P3020 Laser Detection",
-        description: "출고 P3020 카메라에서 배송지 오류 박스를 탐지하는 레이저 HUD 영상입니다.",
+        description: "View boxes with destination errors detected by the outbound P3020 camera in the laser HUD.",
         streamUrl:
           String(import.meta.env.VITE_P3020_OUT_CAMERA_STREAM_URL || "").trim() ||
           defaultStreamUrl(8093),
         kind: "vision",
-        waitingText: "P3020 OUT 영상은 sorter가 D 박스를 검출하면 시작됩니다.",
+        waitingText: "The P3020 OUT stream starts when the sorter detects a box for destination D.",
       },
     ],
     [],

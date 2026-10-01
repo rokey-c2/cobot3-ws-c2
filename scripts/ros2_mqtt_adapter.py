@@ -32,6 +32,7 @@ ROS_LIFT_STATE_TOPIC = os.getenv(
     "ROS_LIFT_STATE_TOPIC",
     "/amr_a/lift_state",
 )
+ROS_LIFT_RESULT_TOPIC = os.getenv("ROS_LIFT_RESULT_TOPIC", "/amr_a/lift_result")
 
 MQTT_STATUS_TOPIC = f"controltower/amr/{EQUIPMENT_CODE}/status"
 MQTT_NAV_COMMAND_TOPIC = (
@@ -98,6 +99,9 @@ class Ros2MqttAdapter(Node):
             10,
         )
         self.current_lift_state = None
+        self.lift_result_subscription = self.create_subscription(
+            String, ROS_LIFT_RESULT_TOPIC, self.lift_result_callback, 10,
+        )
         self.lift_in_progress = False
         self.current_lift_command_id = None
         self.current_lift_action = None
@@ -507,7 +511,7 @@ class Ros2MqttAdapter(Node):
         )
 
         message = String()
-        message.data = action
+        message.data = json.dumps({"command_id": command_id, "action": action})
         self.lift_command_publisher.publish(message)
 
         self.get_logger().info(
@@ -518,6 +522,31 @@ class Ros2MqttAdapter(Node):
             command_id=command_id,
             status="RUNNING",
             command_type=f"LIFT_{action}",
+        )
+
+    def lift_result_callback(self, message: String):
+        try:
+            result = json.loads(message.data)
+        except (ValueError, TypeError):
+            return
+        if not isinstance(result, dict) or not self.lift_in_progress:
+            return
+        if (
+            result.get("command_id") != self.current_lift_command_id
+            or result.get("action") != self.current_lift_action
+            or result.get("status") != "REJECTED"
+        ):
+            return
+        command_id = self.current_lift_command_id
+        action = self.current_lift_action
+        reason = result.get("error_message", "Manual lift command rejected")
+        self.clear_lift_command()
+        self.get_logger().warning(reason)
+        self.publish_command_result(
+            command_id=command_id,
+            status="FAILED",
+            command_type=f"LIFT_{action}",
+            error_message=reason,
         )
 
     def lift_state_callback(self, message: String):
