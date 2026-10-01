@@ -18,10 +18,13 @@ if command -v python3 >/dev/null 2>&1; then ok "python3 $(python3 --version 2>&1
 if command -v docker >/dev/null 2>&1; then ok "docker installed"; else warn "docker not found (Backend/PostgreSQL/MQTT need Docker)"; fi
 
 if command -v node >/dev/null 2>&1; then
-    NODE_MAJOR="$(node -p "Number(process.versions.node.split('.')[0])" 2>/dev/null || echo 0)"
-    if [ "$NODE_MAJOR" -ge 18 ]; then ok "Node $(node -v)"; else fail "Node 18+ required; current $(node -v)"; fi
+    if node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit((major === 20 && minor >= 19) || (major === 22 && minor >= 12) || major > 22 ? 0 : 1)'; then
+        ok "Node $(node -v)"
+    else
+        fail "Node 20.19+ or 22.12+ required; current $(node -v)"
+    fi
 else
-    warn "node not found (Frontend needs Node 18+)"
+    warn "node not found (Frontend needs Node 20.19+ or 22.12+)"
 fi
 if command -v npm >/dev/null 2>&1; then ok "npm $(npm -v)"; else warn "npm not found (Frontend setup cannot run)"; fi
 

@@ -6,19 +6,18 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 
 if ! command -v node >/dev/null 2>&1; then
     echo "[ERROR] node is not installed"
-    echo "Ubuntu 24.04 example: sudo apt update && sudo apt install -y nodejs npm"
+    echo "Install Node.js 20.19+ or 22.12+ with npm. With nvm: nvm install 24 && nvm use 24"
     exit 1
 fi
 
 if ! command -v npm >/dev/null 2>&1; then
     echo "[ERROR] npm is not installed"
-    echo "Ubuntu 24.04 example: sudo apt update && sudo apt install -y npm"
+    echo "Install npm with a compatible Node.js release. With nvm: nvm install 24 && nvm use 24"
     exit 1
 fi
 
-NODE_MAJOR="$(node -p "Number(process.versions.node.split('.')[0])")"
-if [ "$NODE_MAJOR" -lt 18 ]; then
-    echo "[ERROR] Node.js 18 or newer is required. Current: $(node -v)"
+if ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit((major === 20 && minor >= 19) || (major === 22 && minor >= 12) || major > 22 ? 0 : 1)'; then
+    echo "[ERROR] Node.js 20.19+ or 22.12+ is required. Current: $(node -v)"
     exit 1
 fi
 
