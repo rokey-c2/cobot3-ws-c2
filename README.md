@@ -60,65 +60,67 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 
 ## 🎬 동작 시연
 
-### 핵심 자동화
-
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <a href="docs/screenshots/p3020-out-box-detecting.mp4">
-        <img src="docs/screenshots/p3020-out-box-detecting.gif" alt="P3020 OUT Box Detection" width="100%">
-      </a>
-      <br>
-      <sub><b>P3020 OUT · Box Detection</b><br>Reject Line 박스를 비전으로 검출해 작업 대상을 확인</sub>
-    </td>
-    <td width="50%" align="center">
-      <a href="docs/screenshots/sorter.mp4">
-        <img src="docs/screenshots/sorter.gif" alt="Wheel Sorter Parcel Sorting" width="100%">
-      </a>
-      <br>
-      <sub><b>Wheel Sorter · Parcel Sorting</b><br>Conveyor Parcel을 목적지에 따라 자동 분류</sub>
-    </td>
-  </tr>
-</table>
-
-<p align="center"><sub>GIF 클릭 시 MP4 원본 시연을 확인할 수 있습니다.</sub></p>
-
 ### 전체 시스템 / 관제
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <a href="docs/screenshots/isaac-sim-record.webm">
-        <img src="docs/screenshots/isaac-sim-record-x5.gif" alt="Isaac Sim Warehouse 전체 공정" width="100%">
-      </a>
-      <br>
-      <sub><b>Warehouse Simulation · 5×</b><br>AMR · P3020 · Conveyor가 연동되는 전체 시뮬레이션</sub>
-    </td>
-    <td width="50%" align="center">
-      <a href="docs/screenshots/manual-move.webm">
-        <img src="docs/screenshots/manual-move-x3.gif" alt="Control Tower AMR Manual Move" width="100%">
-      </a>
-      <br>
-      <sub><b>AMR Manual Control · 3×</b><br>Control Tower에서 카메라와 상태를 보며 AMR 수동 이동 제어</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <a href="docs/screenshots/top-view.webm">
-        <img src="docs/screenshots/top-view-x5.gif" alt="Warehouse Top View" width="100%">
-      </a>
-      <br>
-      <sub><b>Warehouse Top View · 5×</b><br>상단 카메라 기반 전체 공정 모니터링</sub>
-    </td>
-    <td width="50%" align="center">
-      <a href="docs/screenshots/rviz2-and-termial.webm">
-        <img src="docs/screenshots/rviz2-and-termial-x10.gif" alt="RViz2 and Terminal Navigation" width="100%">
-      </a>
-      <br>
-      <sub><b>RViz2 + Terminal · 10×</b><br>Nav2 주행 화면과 실행 로그 동시 확인</sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <a href="docs/screenshots/isaac-sim-record.webm">
+    <img src="docs/screenshots/isaac-sim-record-x5.gif" alt="Isaac Sim Warehouse 전체 공정" width="900">
+  </a>
+  <br>
+  <sub><b>Warehouse Simulation · 5×</b><br>AMR · P3020 · Conveyor가 연동되는 전체 시뮬레이션</sub>
+</p>
+
+<br>
+
+<p align="center">
+  <a href="docs/screenshots/manual-move.webm">
+    <img src="docs/screenshots/manual-move-x3.gif" alt="Control Tower AMR Manual Move" width="900">
+  </a>
+  <br>
+  <sub><b>AMR Manual Control · 3×</b><br>Control Tower에서 카메라와 상태를 보며 AMR 수동 이동 제어</sub>
+</p>
+
+<br>
+
+<p align="center">
+  <a href="docs/screenshots/top-view.webm">
+    <img src="docs/screenshots/top-view-x5.gif" alt="Warehouse Top View" width="900">
+  </a>
+  <br>
+  <sub><b>Warehouse Top View · 5×</b><br>상단 카메라 기반 전체 공정 모니터링</sub>
+</p>
+
+<br>
+
+<p align="center">
+  <a href="docs/screenshots/rviz2-and-termial.webm">
+    <img src="docs/screenshots/rviz2-and-termial-x10.gif" alt="RViz2 and Terminal Navigation" width="900">
+  </a>
+  <br>
+  <sub><b>RViz2 + Terminal · 10×</b><br>Nav2 주행 화면과 실행 로그 동시 확인</sub>
+</p>
+
+### 핵심 자동화
+
+<p align="center">
+  <a href="docs/screenshots/p3020-out-box-detecting.mp4">
+    <img src="docs/screenshots/p3020-out-box-detecting.gif" alt="P3020 OUT Box Detection" width="900">
+  </a>
+  <br>
+  <sub><b>P3020 OUT · Box Detection</b><br>Reject Line 박스를 비전으로 검출해 작업 대상을 확인</sub>
+</p>
+
+<br>
+
+<p align="center">
+  <a href="docs/screenshots/sorter.mp4">
+    <img src="docs/screenshots/sorter.gif" alt="Wheel Sorter Parcel Sorting" width="900">
+  </a>
+  <br>
+  <sub><b>Wheel Sorter · Parcel Sorting</b><br>Conveyor Parcel을 목적지에 따라 자동 분류</sub>
+</p>
+
+<p align="center"><sub>GIF 클릭 시 원본 시연 영상을 확인할 수 있습니다.</sub></p>
 
 ---
 
