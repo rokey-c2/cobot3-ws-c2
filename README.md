@@ -8,6 +8,117 @@ IW Hub AMR, Doosan P3020, VGP20 gripper, RGB/Depth camera, Conveyor, Wheel Sorte
 
 ---
 
+<p align="center">
+  <strong>물류 운반 · 비전 기반 Pick & Place · 지역별 분류 · 웹 관제</strong><br>
+  <sub>Isaac Sim 5.1 · ROS 2 Jazzy · Nav2 · YOLO ONNX · MQTT · FastAPI · PostgreSQL · React</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/web1-1-1.png" alt="Warehouse Top View — AMR, P3020 IN·OUT, 컨베이어와 분류 라인을 한눈에 보는 관제 화면" width="100%">
+</p>
+
+<p align="center"><em>하나의 Warehouse에서 AMR 운반, 협동로봇 작업, 컨베이어 분류를 연결하고 웹에서 확인합니다.</em></p>
+
+<p align="center">
+  <a href="#프로젝트-한눈에-보기">프로젝트 소개</a> ·
+  <a href="#동작-시연">GIF 시연</a> ·
+  <a href="#비전-인식-화면">비전 인식</a> ·
+  <a href="#control-tower-화면">관제 화면</a> ·
+  <a href="#9-실행-순서">실행 가이드</a>
+</p>
+
+## 프로젝트 한눈에 보기
+
+**택배가 담긴 Cargo Pod를 AMR로 운반하고, 협동로봇으로 박스를 컨베이어에 올린 뒤, Wheel Sorter로 분류하는 물류 자동화 시나리오**입니다. 작업 상태와 카메라 화면은 React Control Tower에서 확인합니다.
+
+| 구성 | 프로젝트에서 하는 일 |
+|---|---|
+| **AMR 운반** | IW Hub가 Cargo Pod를 들어 올려 P3020 작업 위치로 운반하고, 작업 후 원위치로 복귀합니다. |
+| **비전 + 협동로봇** | YOLO와 RGB/Depth로 박스 위치를 인식하고, P3020 IN이 반복 Pick & Place를 수행합니다. |
+| **이송 + 분류** | 컨베이어와 Wheel Sorter가 박스를 지역별로 분류하고, Reject Line의 박스는 P3020 OUT이 처리합니다. |
+| **실시간 관제** | 웹에서 공정 상태, 택배 처리 내역, AMR 제어 및 Warehouse·로봇 카메라 화면을 확인합니다. |
+
+## 동작 시연
+
+<table>
+  <tr>
+    <th width="50%">Warehouse 시뮬레이션 · 5배속</th>
+    <th width="50%">웹 AMR 수동 제어 · 3배속</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/isaac-sim-record-x5.gif" alt="Isaac Sim Warehouse에서 AMR와 P3020이 동작하는 시연 GIF" width="100%"></td>
+    <td><img src="docs/screenshots/manual-move-x3.gif" alt="React AMR Control 화면에서 수동 이동을 조작하는 시연 GIF" width="100%"></td>
+  </tr>
+  <tr>
+    <td>AMR, 협동로봇, 컨베이어가 배치된 시뮬레이션의 실제 동작을 확인합니다.</td>
+    <td>AMR 카메라와 상태를 보면서 웹 제어 화면으로 이동을 조작합니다.</td>
+  </tr>
+</table>
+
+추가 시연은 아래 GIF 링크에서 확인할 수 있습니다.
+
+- [Warehouse Top View 시연 · 5배속](docs/screenshots/top-view-x5.gif) — 웹 관제의 상단 카메라로 보는 Warehouse 동작
+- [RViz2 + 터미널 시연 · 10배속](docs/screenshots/rviz2-and-termial-x10.gif) — 내비게이션 화면과 실행 로그
+
+## 비전 인식 화면
+
+P3020 IN·OUT 카메라에서 박스 검출 결과를 확인할 수 있습니다. 아래 화면의 초록색 테두리와 중앙 조준점은 인식 대상 위치를, `TARGET LOCKED`와 신뢰도는 검출 상태를 보여줍니다.
+
+<table>
+  <tr>
+    <th width="50%">P3020 IN · 투입 측 박스 인식</th>
+    <th width="50%">P3020 OUT · 배출 측 박스 인식</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/p3020-in-vision-verified.png" alt="P3020 IN 카메라에서 박스를 인식하고 TARGET LOCKED를 표시한 화면" width="100%"></td>
+    <td><img src="docs/screenshots/p3020-out-vision-verified.png" alt="P3020 OUT 카메라에서 컨베이어 위 박스를 인식한 화면" width="100%"></td>
+  </tr>
+  <tr>
+    <td>Cargo Pod의 박스를 인식해 Pick & Place에 사용할 위치를 확인합니다.</td>
+    <td>배출 측 컨베이어에 있는 박스의 검출 상태를 확인합니다.</td>
+  </tr>
+</table>
+
+## Control Tower 화면
+
+<table>
+  <tr>
+    <th width="50%">Dashboard · 공정 관제</th>
+    <th width="50%">Tracking · 택배 처리 내역</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/web1-1.png" alt="공정 상태와 Warehouse 실시간 화면을 함께 표시하는 Control Tower Dashboard" width="100%"></td>
+    <td><img src="docs/screenshots/web2-1.png" alt="택배 검색 조건과 처리 내역을 표시하는 Tracking 화면" width="100%"></td>
+  </tr>
+  <tr>
+    <td>공정 상태와 Warehouse 카메라 화면을 한곳에서 확인합니다.</td>
+    <td>검색 조건과 택배 목록을 통해 처리 내역을 확인합니다.</td>
+  </tr>
+</table>
+
+<details>
+<summary><strong>AMR Control 및 비전 탐색 화면 더 보기</strong></summary>
+
+### AMR Control
+
+카메라, AMR 상태, 이동 조작과 Lift 제어를 함께 제공하는 화면입니다.
+
+![AMR Control — 카메라와 상태, 수동 이동 및 Lift 제어](docs/screenshots/web3-1.png)
+
+### 비전 탐색 상태
+
+대상을 탐색하는 `SCANNING FOR BOX` 화면과 OUT 카메라 대기 화면입니다. 위의 `TARGET LOCKED` 이미지와 비교하면 인식 전후 상태를 확인할 수 있습니다.
+
+| P3020 IN · 탐색 | P3020 OUT · 탐색 |
+|---|---|
+| ![P3020 IN 박스 탐색 화면](docs/screenshots/web1-2.png) | ![P3020 OUT 박스 탐색 화면](docs/screenshots/web1-3-1.png) |
+
+![P3020 OUT 카메라 대기 화면](docs/screenshots/web1-3.png)
+
+</details>
+
+---
+
 ## 목차
 
 0. [ZIP 압축 해제 후 처음 실행](#0-zip-압축-해제-후-처음-실행)
