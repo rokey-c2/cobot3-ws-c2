@@ -63,7 +63,7 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 ### 전체 시스템 / 관제
 
 <p align="center">
-  <a href="docs/screenshots/isaac-sim-record.webm">
+  <a href="docs/screenshots/isaac-sim-record-x5.gif">
     <img src="docs/screenshots/isaac-sim-record-x5.gif" alt="Isaac Sim Warehouse 전체 공정" width="900">
   </a>
   <br>
@@ -71,7 +71,7 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/manual-move.webm">
+  <a href="docs/screenshots/manual-move-x3.gif">
     <img src="docs/screenshots/manual-move-x3.gif" alt="Control Tower AMR Manual Move" width="900">
   </a>
   <br>
@@ -79,7 +79,7 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/top-view.webm">
+  <a href="docs/screenshots/top-view-x5.gif">
     <img src="docs/screenshots/top-view-x5.gif" alt="Warehouse Top View" width="900">
   </a>
   <br>
@@ -87,7 +87,7 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/rviz2-and-termial.webm">
+  <a href="docs/screenshots/rviz2-and-termial-x10.gif">
     <img src="docs/screenshots/rviz2-and-termial-x10.gif" alt="RViz2 and Terminal Navigation" width="900">
   </a>
   <br>
@@ -97,7 +97,7 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 ### 핵심 자동화
 
 <p align="center">
-  <a href="docs/screenshots/p3020-out-box-detecting.mp4">
+  <a href="docs/screenshots/p3020-out-box-detecting.gif">
     <img src="docs/screenshots/p3020-out-box-detecting.gif" alt="P3020 OUT Box Detection" width="900">
   </a>
   <br>
@@ -105,14 +105,14 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/sorter.mp4">
+  <a href="docs/screenshots/sorter.gif">
     <img src="docs/screenshots/sorter.gif" alt="Wheel Sorter Parcel Sorting" width="900">
   </a>
   <br>
   <sub><b>Wheel Sorter · Parcel Sorting</b><br>Conveyor Parcel을 목적지에 따라 자동 분류</sub>
 </p>
 
-<p align="center"><sub>GIF 클릭 시 원본 시연 영상을 확인할 수 있습니다.</sub></p>
+<p align="center"><sub>GIF 클릭 시 해당 GIF 파일을 크게 확인할 수 있습니다.</sub></p>
 
 ---
 
