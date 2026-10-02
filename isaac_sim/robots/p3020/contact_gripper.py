@@ -33,12 +33,15 @@ class ContactGripper:
         contact_threshold: float = 0.03,
         snap_distance: float = 0.08,
         local_down_dir: Gf.Vec3d = Gf.Vec3d(0, -1, 0),
+        preserve_contact_pose: bool = False,
     ):
         self._stage = stage
         self._gripper_body_path = gripper_body_path
         self._local_pos = local_pos
         self._threshold = contact_threshold
         self._attached_to = None
+        self._preserve_contact_pose = preserve_contact_pose
+        self._contact_offset = None
         self.last_distance = float("inf")
         self.minimum_distance = float("inf")
         # 콜리전을 꺼놨기 때문에, 붙는 순간의 우연한(겹친) 위치 그대로 잡으면
@@ -79,6 +82,8 @@ class ContactGripper:
 
     def _local_snap_target(self) -> Gf.Vec3d:
         """vgp20 로컬 좌표계 기준, 흡착 컵 바로 아래(박스 원점이 있어야 할) 지점."""
+        if self._contact_offset is not None:
+            return self._contact_offset
         return (
             Gf.Vec3d(self._local_pos[0], self._local_pos[1], self._local_pos[2])
             + self._local_down_dir * self._snap_distance
@@ -86,6 +91,16 @@ class ContactGripper:
 
     def _attach(self, object_prim_path: str):
         prim = self._stage.GetPrimAtPath(object_prim_path)
+        if self._preserve_contact_pose:
+            # Capture the actual contact offset. Snapping a loaded parcel to a
+            # guessed offset can drive it into its supporting pod at attachment.
+            object_world = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(
+                Usd.TimeCode.Default()
+            ).ExtractTranslation()
+            gripper_world = UsdGeom.Xformable(
+                self._stage.GetPrimAtPath(self._gripper_body_path)
+            ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+            self._contact_offset = gripper_world.GetInverse().Transform(object_world)
         # kinematic으로 바꿔서 이제부턴 물리(중력/충돌)가 아니라 우리가 매 스텝
         # 직접 트랜스폼을 써주는 방식으로 위치를 고정한다 -- 조인트 솔버 오차가
         # 없어서 그리퍼-박스 사이 간격이 절대 벌어지거나 파고들지 않는다.
@@ -127,6 +142,7 @@ class ContactGripper:
             prim = self._stage.GetPrimAtPath(self._attached_to)
             UsdPhysics.RigidBodyAPI(prim).CreateKinematicEnabledAttr().Set(False)
         self._attached_to = None
+        self._contact_offset = None
 
     def is_attached(self) -> bool:
         return self._attached_to is not None

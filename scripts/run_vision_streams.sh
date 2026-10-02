@@ -132,6 +132,7 @@ start_node "P3020 OUT laser vision :8093" \
     --ros-args \
     --remap __node:=p3020_out_box_detector \
     -p image_topic:=/arm_b/rgb \
+    -p stream_image_topic:=/arm_b/preview \
     -p box_pixel_topic:=/arm_b/box_pixel \
     -p annotated_image_topic:=/p3020/out/vision/image_annotated \
     -p stream_port:=8093

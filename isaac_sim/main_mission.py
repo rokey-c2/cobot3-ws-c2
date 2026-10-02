@@ -70,6 +70,7 @@ simulation_app.update()
 from cargo.cargo_pod_physics import add_parcel_asset_scaled
 from equipment.conveyor.conveyor_controller import ConveyorController
 from equipment.wheel_sorter.wheel_sorter_controller import WheelSorterController
+from equipment.wheel_sorter.outfeed_center_stop import OutfeedCenterStop
 from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
     PARCEL_DESTINATION_ATTR,
@@ -579,6 +580,9 @@ def main():
 
     world.play()
     conveyor.start()
+    outfeed = OutfeedCenterStop()
+    outfeed.setup()
+    p3020_out_agent.pickup_ready = outfeed.is_ready
 
     for _ in range(30):
         world.step(render=True)
@@ -611,6 +615,7 @@ def main():
         # same event key is idempotent, including after the mission completes.
         bridge.create_timer(2.0, lambda msg=registration: equipment_bridge.process_pub.publish(msg))
     preview_pub = bridge.create_publisher(Image, "/arm_a/preview", 1)
+    out_preview_pub = bridge.create_publisher(Image, "/arm_b/preview", 1)
     last_preview_at = 0.0
 
     print()
@@ -654,23 +659,32 @@ def main():
         # conveyor while P3020 is mid-cycle (see SORTER_MERGE_PLAN.md
         # section 9).
         sorter.update_boxes(parcel_paths, BOX_ID_TO_TRACK)
+        outfeed.update_boxes(
+            parcel_paths,
+            enabled=conveyor.running and equipment_bridge.p3020_out_enabled,
+        )
         if sorter.destination_d_detected and not p3020_out_agent.camera_enabled:
             p3020_out_agent.enable_camera()
         now = time.monotonic()
         if now - last_preview_at >= 0.2:
             last_preview_at = now
-            frame = p3020_agent.camera.get_frame()
-            if frame is not None:
+            cameras = [(p3020_agent.camera, preview_pub, "p3020_rsd455")]
+            if p3020_out_agent.camera_enabled:
+                cameras.append((p3020_out_agent.camera, out_preview_pub, "p3020_out_rsd455"))
+            for camera, publisher, frame_id in cameras:
+                frame = camera.get_frame()
+                if frame is None:
+                    continue
                 # Preview has its own topic; it cannot replace a queued scan.
                 rgb = np.ascontiguousarray(frame[:, :, :3])
                 msg = Image()
                 msg.header.stamp = bridge.get_clock().now().to_msg()
-                msg.header.frame_id = "p3020_rsd455"
+                msg.header.frame_id = frame_id
                 msg.height, msg.width = rgb.shape[:2]
                 msg.encoding = "rgb8"
                 msg.step = msg.width * 3
                 msg.data = rgb.tobytes()
-                preview_pub.publish(msg)
+                publisher.publish(msg)
 
     try:
         while simulation_app.is_running():
@@ -726,7 +740,8 @@ def main():
                     on_box_placed=_on_box_placed,
                 )
 
-            if equipment_bridge.p3020_out_enabled and p3020_out_agent.camera_enabled:
+            if (equipment_bridge.p3020_out_enabled and p3020_out_agent.camera_enabled
+                    and outfeed.held_path is not None):
                 out_success, out_message = p3020_out_agent.try_unload_cycle(
                     p3020_out_bridge,
                     tick_others=tick_iw_hub_agents,

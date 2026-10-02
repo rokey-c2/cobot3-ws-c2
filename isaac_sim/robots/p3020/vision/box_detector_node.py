@@ -70,11 +70,7 @@ class _MjpegHandler(BaseHTTPRequestHandler):
 
         if self.path.rstrip("/") == "/health":
             payload = json.dumps(
-                {
-                    "status": "ok",
-                    "stream": source.stream_path,
-                    "frame_ready": source.has_stream_frame,
-                }
+                source.stream_health()
             ).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -99,16 +95,19 @@ class _MjpegHandler(BaseHTTPRequestHandler):
 
         last_sequence = -1
         try:
+            self.wfile.write(b"--frame\r\n")
             while rclpy.ok():
                 jpeg, sequence = source.wait_for_stream_frame(last_sequence, timeout=2.0)
                 if jpeg is None or sequence == last_sequence:
                     continue
                 last_sequence = sequence
-                self.wfile.write(b"--frame\r\n")
                 self.wfile.write(b"Content-Type: image/jpeg\r\n")
                 self.wfile.write(f"Content-Length: {len(jpeg)}\r\n\r\n".encode("ascii"))
                 self.wfile.write(jpeg)
-                self.wfile.write(b"\r\n")
+                # Complete the multipart boundary now. Otherwise browsers can
+                # hold a newly validated HUD until the next camera frame.
+                self.wfile.write(b"\r\n--frame\r\n")
+                self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError, TimeoutError):
             pass
 
@@ -161,6 +160,8 @@ class BoxDetectorNode(Node):
         self._detection_lock = threading.Lock()
         self._latest_detection = None
         self._latest_detection_time = 0.0
+        self._latest_source = None
+        self._latest_source_time = 0.0
         self._inference_thread = threading.Thread(
             target=self._inference_worker, name="p3020-yolo", daemon=True
         )
@@ -203,6 +204,22 @@ class BoxDetectorNode(Node):
     def has_stream_frame(self):
         with self._frame_condition:
             return self._latest_jpeg is not None
+
+    def stream_health(self):
+        now = time.monotonic()
+        with self._detection_lock:
+            frame_age = now - self._latest_source_time if self._latest_source is not None else None
+            detection = self._latest_detection if now - self._latest_detection_time <= 1.0 else None
+        live = frame_age is not None and frame_age <= 3.0
+        return {
+            "status": "ok",
+            "stream": self.stream_path,
+            "frame_ready": self.has_stream_frame,
+            "frame_age_seconds": frame_age,
+            "live": live,
+            "detection_state": "TARGET LOCKED" if live and detection is not None else "SCANNING" if live else "WAITING",
+            "confidence": detection["conf"] if live and detection is not None else None,
+        }
 
     def wait_for_stream_frame(self, last_sequence, timeout):
         with self._frame_condition:
@@ -263,6 +280,8 @@ class BoxDetectorNode(Node):
 
         received_at = time.monotonic()
         with self._detection_lock:
+            self._latest_source = (msg, rgb)
+            self._latest_source_time = received_at
             detection = self._latest_detection
             if received_at - self._latest_detection_time > 1.0:
                 detection = None
@@ -286,6 +305,8 @@ class BoxDetectorNode(Node):
             return
         now = time.monotonic()
         with self._detection_lock:
+            self._latest_source = (msg, rgb)
+            self._latest_source_time = now
             detection = self._latest_detection if now - self._latest_detection_time <= 1.0 else None
         annotated = self.draw_laser_hud(rgb, detection, now)
         self._update_web_stream(annotated)
@@ -310,6 +331,14 @@ class BoxDetectorNode(Node):
         with self._detection_lock:
             self._latest_detection = detection
             self._latest_detection_time = time.monotonic()
+            source = self._latest_source
+        # Validation can arrive after the mission has stopped requesting RGB.
+        # Show it immediately instead of waiting for the next scan/move frame.
+        if source is not None:
+            msg, rgb = source
+            annotated = self.draw_laser_hud(rgb, detection, time.monotonic())
+            self._update_web_stream(annotated)
+            self._publish_annotated(msg, annotated)
 
     def _inference_worker(self):
         while rclpy.ok():

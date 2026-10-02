@@ -168,6 +168,7 @@ _APPROX_PICK_Z_FOR_SCAN = 0.45 + PARCEL_HALF_HEIGHT
 APPROACH_HEIGHT_OFFSET = 0.35   # 실측 박스 윗면 기준 접근 높이 여유
 PICK_CONTACT_CLEARANCE = 0.01
 PICK_DESCENT_DURATION_SCALE = 2.0
+PICK_TARGET_MATCH_TOLERANCE = 0.20
 SCAN_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + 0.9
 APPROACH_HEIGHT = _APPROX_PICK_Z_FOR_SCAN + APPROACH_HEIGHT_OFFSET
 
@@ -443,6 +444,14 @@ class PickPlaceFSM:
             self._next()
 
     def current_action(self, target_quat):
+        if self.start is None:
+            # _next() resets step before the next state's entry. Reusing the
+            # previous joint trajectory at alpha=0 used to jerk back toward
+            # its starting pose for one physics step at DESCEND -> GRASP.
+            return ArticulationAction(
+                joint_positions=np.array(self._robot.get_joint_positions(), copy=True),
+                joint_indices=np.arange(len(self._robot.dof_names)),
+            ), True
         alpha = min(1.0, self.step / float(self.n_steps)) if self.n_steps else 1.0
         if self.mode == "joint":
             q = lerp(self.joint_start, self.joint_goal, alpha)
@@ -461,6 +470,18 @@ class PickPlaceFSM:
         self.start = None
         if self.state >= self.DONE_STATE:
             print(f"   [{self.DONE_STATE}] DONE")
+
+    def lift_after_contact(self, place_z=None):
+        """Cancel remaining descent/GRASP hold as soon as suction succeeds."""
+        if self.state not in (1, 2):
+            raise RuntimeError("pickup contact is only valid during DESCEND/GRASP")
+        if place_z is not None:
+            self.place_z = float(place_z)
+            self._build_waypoints()
+        self.gripper = "close"
+        self.state = 3
+        self.step = 0
+        self.start = None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -742,6 +763,7 @@ class P3020PickPlaceAgent:
             local_pos=Gf.Vec3f(0.0, -0.064, 0.0),
             contact_threshold=PARCEL_HALF_HEIGHT + 0.03,
             snap_distance=PARCEL_SNAP_DISTANCE,
+            preserve_contact_pose=True,
         )
 
         # ROBOT_BASE_POS/QUAT used to be a hardcoded, headlessly-measured
@@ -1038,6 +1060,23 @@ class P3020PickPlaceAgent:
             return False, message
         print(f"   scanning     target parcel prim: {target_box_path}")
 
+        # A bounding-box center can project onto a side face rather than the
+        # parcel's top (measured 25 mm too low). Match the simulated parcel and
+        # use its known 0.35 m geometry as a lower bound on the approach height.
+        parcel_center = np.array(UsdGeom.Xformable(
+            self.stage.GetPrimAtPath(target_box_path)
+        ).ComputeLocalToWorldTransform(Usd.TimeCode.Default()).ExtractTranslation())
+        if np.linalg.norm(parcel_center[:2] - pick_xy) > PICK_TARGET_MATCH_TOLERANCE:
+            self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+            return False, "검출 좌표와 실제 박스 위치가 맞지 않아 픽업을 중지했습니다."
+        pick_xy = parcel_center[:2]
+        pick_surface_z = float(parcel_center[2]) + PARCEL_HALF_HEIGHT
+        safe_pick_z = max(detected_pick_z, pick_surface_z) + PICK_CONTACT_CLEARANCE
+        print(
+            f"[P3020_IN] PICK_HEIGHT vision={detected_pick_z:.4f} "
+            f"surface={pick_surface_z:.4f} target={safe_pick_z:.4f}"
+        )
+
         pick_xy_rel = base_relative(pick_xy)
         place_xy_rel = base_relative(place_xy_world)
         pick_quat = make_target_quat(APPROACH_ROLL_DEG, APPROACH_PITCH_DEG, yaw_toward(pick_xy_rel))
@@ -1047,9 +1086,8 @@ class P3020PickPlaceAgent:
         ros_node.publish_status("APPROACHING")
         fsm = PickPlaceFSM(self.ee_frame, self.robot, self.ik_solver,
                             pick_xy=pick_xy, place_xy=place_xy_world,
-                            pick_z=detected_pick_z + PICK_CONTACT_CLEARANCE,
+                            pick_z=safe_pick_z,
                             descent_duration_scale=PICK_DESCENT_DURATION_SCALE)
-        gripper_was_attached = False
         ever_attached = False
         release_verified = False
         released_at_step = None
@@ -1074,6 +1112,26 @@ class P3020PickPlaceAgent:
         step = 0
         last_reported_state = None
         while fsm.state < fsm.DONE_STATE:
+            if fsm.state in (1, 2) and not self.gripper.is_attached():
+                cup = self.gripper.gripper_point_world()
+                if cup[2] >= pick_surface_z and self.gripper.try_attach(target_box_path):
+                    ros_node.publish_status("GRASPING")
+                    attached_center = UsdGeom.Xformable(
+                        self.stage.GetPrimAtPath(target_box_path)
+                    ).ComputeLocalToWorldTransform(Usd.TimeCode.Default()).ExtractTranslation()
+                    held_offset_z = float(get_tcp_pose(self.ee_frame)[2]) - float(attached_center[2])
+                    # Preserve the conveyor clearance with the measured hold
+                    # offset instead of assuming that the parcel was snapped.
+                    fsm.lift_after_contact(place_z=(
+                        CONVEYOR_SURFACE_Z + PARCEL_HALF_HEIGHT + held_offset_z + PLACE_CLEARANCE
+                    ))
+                    print(
+                        f"[P3020_IN] CONTACT_STOP step={step} "
+                        f"cup_clearance={cup[2] - pick_surface_z:.4f}m"
+                    )
+            if fsm.state >= 3 and not ever_attached and not self.gripper.is_attached():
+                self._return_to_ready_pose(tick_others=tick_others, dt=dt)
+                return False, "박스 윗면에서 흡착을 확인하지 못해 추가 하강을 중지했습니다."
             target_quat = pick_quat if fsm.state < 4 else place_quat
 
             fsm.advance(on_gripper_change, target_quat)
@@ -1082,10 +1140,6 @@ class P3020PickPlaceAgent:
                 action = clamp_to_safe_limits(action, self.robot.dof_names)
                 self.robot.apply_action(action)
 
-            if fsm.gripper == "close":
-                just_attached = self.gripper.try_attach(target_box_path) and not gripper_was_attached
-                if just_attached:
-                    print(f"      [gripper] 접촉 감지 -> 부착 (step={step})")
             if self.gripper.is_attached():
                 self.gripper.update()
                 ever_attached = True
@@ -1096,8 +1150,6 @@ class P3020PickPlaceAgent:
                     if float(center[2]) >= pick_center_z + 0.05:
                         pick_confirmed = True
                         ros_node.publish_status("PICK_CONFIRMED")
-            gripper_was_attached = self.gripper.is_attached()
-
             if fsm.state == 4 and last_reported_state != "MOVING":
                 ros_node.publish_status("MOVING")
                 last_reported_state = "MOVING"

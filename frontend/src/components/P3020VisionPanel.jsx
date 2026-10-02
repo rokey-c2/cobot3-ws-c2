@@ -56,6 +56,7 @@ export default function P3020VisionPanel() {
   );
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [visionHealth, setVisionHealth] = useState({});
   const [streamStates, setStreamStates] = useState(() =>
     Object.fromEntries(slides.map((slide) => [slide.id, "CONNECTING"])),
   );
@@ -66,6 +67,39 @@ export default function P3020VisionPanel() {
   const activeSlide = slides[activeIndex];
   const streamState = streamStates[activeSlide.id] || "CONNECTING";
   const retryToken = retryTokens[activeSlide.id] || 0;
+  const health = visionHealth[activeSlide.id];
+  const detectionState = health?.detection_state || "WAITING";
+
+  useEffect(() => {
+    if (activeSlide.kind !== "vision") return undefined;
+    let cancelled = false;
+    let timer;
+    let controller;
+    async function poll() {
+      controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 1500);
+      try {
+        const url = new URL(activeSlide.streamUrl, window.location.href);
+        url.pathname = "/health";
+        url.search = "";
+        const response = await fetch(url, { signal: controller.signal, cache: "no-store" });
+        if (!response.ok) throw new Error("Camera health unavailable");
+        const result = await response.json();
+        if (!cancelled) setVisionHealth((current) => ({ ...current, [activeSlide.id]: result }));
+      } catch {
+        if (!cancelled) setVisionHealth((current) => ({ ...current, [activeSlide.id]: null }));
+      } finally {
+        window.clearTimeout(timeout);
+        if (!cancelled) timer = window.setTimeout(poll, 500);
+      }
+    }
+    poll();
+    return () => {
+      cancelled = true;
+      controller?.abort();
+      window.clearTimeout(timer);
+    };
+  }, [activeSlide.id, activeSlide.kind, activeSlide.streamUrl]);
 
   useEffect(() => {
     if (streamState !== "OFFLINE") return undefined;
@@ -183,8 +217,12 @@ export default function P3020VisionPanel() {
       <div className="live-monitor-footer">
         {activeSlide.kind === "vision" ? (
           <>
-            <span><i className="live-monitor-dot detected" /> TARGET LOCKED</span>
-            <span><i className="live-monitor-dot scanning" /> AUTO SCANNING</span>
+            <span>
+              <i className={`live-monitor-dot ${detectionState === "TARGET LOCKED" ? "detected" : "scanning"}`} />
+              {detectionState}
+              {Number.isFinite(health?.confidence) ? ` · ${(health.confidence * 100).toFixed(1)}%` : ""}
+            </span>
+            <span>BOX DETECTION</span>
           </>
         ) : (
           <>
