@@ -40,6 +40,7 @@ BASELINE_FLOOR_TOP_Z/BASELINE_WALL_HEIGHT 상수에서 그대로 역산한다
 
 import os
 import sys
+import time
 
 import numpy as np
 import omni.usd
@@ -98,6 +99,7 @@ from robots.p3020.p3020_mission_agent import (
     APPROACH_PITCH_DEG,
     APPROACH_ROLL_DEG,
     PickPlaceFSM,
+    P3020RosBridge,
     clamp_to_safe_limits,
     find_nearest_parcel,
     get_tcp_pose,
@@ -218,7 +220,19 @@ class P3020OutRosBridge:
         self.depth_pub = node.create_publisher(Image, DEPTH_TOPIC, qos_profile_sensor_data)
         self.pixel_sub = node.create_subscription(PointStamped, BOX_PIXEL_TOPIC, self._on_pixel, 10)
         self.latest_pixel = None
+        self.detection_results = {}
+        self.result_sub = node.create_subscription(
+            String, BOX_PIXEL_TOPIC + "/result", self._on_detection_result, 10
+        )
+        self.validated_detection_pub = node.create_publisher(
+            String, BOX_PIXEL_TOPIC + "/validated", 10
+        )
         self.status_pub = node.create_publisher(String, STATUS_TOPIC, 10)
+
+    # Share the IN result protocol, while keeping all publishers on arm_b.
+    _on_detection_result = P3020RosBridge._on_detection_result
+    take_detection_result = P3020RosBridge.take_detection_result
+    publish_validated_detection = P3020RosBridge.publish_validated_detection
 
     def get_clock(self):
         return self._node.get_clock()
@@ -243,12 +257,14 @@ class P3020OutRosBridge:
         self.status_pub.publish(msg)
         self._node.get_logger().info(f"status: {status}")
 
-    def publish_image(self, rgba):
+    def publish_image(self, rgba, stamp_ns=None):
         rgb = np.ascontiguousarray(rgba[:, :, :3])
         if rgb.mean() < 1.0:
             return
         msg = Image()
         msg.header.stamp = self._node.get_clock().now().to_msg()
+        if stamp_ns is not None:
+            msg.header.stamp.sec, msg.header.stamp.nanosec = divmod(int(stamp_ns), 1_000_000_000)
         msg.header.frame_id = "p3020_out_rsd455"
         msg.height, msg.width = rgb.shape[:2]
         msg.encoding = "rgb8"
@@ -256,6 +272,7 @@ class P3020OutRosBridge:
         msg.step = msg.width * 3
         msg.data = rgb.tobytes()
         self.image_pub.publish(msg)
+        return msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec
 
     def publish_depth(self, depth_map):
         d = np.ascontiguousarray(depth_map, dtype=np.float32)
@@ -492,30 +509,47 @@ class P3020UnloadToBinAgent:
         return None
 
     def _wait_for_detection(self, ros_node, timeout_steps, tick_others, dt):
-        not_before = ros_node.get_clock().now()
-        depth_map = None
-        last_frame = None
+        # Keep RGB/depth with the request so delayed inference cannot validate
+        # a box against a different frame. Full boxes also supply the web HUD.
+        pending = None
+        last_publish = 0.0
         for _ in range(timeout_steps):
-            frame = self.camera.get_frame()
-            if frame is not None:
-                last_frame = frame
-                ros_node.publish_image(frame)
-                depth_map = self.camera.get_depth()
-                ros_node.publish_depth(depth_map)
-            rclpy.spin_once(ros_node._node, timeout_sec=0.0)
-            pixel = ros_node.take_pixel_after(not_before)
-            if pixel is not None and depth_map is not None:
-                world_xy = pixel_to_world_xy(pixel, depth_map, self.camera, last_frame)
-                if world_xy is not None and is_within_reach(world_xy[:2]):
-                    return world_xy
-                if world_xy is not None:
-                    print(
-                        "   [p3020_out] detected parcel is outside arm reach; "
-                        "keep belt moving and wait"
-                    )
+            now = time.monotonic()
+            if pending is not None and now - last_publish >= 1.0:
+                ros_node.publish_image(pending[1], stamp_ns=pending[0])
+                last_publish = now
+            if pending is None:
+                frame = self.camera.get_frame()
+                depth = self.camera.get_depth()
+                if (frame is not None and depth is not None and depth.size
+                        and depth.shape == frame.shape[:2]
+                        and np.any(np.isfinite(depth) & (depth > 0))):
+                    stamp = ros_node.publish_image(frame)
+                    if stamp is not None:
+                        pending = (stamp, frame.copy(), depth.copy())
+                        last_publish = now
+                        ros_node.publish_depth(depth)
+            for _ in range(20):
+                rclpy.spin_once(ros_node._node, timeout_sec=0.0)
+            result = None if pending is None else ros_node.take_detection_result(pending[0])
+            if result is not None:
+                stamp, frame, depth = pending
+                pending = None
+                candidates = result.get("candidates")
+                if candidates is None:
+                    detection = result.get("detection")
+                    candidates = [] if detection is None else [detection]
+                for detection in candidates:
+                    pixel = tuple(detection[key] for key in ("cx", "cy", "conf"))
+                    world_xy = pixel_to_world_xy(pixel, depth, self.camera, frame)
+                    if world_xy is not None and is_within_reach(world_xy[:2]):
+                        ros_node.publish_validated_detection(stamp, detection)
+                        return world_xy
+                ros_node.publish_validated_detection(stamp, None)
             if tick_others:
                 tick_others(dt)
             self.world.step(render=True)
+        ros_node.publish_validated_detection(0, None)
         return None
 
     def _move_to(self, xy_world, height_from, height_to, steps, tick_others, dt):
@@ -548,8 +582,10 @@ class P3020UnloadToBinAgent:
         # the parcel; the previous attempt left a 0.329 m gripper gap, so log
         # the vision error and use the parcel's authoritative pose for grasping.
         self._detected_parcel_path = find_nearest_parcel(self.stage, box_xy[:2])
+        pickup_ready = getattr(self, "pickup_ready", None)
         if (self._detected_parcel_path is None
-                or self._detected_parcel_path in self._placed_parcel_paths):
+                or self._detected_parcel_path in self._placed_parcel_paths
+                or (pickup_ready is not None and not pickup_ready(self._detected_parcel_path))):
             self._detected_parcel_path = None
             return None
         if self._detected_parcel_path is not None:

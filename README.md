@@ -763,6 +763,16 @@ bash scripts/run_vision_streams.sh
 | 8092 | Warehouse Top View |
 | 8093 | P3020 OUT + YOLO |
 
+IN·OUT은 YOLO 박스 후보를 해당 RGB/depth 프레임으로 검증한 뒤 초록색 테두리,
+중앙 조준점과 `TARGET LOCKED 신뢰도%`를 표시합니다. OUT 카메라는 기존대로
+소터가 D 목적지 박스를 감지한 뒤 활성화됩니다. 웹 하단은 각 스트림의 `/health`를
+조회해 `TARGET LOCKED`, `SCANNING`, `WAITING`을 표시합니다.
+
+웹 서버와 비전 서버가 다른 PC라면 `frontend/.env`의
+`VITE_P3020_IN_CAMERA_STREAM_URL`과 `VITE_P3020_OUT_CAMERA_STREAM_URL`을 각각
+`http://<비전-PC-IP>:8091/stream.mjpg`, `http://<비전-PC-IP>:8093/stream.mjpg`로
+설정하고 웹 서버를 다시 실행하세요.
+
 ## Terminal 8 — React Control Tower
 
 새 터미널을 프로젝트 root에서 열고:

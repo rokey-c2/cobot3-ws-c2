@@ -258,6 +258,14 @@ class OutParcelSelectionTest(unittest.TestCase):
         self.assertIsNone(agent._locate_box_and_descend(Mock(), None, 1 / 60))
         agent._move_to.assert_not_called()
 
+        # The main mission now reserves pickup until track 05 centers the box.
+        agent._placed_parcel_paths.clear()
+        agent.pickup_ready = lambda path: False
+        pxr.UsdPhysics.reset_mock()
+        self.assertIsNone(agent._locate_box_and_descend(Mock(), None, 1 / 60))
+        agent._move_to.assert_not_called()
+        pxr.UsdPhysics.RigidBodyAPI.assert_not_called()
+
         cls = load_class(path, "P3020UnloadToBinAgent", {"_placement_verified"}, namespace)
         verifier = cls()
         verifier.stage = agent.stage

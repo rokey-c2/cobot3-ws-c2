@@ -12,8 +12,8 @@ class ConveyorController:
     graphs that already exist in the USD stage. Per-graph directions come from
     hwi_new_sorter's verified Demo2 run: a single signed speed applied to every
     ConveyorBeltGraph is wrong, because ConveyorTrack_01/02/03's second
-    graph must run in reverse, and ConveyorTrack_05 must not be
-    touched at all (role not confirmed yet).
+    graph must run in reverse. ConveyorTrack_05's wheel sorter is owned
+    separately by OutfeedCenterStop so it can stop a parcel for OUT pickup.
     """
 
     SORTER_TRACKS = ("01", "02", "03")
@@ -139,7 +139,7 @@ class ConveyorController:
             self._set_usd_velocity(graph_path, speed)
             self._set_runtime_velocity(graph_path, speed)
 
-        print("[CONVEYOR] configured current map; ConveyorTrack_05 intentionally untouched")
+        print("[CONVEYOR] configured current map; ConveyorTrack_05 is controlled by OutfeedCenterStop")
 
     def start(self):
         """Re-apply values after world.play() makes OmniGraph fully active."""
