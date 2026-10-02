@@ -40,6 +40,35 @@ IW Hub AMR, Doosan P3020, VGP20 gripper, RGB/Depth camera, Conveyor, Wheel Sorte
 
 ## 동작 시연
 
+### 핵심 자동화 시연
+
+<table>
+  <tr>
+    <th width="50%">P3020 OUT · Box Detection</th>
+    <th width="50%">Wheel Sorter · Parcel Sorting</th>
+  </tr>
+  <tr>
+    <td>
+      <a href="docs/screenshots/p3020_out_box_detecting.mp4">
+        <img src="docs/screenshots/p3020_out_box_detecting.gif" alt="P3020 OUT 박스 검출 시연" width="100%">
+      </a>
+    </td>
+    <td>
+      <a href="docs/screenshots/sorter.mp4">
+        <img src="docs/screenshots/sorter.gif" alt="Wheel Sorter 택배 분류 시연" width="100%">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>배출 라인의 박스를 비전으로 검출하고 P3020 OUT 작업 대상으로 확인합니다.</td>
+    <td>컨베이어로 이송된 Parcel을 Wheel Sorter가 목적지에 따라 분류합니다.</td>
+  </tr>
+</table>
+
+<p align="center"><sub>GIF를 클릭하면 MP4 원본 시연을 볼 수 있습니다.</sub></p>
+
+### 전체 시스템 · Control Tower
+
 <table>
   <tr>
     <th width="50%">Warehouse 시뮬레이션 · 5배속</th>
@@ -121,7 +150,6 @@ P3020 IN·OUT 카메라에서 박스 검출 결과를 확인할 수 있습니다
 
 ## 목차
 
-0. [ZIP 압축 해제 후 처음 실행](#0-zip-압축-해제-후-처음-실행)
 1. [시스템 설계](#1-시스템-설계)
 2. [전체 Flow Chart](#2-전체-flow-chart)
 3. [운영체제 및 개발 환경](#3-운영체제-및-개발-환경)
@@ -132,178 +160,6 @@ P3020 IN·OUT 카메라에서 박스 검출 결과를 확인할 수 있습니다
 8. [Dependencies / 설치 방법](#8-dependencies--설치-방법)
 9. [실행 순서](#9-실행-순서)
 10. [제출용 ZIP 생성 전 정리](#10-제출용-zip-생성-전-정리)
-
----
-
-# 0. ZIP 압축 해제 후 처음 실행
-
-이 절차는 **Git clone이 아니라 제출용 ZIP을 전달받은 사용자**를 기준으로 합니다.
-
-압축을 푼 뒤 `README.md`, `compose.yaml`, `isaac_sim/`, `ros2_ws/`, `scripts/`가 보이는 `cobot3-ws-c2` 폴더가 **프로젝트 root**입니다.
-
-예시:
-
-```text
-Downloads/
-└── cobot3-ws-c2_submission/
-    └── cobot3-ws-c2/        ← 프로젝트 root
-        ├── README.md
-        ├── compose.yaml
-        ├── isaac_sim/
-        ├── ros2_ws/
-        └── scripts/
-```
-
-> 아래의 모든 명령은 특별히 다른 경로가 표시되지 않는 한 **프로젝트 root에서 시작**합니다. 개인 PC의 `~/collaboration/...` 같은 고정 경로는 필요하지 않습니다.
-
-## 0.1 프로젝트 root로 이동
-
-터미널에서 실제 압축 해제 위치의 `cobot3-ws-c2` 폴더로 이동합니다.
-
-예시:
-
-```bash
-cd ~/cobot3-ws-c2_submission/cobot3-ws-c2
-pwd
-ls
-```
-
-다음 항목이 보이면 정상입니다.
-
-```text
-README.md
-compose.yaml
-isaac_sim
-ros2_ws
-scripts
-frontend
-backend
-```
-
-## 0.2 실행용 환경 파일 생성
-
-제출 ZIP에는 개인 환경값이 들어간 `.env`를 포함하지 않습니다. example 파일을 복사해 실행용 파일을 만듭니다.
-
-```bash
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-```
-
-기본 Docker DB 설정 확인:
-
-```bash
-cat .env
-```
-
-기본값:
-
-```text
-POSTGRES_DB=control_tower
-POSTGRES_USER=controltower
-POSTGRES_PASSWORD=controltower-dev
-```
-
-## 0.3 Host Python 환경 생성
-
-ROS2/MQTT Adapter용 환경:
-
-```bash
-bash scripts/setup_adapter_env.sh
-```
-
-Vision/YOLO용 환경:
-
-```bash
-bash scripts/setup_vision_env.sh
-```
-
-> ZIP 압축/해제 과정에서 shell script의 실행 권한이 보존되지 않을 수 있으므로 초기 setup은 `./scripts/...` 대신 `bash scripts/...` 형태를 권장합니다.
-
-확인:
-
-```bash
-.venv/bin/python3 -c "import paho.mqtt.client as mqtt; print(mqtt.CallbackAPIVersion.VERSION2)"
-.venv/bin/python3 -c "import onnxruntime; print(onnxruntime.__version__)"
-```
-
-## 0.4 Frontend dependency 설치
-
-프로젝트 root에서:
-
-```bash
-cd frontend
-npm ci
-cd ..
-```
-
-## 0.5 ROS2 workspace 최초 build
-
-제출 ZIP에는 `build`, `install`, `log`를 넣지 않으므로 **최초 실행 전에 반드시 새로 build**해야 합니다.
-
-프로젝트 root에서:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-
-cd ros2_ws
-colcon build --symlink-install
-source install/setup.bash
-cd ..
-```
-
-패키지 확인:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-source ros2_ws/install/setup.bash
-
-ros2 pkg list | grep arm_controller
-ros2 pkg list | grep amr_controller
-```
-
-`arm_controller`, `amr_controller`가 출력되면 자체 ROS2 workspace build가 정상입니다.
-
-## 0.6 외부 NVIDIA ROS workspace 확인
-
-Nav2 실행은 NVIDIA Isaac Sim ROS Jazzy workspace의 `iw_hub_navigation` 패키지를 사용합니다.
-
-기본 예시 경로:
-
-```text
-~/IsaacSim-ros_workspaces/jazzy_ws
-```
-
-다음으로 확인할 수 있습니다.
-
-```bash
-source /opt/ros/jazzy/setup.bash
-
-if [ -f "$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash" ]; then
-  source "$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash"
-fi
-
-ros2 pkg list | grep iw_hub_navigation
-```
-
-`iw_hub_navigation`이 없다면 해당 NVIDIA ROS workspace를 먼저 준비해야 합니다.
-
-## 0.7 Docker 서비스 최초 실행
-
-```bash
-sudo docker compose down -v --remove-orphans
-sudo docker compose up -d --build
-sudo docker compose ps
-```
-
-정상 예:
-
-```text
-control_tower_postgres     ... healthy
-control_tower_mosquitto    ... Up
-control_tower_backend      ... Up
-```
-
-여기까지 성공하면 최초 환경 구성이 끝난 것입니다. 이후에는 [9. 실행 순서](#9-실행-순서)에 따라 Isaac Sim → Nav2 → Pose Sync → Adapter → P3020 → Vision → Frontend → Mission 순서로 실행합니다.
 
 ---
 
@@ -744,7 +600,7 @@ bash scripts/check_environment.sh
 
 # 9. 실행 순서
 
-**중요:** 아래 각 Terminal은 모두 **압축을 푼 `cobot3-ws-c2` 프로젝트 root에서 시작**합니다.
+**중요:** 아래 각 Terminal은 모두 **`cobot3-ws-c2` 프로젝트 root에서 시작**합니다.
 
 프로젝트 root 예시 확인:
 
@@ -753,7 +609,7 @@ pwd
 ls README.md compose.yaml scripts ros2_ws isaac_sim
 ```
 
-사용자마다 압축을 푼 위치가 다르므로 `~/collaboration/...` 같은 고정 절대경로는 사용하지 않습니다.
+사용자마다 프로젝트 위치가 다르므로 `~/collaboration/...` 같은 고정 절대경로는 사용하지 않습니다.
 
 ## Terminal 1 — Docker DB / MQTT / Backend
 
@@ -852,7 +708,7 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ros2 run arm_controller pick_place_action_server
 ```
 
-> `ros2_ws/install/setup.bash`가 없다면 아직 ROS2 workspace를 build하지 않은 것입니다. 먼저 [0.5 ROS2 workspace 최초 build](#05-ros2-workspace-최초-build)를 실행하세요.
+> `ros2_ws/install/setup.bash`가 없다면 아직 ROS2 workspace를 build하지 않은 것입니다. 먼저 [8.5 ROS2 workspace build](#85-ros2-workspace-build)를 실행하세요.
 
 ## Terminal 7 — Vision / YOLO / MJPEG
 
@@ -1121,5 +977,5 @@ cobot3-ws-c2/
 - 제출 ZIP 생성 시 `ros2_ws/build`, `ros2_ws/install`, `ros2_ws/log`를 반드시 제외합니다.
 - `.venv`, `node_modules`, `__pycache__`, `.pyc`는 제출하지 않습니다.
 - `.env`에는 개인 환경값이 들어갈 수 있으므로 `.env.example`을 제출합니다.
-- ZIP 압축 해제 후에는 `.env` 생성, Python/Frontend dependency 설치, `colcon build`를 먼저 수행해야 합니다.
-- README의 실행 명령은 특정 사용자의 홈 디렉터리에 의존하지 않으며, 압축을 푼 프로젝트 root를 기준으로 합니다.
+- 최초 실행 전에는 `.env` 생성, Python/Frontend dependency 설치, `colcon build`를 먼저 수행해야 합니다.
+- README의 실행 명령은 특정 사용자의 홈 디렉터리에 의존하지 않으며, 프로젝트 root를 기준으로 합니다.
