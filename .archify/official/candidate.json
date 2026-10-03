@@ -369,7 +369,7 @@
       "fromSide": "bottom",
       "toSide": "top",
       "labelAt": [
-        480,
+        750,
         650
       ],
       "via": [
@@ -378,11 +378,11 @@
           400
         ],
         [
-          500,
+          750,
           400
         ],
         [
-          500,
+          750,
           740
         ],
         [
@@ -396,7 +396,8 @@
       "from": "mission",
       "to": "nav",
       "label": "/navigate_to_pose",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelDy": -18
     },
     {
       "id": "mission-action",
@@ -449,7 +450,23 @@
       "id": "bridge-vision",
       "from": "bridge",
       "to": "vision",
-      "label": "RGB / detection"
+      "label": "RGB / detection",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          635,
+          700
+        ],
+        [
+          1117.5,
+          700
+        ]
+      ],
+      "labelAt": [
+        900,
+        688
+      ]
     },
     {
       "id": "bridge-internal",
