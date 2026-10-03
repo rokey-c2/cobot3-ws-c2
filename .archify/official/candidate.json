@@ -60,8 +60,8 @@
       "label": "PostgreSQL",
       "sublabel": "Mission · State · Pose",
       "pos": [
-        730,
-        50
+        270,
+        155
       ],
       "size": [
         150,
@@ -220,11 +220,11 @@
       "label": "IW Hub AMR",
       "sublabel": "Simulated robot",
       "pos": [
-        1040,
+        1085,
         790
       ],
       "size": [
-        150,
+        125,
         72
       ]
     },
@@ -234,11 +234,11 @@
       "label": "IW Hub ROS2 Graphs",
       "sublabel": "LiDAR · Odom · TF · cmd_vel",
       "pos": [
-        1040,
+        1085,
         920
       ],
       "size": [
-        150,
+        125,
         76
       ]
     }
@@ -301,14 +301,37 @@
       "id": "api-db",
       "from": "api",
       "to": "db",
-      "label": "SQL"
+      "label": "SQL",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        370,
+        137
+      ]
     },
     {
       "id": "mqtt-nav",
       "from": "mqtt",
       "to": "mqtt_nav",
       "label": "navigation",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          575,
+          220
+        ],
+        [
+          115,
+          220
+        ]
+      ],
+      "labelAt": [
+        345,
+        208
+      ]
     },
     {
       "id": "mqtt-manual",
@@ -342,7 +365,14 @@
       "id": "process-bridge",
       "from": "mqtt_process",
       "to": "bridge",
-      "label": "equipment/process"
+      "label": "equipment/process",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        592,
+        690
+      ]
     },
     {
       "id": "mission-nav",
@@ -356,7 +386,11 @@
       "from": "mission",
       "to": "action",
       "label": "/p3020/pick_place",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight",
+      "labelDy": -18
     },
     {
       "id": "mission-bridge",
@@ -388,7 +422,14 @@
       "from": "internal",
       "to": "amr",
       "label": "method calls",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight",
+      "labelAt": [
+        1042,
+        777
+      ]
     },
     {
       "id": "nav-sensor",
