@@ -118,7 +118,7 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 
 ## 👁 비전 인식
 
-P3020 IN·OUT의 RGB/Depth 카메라와 YOLO 결과를 이용해 Pick & Place 대상을 검출합니다. `TARGET LOCKED` 상태에서는 초록색 테두리, 중앙 조준점, 검출 신뢰도를 함께 표시합니다.
+P3020 IN·OUT의 RGB/Depth 카메라와 YOLO 결과를 이용해 Pick & Place 대상을 검출합니다. `TARGET LOCKED` 상태에서는 초록색 테두리, 중앙 조준점, 검출 신뢰도를 함께 표시합니다. 박스 검출 모델의 학습과 ONNX 변환 과정은 [6. Vision](#vision)에 정리했습니다.
 
 <table>
   <tr>
@@ -200,11 +200,14 @@ flowchart LR
     BRIDGE --> PROC[Conveyor / Wheel Sorter]
 
     AMR --> NAV[Nav2 / AMCL]
-    ARM --> VISION[YOLO ONNX\nBox Detection]
+    ARM -->|"/arm_a/rgb · /depth"| VISION[Box Detector\nYOLO ONNX Runtime\n시스템 Python]
+    VISION -->|"/box_pixel"| ARM
 
     NAV --> MISSION[AMR-P3020 Mission]
-    VISION --> MISSION
     PROC --> MISSION
+    MISSION -->|"/p3020/pick_place Action"| ACTION[P3020 PickPlace\nAction Server\n시스템 Python]
+    ACTION -->|"/arm_a/pick_place_command"| ARM
+    ARM -->|"/arm_a/pick_place_status"| ACTION
 
     MISSION --> ADAPTER[ROS2-MQTT Adapter]
     ADAPTER --> MQTT[Mosquitto MQTT]
@@ -222,7 +225,9 @@ flowchart LR
 
 - **로봇/공정 상태**: Isaac Sim → ROS2 → MQTT Adapter → Mosquitto → FastAPI → PostgreSQL / React
 - **AMR 자율주행**: Isaac Sim LiDAR/Odom → ROS2 → Nav2/AMCL → AMR velocity command
-- **P3020 작업**: Camera → YOLO ONNX → box pixel → P3020 Pick & Place → Action result
+- **P3020 작업**: AMR-P3020 Mission → `/p3020/pick_place` Action Server → `/arm_a/pick_place_command`(JSON) → Isaac Sim P3020 에이전트 → `/arm_a/pick_place_status` → Action result
+- **박스 검출**: Isaac Sim 카메라(`/arm_a/rgb`, `/depth`) → Box Detector(ONNX Runtime) → `/box_pixel` → P3020 에이전트가 Pixel + Depth로 3D 좌표 계산
+- Isaac Sim 내장 Python(3.11)에서는 시스템 ROS 2(3.12)로 빌드한 커스텀 타입을 쓸 수 없어서, Action Server와 Box Detector는 시스템 Python 프로세스로 분리하고 Isaac Sim과는 표준 타입(`Image`, `PointStamped`, `String`)으로만 통신합니다.
 - **실시간 영상**: ROS Image → MJPEG stream → React Control Tower
 
 ---
@@ -469,6 +474,18 @@ isaac_sim/robots/p3020/vision/object_detector.py
 models/parcel_box_yolo_model/best.onnx
 ```
 
+### YOLO 박스 검출 모델 학습 · ONNX 변환
+
+| 단계 | 파일 | 내용 |
+|---|---|---|
+| 1. 합성 데이터 생성 | `isaac_sim/scripts/generate_parcel_data.py` | Isaac Sim Replicator로 손목 카메라 시점에서 AMR 위·Conveyor 위 택배 박스를 여러 각도와 거리로 촬영하고 RGB와 2D bbox(`bounding_box_2d_tight`)를 저장 |
+| 2. YOLO 형식 변환 | `isaac_sim/scripts/convert_to_yolo.py` | Replicator 출력을 YOLOv8 데이터셋(images·labels train/val, `data.yaml`)으로 변환. 기본 검증 비율 20%, 시스템 `python3`로 실행 |
+| 3. 학습 · 평가 | `isaac_sim/scripts/train_yolo_colab.ipynb` | Google Colab에서 `yolov8n.pt` 파인튜닝(1 class `box`, epochs 100, imgsz 640, batch 16) 후 mAP · Precision · Recall 평가 |
+| 4. ONNX 변환 | 같은 노트북 | `model.export(format="onnx", opset=12, simplify=True)` → `models/parcel_box_yolo_model/best.onnx` |
+| 5. 추론 | `object_detector.py`, `box_detector_node.py` | 시스템 Python `.venv`의 ONNX Runtime으로 640×640 letterbox 추론, 가장 신뢰도 높은 박스 중심을 `/box_pixel`로 발행 |
+
+**ONNX를 쓴 이유** — Isaac Sim은 내장 Python 3.11을, ROS 2 Jazzy는 시스템 Python 3.12를 사용해 패키지를 함께 쓸 수 없습니다. 그래서 박스 검출은 Isaac Sim 밖의 별도 프로세스에서 실행하고, 그 환경에는 PyTorch · Ultralytics 없이 `onnxruntime`만 설치하면 되도록(`requirements/vision.txt`, `scripts/setup_vision_env.sh`) 학습한 모델을 ONNX로 변환해 사용합니다. 카메라 2대를 CPU에서 동시에 추론하므로 ONNX Runtime 스레드 수를 제한해 두었습니다(`object_detector.py`).
+
 ---
 
 # 7. ROS2 패키지
@@ -517,6 +534,10 @@ iw_hub_navigation
 - Node.js 20.19+ 또는 22.12+ (24 LTS 권장)
 - npm 9+
 
+> **Isaac Sim 설치 경로** — 실행 스크립트(`scripts/run_isaac_mission.sh` 등)는 Isaac Sim이 `~/isaacsim`에 설치되어 있다고 가정합니다. 다른 위치라면 실행 전에 `export ISAAC_SIM_DIR=<Isaac Sim 설치 경로>`를 지정하세요.
+>
+> **iw_hub_navigation** — NVIDIA Isaac Sim ROS 워크스페이스에서 빌드한 패키지를 사용합니다. `scripts/run_ros2.sh`는 `~/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash`가 있으면 자동으로 source합니다. 다른 위치에 빌드했다면 해당 `setup.bash`를 먼저 source하세요.
+
 Ubuntu helper package:
 
 ```bash
@@ -539,6 +560,8 @@ git clone https://github.com/rokey-c2/cobot3-ws-c2.git
 cd cobot3-ws-c2
 git switch main
 ```
+
+> Isaac Sim USD와 에셋이 포함되어 있어 clone 용량이 큽니다(수 GB). 이력이 필요 없다면 `git clone --depth 1 https://github.com/rokey-c2/cobot3-ws-c2.git`로 최신 파일만 받을 수 있습니다.
 
 ### 제출 ZIP 사용 시
 
