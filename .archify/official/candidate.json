@@ -414,7 +414,11 @@
       "id": "mission-bridge",
       "from": "mission",
       "to": "bridge",
-      "label": "pickup/lift control"
+      "label": "pickup/lift control",
+      "labelAt": [
+        620,
+        586
+      ]
     },
     {
       "id": "action-bridge",
