@@ -452,23 +452,19 @@
       "to": "vision",
       "label": "RGB / detection",
       "fromSide": "top",
-      "toSide": "right",
+      "toSide": "bottom",
       "via": [
         [
           635,
           750
         ],
         [
-          1215,
+          1117.5,
           750
-        ],
-        [
-          1215,
-          536
         ]
       ],
       "labelAt": [
-        1100,
+        1080,
         738
       ]
     },
