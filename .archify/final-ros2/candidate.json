@@ -637,7 +637,10 @@
       "to": "p3020_in",
       "label": "BRIDGE SUB /arm_a/pick_place_command",
       "variant": "emphasis",
-      "labelDy": -22
+      "labelAt": [
+        815,
+        470
+      ]
     },
     {
       "id": "pickplace-status",
@@ -662,8 +665,8 @@
       "label": "NODE PUB /arm_a/preview · main_mission",
       "variant": "dashed",
       "labelAt": [
-        770,
-        395
+        700,
+        390
       ]
     },
     {
@@ -680,7 +683,10 @@
       "to": "vision_in",
       "label": "BRIDGE PUB /box_pixel/validated",
       "variant": "dashed",
-      "labelDy": 22
+      "labelAt": [
+        1100,
+        485
+      ]
     },
     {
       "id": "out-rgb",
@@ -688,7 +694,10 @@
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/rgb",
       "variant": "dashed",
-      "labelDy": 28
+      "labelAt": [
+        1240,
+        470
+      ]
     },
     {
       "id": "out-preview",
@@ -697,8 +706,8 @@
       "label": "NODE PUB /arm_b/preview · main_mission",
       "variant": "dashed",
       "labelAt": [
-        1120,
-        395
+        1190,
+        390
       ]
     },
     {
@@ -716,8 +725,8 @@
       "label": "BRIDGE PUB /arm_b/box_pixel/validated",
       "variant": "dashed",
       "labelAt": [
-        1445,
-        405
+        1470,
+        390
       ]
     },
     {
