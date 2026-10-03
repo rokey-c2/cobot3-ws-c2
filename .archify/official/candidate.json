@@ -1,0 +1,587 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "cobot3-ws-c2 — ROS 2 Node & Runtime Architecture",
+    "subtitle": "Control Tower · Host ROS 2 · Isaac Sim",
+    "output": ".archify/official/cobot3-runtime.architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [
+      2200,
+      1500
+    ]
+  },
+  "components": [
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "React Control Tower",
+      "sublabel": "Dashboard · Manual · Streams",
+      "pos": [
+        100,
+        110
+      ],
+      "size": [
+        190,
+        78
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI Backend",
+      "sublabel": "REST API · MQTT client",
+      "pos": [
+        360,
+        110
+      ],
+      "size": [
+        190,
+        78
+      ]
+    },
+    {
+      "id": "mqtt",
+      "type": "messagebus",
+      "label": "Mosquitto Broker",
+      "sublabel": "MQTT :1883",
+      "tag": "BROKER ×1",
+      "pos": [
+        620,
+        110
+      ],
+      "size": [
+        190,
+        78
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "Mission · State · Pose",
+      "pos": [
+        360,
+        245
+      ],
+      "size": [
+        190,
+        78
+      ]
+    },
+    {
+      "id": "mqtt_nav",
+      "type": "backend",
+      "label": "ros2_mqtt_adapter",
+      "sublabel": "MQTT ↔ NavigateToPose",
+      "tag": "MQTT client · ROS Node",
+      "pos": [
+        120,
+        480
+      ],
+      "size": [
+        250,
+        86
+      ]
+    },
+    {
+      "id": "mqtt_manual",
+      "type": "backend",
+      "label": "ros2_manual_mqtt_adapter",
+      "sublabel": "Manual /cmd_vel · lift",
+      "tag": "MQTT client · ROS Node",
+      "pos": [
+        120,
+        610
+      ],
+      "size": [
+        250,
+        86
+      ]
+    },
+    {
+      "id": "mqtt_process",
+      "type": "backend",
+      "label": "process_mqtt_adapter",
+      "sublabel": "Equipment / process events",
+      "tag": "MQTT client · ROS Node",
+      "pos": [
+        120,
+        740
+      ],
+      "size": [
+        250,
+        86
+      ]
+    },
+    {
+      "id": "pose_sync",
+      "type": "backend",
+      "label": "pose_sync_manager",
+      "sublabel": "Map pose · restore · initialpose",
+      "tag": "MQTT client · ROS Node",
+      "pos": [
+        120,
+        870
+      ],
+      "size": [
+        250,
+        86
+      ]
+    },
+    {
+      "id": "nav",
+      "type": "backend",
+      "label": "Nav2 / AMCL",
+      "sublabel": "iw_hub_navigation",
+      "tag": "Action Server",
+      "pos": [
+        560,
+        480
+      ],
+      "size": [
+        220,
+        86
+      ]
+    },
+    {
+      "id": "mission",
+      "type": "backend",
+      "label": "amr_p3020_mission",
+      "sublabel": "Main Mission FSM",
+      "tag": "Orchestrator Node",
+      "pos": [
+        930,
+        610
+      ],
+      "size": [
+        240,
+        90
+      ]
+    },
+    {
+      "id": "action",
+      "type": "backend",
+      "label": "PickPlace Action Server",
+      "sublabel": "Action ↔ String Topics",
+      "tag": "/p3020/pick_place",
+      "pos": [
+        1300,
+        610
+      ],
+      "size": [
+        245,
+        90
+      ]
+    },
+    {
+      "id": "vision",
+      "type": "backend",
+      "label": "P3020 Vision Nodes",
+      "sublabel": "IN + OUT · YOLO ONNX",
+      "tag": "2 detector nodes",
+      "pos": [
+        1680,
+        610
+      ],
+      "size": [
+        245,
+        90
+      ]
+    },
+    {
+      "id": "bridge",
+      "type": "backend",
+      "label": "isaac_amr_mission_bridge",
+      "sublabel": "ROS 2 ↔ Isaac mission bridge",
+      "tag": "rclpy Node",
+      "pos": [
+        930,
+        1110
+      ],
+      "size": [
+        270,
+        94
+      ]
+    },
+    {
+      "id": "iw_agent",
+      "type": "external",
+      "label": "MissionIwHubAgent",
+      "sublabel": "Isaac internal Python component",
+      "tag": "NOT a ROS Node",
+      "pos": [
+        1300,
+        1110
+      ],
+      "size": [
+        245,
+        86
+      ]
+    },
+    {
+      "id": "amr",
+      "type": "external",
+      "label": "IW Hub AMR",
+      "sublabel": "Simulated Mobile Robot",
+      "tag": "AMR object",
+      "pos": [
+        1680,
+        1110
+      ],
+      "size": [
+        245,
+        86
+      ]
+    },
+    {
+      "id": "sensor",
+      "type": "external",
+      "label": "IW Hub ROS2 Graphs",
+      "sublabel": "LiDAR · Odom · TF · Camera",
+      "tag": "Sensor / Actuation",
+      "pos": [
+        1680,
+        1270
+      ],
+      "size": [
+        245,
+        90
+      ]
+    },
+    {
+      "id": "equip_bridge",
+      "type": "external",
+      "label": "ProcessEquipmentBridge",
+      "sublabel": "Attached to bridge rclpy Node",
+      "tag": "NOT a ROS Node",
+      "pos": [
+        930,
+        1270
+      ],
+      "size": [
+        270,
+        88
+      ]
+    },
+    {
+      "id": "controllers",
+      "type": "external",
+      "label": "Conveyor + Sorter Controllers",
+      "sublabel": "ConveyorController · SorterController",
+      "tag": "Python components",
+      "pos": [
+        930,
+        1390
+      ],
+      "size": [
+        270,
+        88
+      ]
+    },
+    {
+      "id": "p3020_agent",
+      "type": "external",
+      "label": "P3020PickPlaceAgent",
+      "sublabel": "Isaac internal component",
+      "tag": "NOT a ROS Node",
+      "pos": [
+        1300,
+        1270
+      ],
+      "size": [
+        245,
+        86
+      ]
+    },
+    {
+      "id": "p3020_out",
+      "type": "external",
+      "label": "P3020OutAgent",
+      "sublabel": "Unload / bin handling",
+      "tag": "NOT a ROS Node",
+      "pos": [
+        1300,
+        1390
+      ],
+      "size": [
+        245,
+        86
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Control Tower / Web",
+      "wraps": [
+        "web",
+        "api",
+        "mqtt",
+        "db"
+      ],
+      "pad": 38
+    },
+    {
+      "kind": "region",
+      "label": "Host ROS 2 Jazzy",
+      "wraps": [
+        "mqtt_nav",
+        "mqtt_manual",
+        "mqtt_process",
+        "pose_sync",
+        "nav",
+        "mission",
+        "action",
+        "vision"
+      ],
+      "pad": 44
+    },
+    {
+      "kind": "region",
+      "label": "Isaac Sim 5.1 Runtime",
+      "wraps": [
+        "bridge",
+        "iw_agent",
+        "amr",
+        "sensor",
+        "equip_bridge",
+        "controllers",
+        "p3020_agent",
+        "p3020_out"
+      ],
+      "pad": 44
+    }
+  ],
+  "connections": [
+    {
+      "id": "web-api",
+      "from": "web",
+      "to": "api",
+      "label": "HTTP / REST",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-mqtt",
+      "from": "api",
+      "to": "mqtt",
+      "label": "MQTT",
+      "variant": "dashed"
+    },
+    {
+      "id": "api-db",
+      "from": "api",
+      "to": "db",
+      "label": "SQL",
+      "variant": "security"
+    },
+    {
+      "id": "mqtt-nav-adapter",
+      "from": "mqtt",
+      "to": "mqtt_nav",
+      "label": "nav cmd/state",
+      "variant": "dashed"
+    },
+    {
+      "id": "mqtt-manual-adapter",
+      "from": "mqtt",
+      "to": "mqtt_manual",
+      "label": "manual cmd/state",
+      "variant": "dashed"
+    },
+    {
+      "id": "mqtt-process-adapter",
+      "from": "mqtt",
+      "to": "mqtt_process",
+      "label": "equipment/process",
+      "variant": "dashed"
+    },
+    {
+      "id": "mqtt-pose-adapter",
+      "from": "mqtt",
+      "to": "pose_sync",
+      "label": "pose/restore",
+      "variant": "dashed"
+    },
+    {
+      "id": "adapter-nav",
+      "from": "mqtt_nav",
+      "to": "nav",
+      "label": "/navigate_to_pose",
+      "variant": "emphasis"
+    },
+    {
+      "id": "manual-cmdvel",
+      "from": "mqtt_manual",
+      "to": "sensor",
+      "label": "/cmd_vel · lift",
+      "variant": "emphasis"
+    },
+    {
+      "id": "process-equipment",
+      "from": "mqtt_process",
+      "to": "equip_bridge",
+      "label": "equipment cmd/status"
+    },
+    {
+      "id": "pose-bridge",
+      "from": "bridge",
+      "to": "pose_sync",
+      "label": "map_pose · session"
+    },
+    {
+      "id": "pose-restore",
+      "from": "pose_sync",
+      "to": "bridge",
+      "label": "restore_pose"
+    },
+    {
+      "id": "pose-nav",
+      "from": "pose_sync",
+      "to": "nav",
+      "label": "/initialpose · TF"
+    },
+    {
+      "id": "mission-nav",
+      "from": "mission",
+      "to": "nav",
+      "label": "/navigate_to_pose",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mission-action",
+      "from": "mission",
+      "to": "action",
+      "label": "/p3020/pick_place",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mission-bridge-cmd",
+      "from": "mission",
+      "to": "bridge",
+      "label": "pickup/lift cmd"
+    },
+    {
+      "id": "bridge-mission-state",
+      "from": "bridge",
+      "to": "mission",
+      "label": "pickup/lift state"
+    },
+    {
+      "id": "action-p3020-cmd",
+      "from": "action",
+      "to": "bridge",
+      "label": "String command"
+    },
+    {
+      "id": "bridge-action-status",
+      "from": "bridge",
+      "to": "action",
+      "label": "String status"
+    },
+    {
+      "id": "bridge-agent",
+      "from": "bridge",
+      "to": "iw_agent",
+      "label": "Python API",
+      "variant": "dashed"
+    },
+    {
+      "id": "agent-amr",
+      "from": "iw_agent",
+      "to": "amr",
+      "label": "method calls",
+      "variant": "dashed"
+    },
+    {
+      "id": "nav-sensor-cmd",
+      "from": "nav",
+      "to": "sensor",
+      "label": "/cmd_vel",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sensor-nav-state",
+      "from": "sensor",
+      "to": "nav",
+      "label": "/scan · /odom · /tf · /clock"
+    },
+    {
+      "id": "sensor-amr",
+      "from": "sensor",
+      "to": "amr",
+      "label": "sensor / actuation"
+    },
+    {
+      "id": "bridge-p3020",
+      "from": "bridge",
+      "to": "p3020_agent",
+      "label": "attach",
+      "variant": "dashed"
+    },
+    {
+      "id": "bridge-p3020-out",
+      "from": "bridge",
+      "to": "p3020_out",
+      "label": "attach",
+      "variant": "dashed"
+    },
+    {
+      "id": "bridge-equip",
+      "from": "bridge",
+      "to": "equip_bridge",
+      "label": "same rclpy Node",
+      "variant": "dashed"
+    },
+    {
+      "id": "equip-controllers",
+      "from": "equip_bridge",
+      "to": "controllers",
+      "label": "Python API",
+      "variant": "dashed"
+    },
+    {
+      "id": "bridge-vision",
+      "from": "bridge",
+      "to": "vision",
+      "label": "RGB / detection"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "ROS 2 Actions",
+      "items": [
+        "/navigate_to_pose — Nav2 server; mission + ros2_mqtt_adapter are clients",
+        "/p3020/pick_place — Host ROS 2 PickPlace Action Server; mission is the client"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "MQTT Adapter Processes",
+      "items": [
+        "Four independent MQTT clients: ros2_mqtt_adapter, ros2_manual_mqtt_adapter, process_mqtt_adapter, pose_sync_manager",
+        "Mosquitto is the central broker; FastAPI is another MQTT client",
+        "React talks to FastAPI through HTTP/REST"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "ROS vs Isaac Internal Calls",
+      "items": [
+        "ROS-labelled edges represent ROS 2 Topic / Action communication",
+        "Dashed Python API edges inside Isaac Sim are in-process calls, not ROS topics",
+        "MissionIwHubAgent, ProcessEquipmentBridge and P3020 agents are not independent ROS nodes"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "AMR Navigation Loop",
+      "items": [
+        "Nav2 sends /cmd_vel through IW Hub ROS2 Graphs",
+        "IW Hub ROS2 Graphs returns /scan, /odom, /tf and /clock",
+        "IW Hub AMR is the simulated robot object; isaac_amr_mission_bridge is the ROS ↔ Isaac bridge node"
+      ]
+    }
+  ]
+}
