@@ -2,12 +2,12 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "cobot3-ws-c2 — ROS 2 Node Communication Architecture (portfolio layout)",
+    "title": "cobot3-ws-c2 — ROS 2 Node Communication Architecture",
     "subtitle": "Topics · Services · Actions · Host ROS 2 Jazzy ↔ Isaac Sim 5.1",
     "output": ".archify/ros2-node-communication/cobot3-ros2-node-communication.architecture.html",
     "quality_profile": "standard",
     "viewBox": [
-      1500,
+      1640,
       1180
     ]
   },
@@ -19,7 +19,7 @@
       "sublabel": "control_tower_ros2_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        300,
+        370,
         120
       ],
       "size": [
@@ -34,7 +34,7 @@
       "sublabel": "control_tower_manual_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        20,
+        90,
         120
       ],
       "size": [
@@ -49,7 +49,7 @@
       "sublabel": "control_tower_process_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        600,
+        670,
         120
       ],
       "size": [
@@ -64,7 +64,7 @@
       "sublabel": "control_tower_pose_sync_manager",
       "tag": "ROS Node",
       "pos": [
-        930,
+        1000,
         120
       ],
       "size": [
@@ -79,7 +79,7 @@
       "sublabel": "Mission FSM",
       "tag": "ROS Node",
       "pos": [
-        520,
+        590,
         390
       ],
       "size": [
@@ -94,7 +94,7 @@
       "sublabel": "NavigateToPose · /initialpose · TF",
       "tag": "ROS subsystem",
       "pos": [
-        300,
+        370,
         390
       ],
       "size": [
@@ -109,7 +109,7 @@
       "sublabel": "p3020_pick_place_action_server",
       "tag": "ROS Node",
       "pos": [
-        780,
+        850,
         390
       ],
       "size": [
@@ -124,7 +124,7 @@
       "sublabel": "LocateBox client → Point topic",
       "tag": "ROS Node",
       "pos": [
-        1040,
+        1110,
         390
       ],
       "size": [
@@ -139,7 +139,7 @@
       "sublabel": "YOLO + depth 3D",
       "tag": "ROS Node",
       "pos": [
-        1280,
+        1350,
         390
       ],
       "size": [
@@ -154,7 +154,7 @@
       "sublabel": "AmrMissionBridge + attached ROS pubs/subs",
       "tag": "rclpy Node",
       "pos": [
-        410,
+        480,
         735
       ],
       "size": [
@@ -169,7 +169,7 @@
       "sublabel": "cmd_vel · scan · odom · tf · clock",
       "tag": "Isaac ROS Graph",
       "pos": [
-        20,
+        90,
         735
       ],
       "size": [
@@ -184,7 +184,7 @@
       "sublabel": "PickPlace agent + ROS bridge",
       "tag": "Isaac Python",
       "pos": [
-        780,
+        850,
         735
       ],
       "size": [
@@ -199,7 +199,7 @@
       "sublabel": "attached to isaac_amr_mission_bridge",
       "tag": "Python object",
       "pos": [
-        1080,
+        1150,
         735
       ],
       "size": [
@@ -280,7 +280,7 @@
       "label": "TOPIC /cmd_vel",
       "variant": "emphasis",
       "labelAt": [
-        145,
+        215,
         660
       ]
     },
@@ -298,7 +298,7 @@
       "label": "TOPICS equipment/status · process/event",
       "variant": "dashed",
       "labelAt": [
-        1130,
+        1200,
         486
       ]
     },
@@ -308,7 +308,7 @@
       "to": "mission",
       "label": "TOPIC /amr_a/p3020_arrival_confirm",
       "labelAt": [
-        560,
+        630,
         320
       ]
     },
@@ -329,20 +329,20 @@
       "toSide": "bottom",
       "via": [
         [
-          750,
+          820,
           779
         ],
         [
-          750,
+          820,
           250
         ],
         [
-          1042.5,
+          1112.5,
           250
         ]
       ],
       "labelAt": [
-        895,
+        965,
         238
       ]
     },
@@ -356,20 +356,20 @@
       "toSide": "top",
       "via": [
         [
-          1480,
+          1550,
           159
         ],
         [
-          1480,
+          1550,
           650
         ],
         [
-          542.5,
+          612.5,
           650
         ]
       ],
       "labelAt": [
-        1230,
+        1300,
         638
       ]
     },
@@ -390,20 +390,20 @@
       "toSide": "bottom",
       "via": [
         [
-          -40,
+          30,
           779
         ],
         [
-          -40,
+          30,
           250
         ],
         [
-          1042.5,
+          1112.5,
           250
         ]
       ],
       "labelAt": [
-        560,
+        630,
         238
       ]
     },
@@ -414,7 +414,7 @@
       "label": "ACTION /navigate_to_pose",
       "variant": "emphasis",
       "labelAt": [
-        410,
+        480,
         486
       ]
     },
@@ -425,7 +425,7 @@
       "label": "ACTION /p3020/pick_place",
       "variant": "emphasis",
       "labelAt": [
-        750,
+        820,
         486
       ]
     },
@@ -435,7 +435,7 @@
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/pickup_command",
       "labelAt": [
-        500,
+        570,
         837
       ]
     },
@@ -452,7 +452,7 @@
       "to": "p3020_runtime",
       "label": "TOPIC /arm_a/pick_place_command",
       "labelAt": [
-        891,
+        961,
         486
       ]
     },
@@ -477,7 +477,7 @@
       "label": "SERVICE locate_box",
       "variant": "emphasis",
       "labelAt": [
-        1225,
+        1295,
         486
       ]
     },
@@ -495,7 +495,7 @@
       "label": "agent method calls / actuation",
       "variant": "dashed",
       "labelAt": [
-        310,
+        380,
         837
       ]
     },
@@ -506,7 +506,7 @@
       "label": "shared Isaac rclpy runtime",
       "variant": "dashed",
       "labelAt": [
-        680,
+        750,
         837
       ]
     },
@@ -517,7 +517,7 @@
       "label": "same rclpy Node attachment",
       "variant": "dashed",
       "labelAt": [
-        900,
+        970,
         837
       ]
     }
