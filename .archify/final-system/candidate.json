@@ -203,7 +203,7 @@
       "id": "internal",
       "type": "external",
       "label": "Isaac Internal Components",
-      "sublabel": "MissionIwHubAgent · P3020 agents · equipment bridge",
+      "sublabel": "MissionIwHubAgent · P3020 agents/ROS bridges · equipment bridge",
       "tag": "Python objects",
       "pos": [
         790,
@@ -313,7 +313,7 @@
       "id": "mqtt-nav",
       "from": "mqtt",
       "to": "mqtt_nav",
-      "label": "navigation / lift control",
+      "label": "MQTT channel · navigation/lift",
       "variant": "dashed",
       "labelAt": [
         546,
@@ -324,29 +324,22 @@
       "id": "mqtt-manual",
       "from": "mqtt",
       "to": "mqtt_manual",
-      "label": "manual velocity",
+      "label": "MQTT channel · manual velocity",
       "variant": "dashed"
     },
     {
       "id": "mqtt-process",
       "from": "mqtt",
       "to": "mqtt_process",
-      "label": "process / status",
+      "label": "MQTT channel · process/control",
       "variant": "dashed"
     },
     {
       "id": "mqtt-pose",
       "from": "mqtt",
       "to": "pose_sync",
-      "label": "pose persistence / restore",
+      "label": "MQTT channel · pose persistence",
       "variant": "dashed"
-    },
-    {
-      "id": "adapter-nav",
-      "from": "mqtt_nav",
-      "to": "nav",
-      "label": "NavigateToPose + STOP cmd_vel",
-      "variant": "emphasis"
     },
     {
       "id": "manual-graph",
@@ -355,30 +348,24 @@
       "label": "manual /cmd_vel",
       "variant": "emphasis",
       "labelAt": [
-        402,
-        627
-      ]
-    },
-    {
-      "id": "nav-graph",
-      "from": "nav",
-      "to": "sensor",
-      "label": "velocity control",
-      "variant": "emphasis",
-      "labelAt": [
-        285,
-        627
-      ]
-    },
-    {
-      "id": "graph-nav",
-      "from": "sensor",
-      "to": "nav",
-      "label": "sensor · odom · TF · clock inputs",
-      "variant": "dashed",
-      "labelAt": [
-        450,
-        690
+        145,
+        650
+      ],
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [
+        [
+          285,
+          338
+        ],
+        [
+          130,
+          338
+        ],
+        [
+          130,
+          1031
+        ]
       ]
     },
     {
@@ -396,102 +383,6 @@
       "label": "PickPlace action*",
       "variant": "emphasis",
       "route": "straight"
-    },
-    {
-      "id": "mission-bridge",
-      "from": "mission",
-      "to": "bridge",
-      "label": "pickup workflow command/state"
-    },
-    {
-      "id": "nav-lift",
-      "from": "mqtt_nav",
-      "to": "bridge",
-      "label": "manual lift command/state",
-      "variant": "dashed"
-    },
-    {
-      "id": "process-bridge",
-      "from": "mqtt_process",
-      "to": "bridge",
-      "label": "equipment command/status · process events",
-      "variant": "dashed"
-    },
-    {
-      "id": "process-mission",
-      "from": "mqtt_process",
-      "to": "mission",
-      "label": "arrival confirm ↔ mission state",
-      "variant": "dashed"
-    },
-    {
-      "id": "pose-bridge",
-      "from": "pose_sync",
-      "to": "bridge",
-      "label": "restore pose ↔ canonical pose/session",
-      "variant": "dashed"
-    },
-    {
-      "id": "pose-nav",
-      "from": "pose_sync",
-      "to": "nav",
-      "label": "/initialpose + TF consistency check",
-      "variant": "dashed"
-    },
-    {
-      "id": "action-command",
-      "from": "action",
-      "to": "internal",
-      "label": "TOPIC /arm_a/pick_place_command",
-      "variant": "emphasis",
-      "labelAt": [
-        900,
-        627
-      ]
-    },
-    {
-      "id": "action-status",
-      "from": "internal",
-      "to": "action",
-      "label": "TOPIC /arm_a/pick_place_status",
-      "variant": "emphasis",
-      "labelAt": [
-        980,
-        675
-      ]
-    },
-    {
-      "id": "vision-detection",
-      "from": "vision",
-      "to": "internal",
-      "label": "TOPICS detection/result",
-      "variant": "dashed",
-      "labelAt": [
-        1055,
-        735
-      ]
-    },
-    {
-      "id": "vision-rgb",
-      "from": "internal",
-      "to": "vision",
-      "label": "TOPICS RGB/preview",
-      "variant": "dashed",
-      "labelAt": [
-        1100,
-        655
-      ]
-    },
-    {
-      "id": "vision-validated",
-      "from": "internal",
-      "to": "vision",
-      "label": "TOPIC validated HUD",
-      "variant": "dashed",
-      "labelAt": [
-        1130,
-        790
-      ]
     },
     {
       "id": "bridge-internal",
@@ -553,6 +444,584 @@
         1200,
         150
       ]
+    },
+    {
+      "id": "adapter-nav",
+      "from": "mqtt_nav",
+      "to": "nav",
+      "label": "ACTION /navigate_to_pose",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          165,
+          455
+        ],
+        [
+          285,
+          455
+        ]
+      ],
+      "labelAt": [
+        230,
+        440
+      ]
+    },
+    {
+      "id": "adapter-stop",
+      "from": "mqtt_nav",
+      "to": "sensor",
+      "label": "TOPIC /cmd_vel (STOP)",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [
+        [
+          40,
+          338
+        ],
+        [
+          40,
+          1031
+        ]
+      ],
+      "labelAt": [
+        92,
+        735
+      ]
+    },
+    {
+      "id": "nav-graph",
+      "from": "nav",
+      "to": "sensor",
+      "label": "velocity control (/cmd_vel)‡",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          235,
+          690
+        ],
+        [
+          235,
+          930
+        ]
+      ],
+      "labelAt": [
+        205,
+        810
+      ]
+    },
+    {
+      "id": "graph-nav",
+      "from": "sensor",
+      "to": "nav",
+      "label": "sensor · odom · TF · clock inputs‡",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          345,
+          930
+        ],
+        [
+          345,
+          690
+        ]
+      ],
+      "labelAt": [
+        390,
+        810
+      ]
+    },
+    {
+      "id": "mission-pickup-command",
+      "from": "mission",
+      "to": "bridge",
+      "label": "TOPIC /amr_a/pickup_command",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          545,
+          680
+        ],
+        [
+          545,
+          780
+        ]
+      ],
+      "labelAt": [
+        505,
+        730
+      ]
+    },
+    {
+      "id": "pickup-state-feedback",
+      "from": "bridge",
+      "to": "mission",
+      "label": "TOPIC /amr_a/pickup_state",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          625,
+          780
+        ],
+        [
+          625,
+          680
+        ]
+      ],
+      "labelAt": [
+        665,
+        730
+      ]
+    },
+    {
+      "id": "lift-command",
+      "from": "mqtt_nav",
+      "to": "bridge",
+      "label": "TOPIC /amr_a/lift_command",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          290,
+          338
+        ],
+        [
+          430,
+          338
+        ],
+        [
+          430,
+          785
+        ]
+      ],
+      "labelAt": [
+        390,
+        565
+      ]
+    },
+    {
+      "id": "lift-feedback",
+      "from": "bridge",
+      "to": "mqtt_nav",
+      "label": "TOPICS /amr_a/lift_state · /lift_result",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right",
+      "via": [
+        [
+          400,
+          871
+        ],
+        [
+          400,
+          430
+        ],
+        [
+          260,
+          430
+        ]
+      ],
+      "labelAt": [
+        355,
+        505
+      ]
+    },
+    {
+      "id": "equipment-command",
+      "from": "mqtt_process",
+      "to": "bridge",
+      "label": "TOPIC equipment command",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          725,
+          455
+        ],
+        [
+          705,
+          455
+        ],
+        [
+          705,
+          770
+        ],
+        [
+          625,
+          770
+        ]
+      ],
+      "labelAt": [
+        730,
+        610
+      ]
+    },
+    {
+      "id": "process-feedback",
+      "from": "bridge",
+      "to": "mqtt_process",
+      "label": "TOPICS status · process events",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          665,
+          800
+        ],
+        [
+          770,
+          800
+        ],
+        [
+          770,
+          485
+        ],
+        [
+          725,
+          485
+        ]
+      ],
+      "labelAt": [
+        795,
+        640
+      ]
+    },
+    {
+      "id": "arrival-confirm",
+      "from": "mqtt_process",
+      "to": "mission",
+      "label": "TOPIC arrival_confirm*",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          690,
+          430
+        ],
+        [
+          650,
+          430
+        ]
+      ],
+      "labelAt": [
+        675,
+        410
+      ]
+    },
+    {
+      "id": "mission-state",
+      "from": "mission",
+      "to": "mqtt_process",
+      "label": "TOPIC mission_state",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          600,
+          505
+        ],
+        [
+          785,
+          505
+        ],
+        [
+          785,
+          430
+        ]
+      ],
+      "labelAt": [
+        720,
+        520
+      ]
+    },
+    {
+      "id": "restore-pose",
+      "from": "pose_sync",
+      "to": "bridge",
+      "label": "TOPIC /amr_a/restore_pose",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          1020,
+          470
+        ],
+        [
+          900,
+          470
+        ],
+        [
+          900,
+          760
+        ],
+        [
+          710,
+          760
+        ]
+      ],
+      "labelAt": [
+        925,
+        605
+      ]
+    },
+    {
+      "id": "canonical-pose",
+      "from": "bridge",
+      "to": "pose_sync",
+      "label": "TOPICS map_pose · pose_source_session",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [
+        [
+          720,
+          850
+        ],
+        [
+          950,
+          850
+        ],
+        [
+          950,
+          500
+        ],
+        [
+          1020,
+          500
+        ]
+      ],
+      "labelAt": [
+        975,
+        675
+      ]
+    },
+    {
+      "id": "initialpose",
+      "from": "pose_sync",
+      "to": "nav",
+      "label": "TOPIC /initialpose",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right",
+      "via": [
+        [
+          900,
+          338
+        ],
+        [
+          900,
+          490
+        ],
+        [
+          400,
+          490
+        ]
+      ],
+      "labelAt": [
+        650,
+        475
+      ]
+    },
+    {
+      "id": "tf-pose",
+      "from": "sensor",
+      "to": "pose_sync",
+      "label": "TF map→base_link lookup†",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "right",
+      "via": [
+        [
+          430,
+          1031
+        ],
+        [
+          1120,
+          1031
+        ],
+        [
+          1120,
+          338
+        ]
+      ],
+      "labelAt": [
+        1110,
+        710
+      ]
+    },
+    {
+      "id": "action-command",
+      "from": "action",
+      "to": "internal",
+      "label": "TOPIC /arm_a/pick_place_command",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          855,
+          675
+        ],
+        [
+          855,
+          785
+        ]
+      ],
+      "labelAt": [
+        820,
+        730
+      ]
+    },
+    {
+      "id": "action-status",
+      "from": "internal",
+      "to": "action",
+      "label": "TOPIC /arm_a/pick_place_status",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          975,
+          785
+        ],
+        [
+          975,
+          675
+        ]
+      ],
+      "labelAt": [
+        1015,
+        730
+      ]
+    },
+    {
+      "id": "vision-detection",
+      "from": "vision",
+      "to": "internal",
+      "label": "TOPICS detection / result",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          1210,
+          700
+        ],
+        [
+          1070,
+          700
+        ],
+        [
+          1070,
+          820
+        ]
+      ],
+      "labelAt": [
+        1125,
+        685
+      ]
+    },
+    {
+      "id": "vision-rgb",
+      "from": "internal",
+      "to": "vision",
+      "label": "RGB · P3020 ROS Bridge PUB",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [
+        [
+          1060,
+          870
+        ],
+        [
+          1330,
+          870
+        ],
+        [
+          1330,
+          650
+        ],
+        [
+          1285,
+          650
+        ]
+      ],
+      "labelAt": [
+        1230,
+        855
+      ]
+    },
+    {
+      "id": "vision-preview",
+      "from": "bridge",
+      "to": "vision",
+      "label": "Preview · shared Node PUB (main_mission)",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          720,
+          900
+        ],
+        [
+          1100,
+          900
+        ],
+        [
+          1100,
+          574
+        ]
+      ],
+      "labelAt": [
+        910,
+        885
+      ]
+    },
+    {
+      "id": "vision-validated",
+      "from": "internal",
+      "to": "vision",
+      "label": "Validated result → detector HUD",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          980,
+          790
+        ],
+        [
+          1180,
+          790
+        ],
+        [
+          1180,
+          650
+        ]
+      ],
+      "labelAt": [
+        1090,
+        775
+      ]
     }
   ],
   "cards": [
@@ -569,8 +1038,9 @@
       "title": "Control responsibility",
       "items": [
         "ros2_manual_mqtt_adapter publishes manual velocity only.",
-        "ros2_mqtt_adapter owns MQTT-driven navigation plus manual lift command/state bridging.",
-        "amr_p3020_mission drives lift-related mission phases through /amr_a/pickup_command values such as LOWER_AT_DELIVERY and RAISE_AT_DELIVERY; it is not the /lift_command publisher."
+        "ros2_mqtt_adapter owns MQTT-driven NavigateToPose, STOP /cmd_vel, and manual lift command/state bridging.",
+        "Dashed MQTT broker edges denote brokered channels; the lower ROS/runtime edges show actual command and feedback directions.",
+        "amr_p3020_mission drives lift-related mission phases through /amr_a/pickup_command; it is not the /lift_command publisher."
       ]
     },
     {
@@ -586,15 +1056,16 @@
       "title": "Navigation / pose scope",
       "items": [
         "Nav2 ↔ IW Hub ROS2 Graphs is shown at control/sensor-flow level. Exact topic remaps and TF broadcasters require runtime graph/external iw_hub_navigation configuration to confirm.",
-        "pose_sync_manager looks up map→base_link for consistency; this diagram does not assert a single TF publisher."
+        "pose_sync_manager publishes /initialpose and separately looks up map→base_link for consistency; this diagram does not assert a single TF publisher."
       ]
     },
     {
       "dot": "emerald",
       "title": "Vision scope",
       "items": [
-        "Active Mission vision is directional: Isaac ROS bridge publishes RGB/preview to detector nodes; detectors publish pixel/result back to the Isaac bridge; the bridge publishes validated results back to detector HUD.",
-        "Legacy locate_box service/relay exists in the repository but /box_position_camera is not shown as an active main_mission runtime edge."
+        "P3020 ROS Bridge objects create/manage RGB publishers; main_mission.py creates /arm_a/preview and /arm_b/preview publishers on the shared AmrMissionBridge rclpy Node.",
+        "Detector nodes publish pixel/result back to the P3020 ROS Bridge objects; the bridge objects publish validated results back to detector HUD.",
+        "Legacy locate_box service/relay is not shown as an active main_mission runtime edge."
       ]
     }
   ]

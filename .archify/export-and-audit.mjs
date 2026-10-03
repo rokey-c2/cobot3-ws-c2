@@ -61,6 +61,14 @@ try {
   fs.mkdirSync('.archify/final-combined',{recursive:true});
   const combinedPath='.archify/final-combined/03_combined_portfolio_architecture.html';
   fs.writeFileSync(combinedPath,combined);
+  const combinedLinkTargets = [
+    '.archify/final-system/cobot3-system.architecture.html',
+    '.archify/final-system/cobot3-system.architecture.svg',
+    '.archify/final-ros2/cobot3-ros2-node-communication.architecture.html',
+    '.archify/final-ros2/cobot3-ros2-node-communication.architecture.svg',
+  ];
+  const combinedLinkAudit = combinedLinkTargets.map(target => ({target, exists: fs.existsSync(target)}));
+  if (combinedLinkAudit.some(item => !item.exists)) throw new Error('Combined local link target missing '+JSON.stringify(combinedLinkAudit));
   const loaded = browser.cdp.waitFor('Page.loadEventFired', session);
   await send('Page.navigate',{url:pathToFileURL(path.resolve(combinedPath)).href});
   await loaded;
@@ -81,5 +89,5 @@ try {
     const shot=await send('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync('.archify/final-combined/combined-'+mode+'.desktop.png',Buffer.from(shot.data,'base64'));
   }
-  fs.writeFileSync('.archify/final-combined/combined-browser-audit.json',JSON.stringify({status:'pass',method:'Chrome CDP, srcdoc loads, tab visibility, frame content/height; viewport 1920x1080',states},null,2)+'\n');
+  fs.writeFileSync('.archify/final-combined/combined-browser-audit.json',JSON.stringify({status:'pass',method:'Chrome CDP, srcdoc loads, tab visibility, frame content/height + local link existence; viewport 1920x1080',combinedLinkAudit,states},null,2)+'\n');
 } finally { await browser.close(); }
