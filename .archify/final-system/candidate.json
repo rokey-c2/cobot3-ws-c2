@@ -915,27 +915,29 @@
       "to": "internal",
       "label": "TOPIC /arm_a/pick_place_command",
       "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
       "via": [
         [
-          875,
+          920,
           675
         ],
         [
-          875,
-          745
+          855,
+          675
         ],
         [
-          885,
-          745
+          855,
+          780
         ],
         [
-          885,
-          790
+          920,
+          780
         ]
       ],
       "labelAt": [
-        835,
-        715
+        820,
+        725
       ]
     },
     {
@@ -944,27 +946,29 @@
       "to": "action",
       "label": "TOPIC /arm_a/pick_place_status",
       "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
       "via": [
         [
-          985,
+          920,
           790
         ],
         [
-          985,
-          720
+          975,
+          790
         ],
         [
-          965,
-          720
+          975,
+          675
         ],
         [
-          965,
+          920,
           675
         ]
       ],
       "labelAt": [
-        1025,
-        715
+        1015,
+        725
       ]
     },
     {
@@ -973,26 +977,24 @@
       "to": "internal",
       "label": "TOPICS detection / result",
       "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "right",
       "via": [
         [
-          1210,
+          1250,
           700
         ],
         [
-          1110,
+          1070,
           700
         ],
         [
-          1110,
-          840
-        ],
-        [
-          1050,
-          840
+          1070,
+          871
         ]
       ],
       "labelAt": [
-        1145,
+        1135,
         685
       ]
     },
@@ -1002,31 +1004,33 @@
       "to": "vision",
       "label": "RGB · P3020 ROS Bridge PUB",
       "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom",
       "via": [
         [
-          1050,
-          855
+          1060,
+          871
         ],
         [
-          1050,
-          825
+          1060,
+          810
         ],
         [
-          1310,
-          825
+          1330,
+          810
         ],
         [
-          1310,
+          1330,
           650
         ],
         [
-          1240,
+          1250,
           650
         ]
       ],
       "labelAt": [
-        1200,
-        812
+        1210,
+        795
       ]
     },
     {
@@ -1035,27 +1039,29 @@
       "to": "vision",
       "label": "Preview · shared Node PUB (main_mission)",
       "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
       "via": [
         [
-          690,
-          855
+          720,
+          871
         ],
         [
-          690,
-          735
+          720,
+          760
         ],
         [
-          1110,
-          735
+          1100,
+          760
         ],
         [
-          1110,
+          1100,
           574
         ]
       ],
       "labelAt": [
         900,
-        720
+        745
       ]
     },
     {
@@ -1064,26 +1070,24 @@
       "to": "vision",
       "label": "Validated result → detector HUD",
       "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "right",
       "via": [
         [
-          990,
+          920,
           790
         ],
         [
-          1430,
+          1400,
           790
         ],
         [
-          1430,
-          600
-        ],
-        [
-          1360,
-          600
+          1400,
+          574
         ]
       ],
       "labelAt": [
-        1325,
+        1320,
         775
       ]
     }
