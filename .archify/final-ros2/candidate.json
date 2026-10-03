@@ -192,7 +192,7 @@
       "id": "p3020_in",
       "type": "external",
       "label": "P3020 IN Runtime",
-      "sublabel": "OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent",
+      "sublabel": "ROS Bridge + PickPlace Agent",
       "tag": "2 Python objects",
       "pos": [
         890,
@@ -207,7 +207,7 @@
       "id": "p3020_out",
       "type": "external",
       "label": "P3020 OUT Runtime",
-      "sublabel": "P3020OutRosBridge + P3020UnloadToBinAgent",
+      "sublabel": "ROS Bridge + Unload Agent",
       "tag": "2 Python objects",
       "pos": [
         1160,
