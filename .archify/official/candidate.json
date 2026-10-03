@@ -194,7 +194,7 @@
       "sublabel": "ROS 2 ↔ Isaac bridge",
       "tag": "rclpy Node",
       "pos": [
-        560,
+        550,
         820
       ],
       "size": [
@@ -209,11 +209,11 @@
       "sublabel": "Agents · Equipment Bridge",
       "tag": "Python objects",
       "pos": [
-        820,
-        820
+        800,
+        818
       ],
       "size": [
-        150,
+        175,
         80
       ]
     },
@@ -380,7 +380,23 @@
       "from": "mission",
       "to": "nav",
       "label": "/navigate_to_pose",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "right",
+      "via": [
+        [
+          520,
+          488
+        ],
+        [
+          520,
+          376
+        ]
+      ],
+      "labelAt": [
+        520,
+        400
+      ]
     },
     {
       "id": "mission-action",
@@ -406,7 +422,14 @@
       "id": "bridge-mission",
       "from": "bridge",
       "to": "mission",
-      "label": "pickup/lift state"
+      "label": "pickup/lift state",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "straight",
+      "labelAt": [
+        610,
+        675
+      ]
     },
     {
       "id": "action-bridge",
@@ -460,8 +483,8 @@
       "toSide": "left",
       "route": "straight",
       "labelAt": [
-        1017,
-        807
+        1020,
+        805
       ]
     },
     {
