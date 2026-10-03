@@ -52,7 +52,7 @@ LIFT_MAX_EFFORT = 100_000.0
 LIFT_TARGET = 0.04
 MANUAL_LIFT_STATES = {"IDLE", "LOWER_DONE", "SPAWN_DONE", "ERROR"}
 
-# Real values measured headlessly off Parcel_Sorting_Map
+# Real values measured headlessly off parcel_sorting_map
 # (both AMR and cargo pod are baked into the map, not code-spawned):
 #   /World/iw_hub_warehouse_navigation/iw_hub_ROS -> (9, -6), yaw=+90 deg
 #   /World/cargo_box_gaurd_size_200_fix_02        -> (9, -3), yaw=0 deg

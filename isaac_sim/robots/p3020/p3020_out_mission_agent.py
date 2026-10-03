@@ -112,7 +112,7 @@ from robots.p3020.p3020_mission_agent import (
 
 # ══════════════════════════════════════════════════════════════
 #  p3020_out 전용 프림 경로 / 베이스 pose
-#  (p3020_in과 같은 애셋(P3020_mount_vgp20_rsd455_1)이 /World/p3020_out에
+#  (p3020_in과 같은 애셋(p3020_vgp20_rsd455)이 /World/p3020_out에
 #  같은 하위 구조로 참조돼 있다는 전제 -- p3020_mission_agent.py 상단
 #  P3020_OUT_BASE_POS/QUAT 주석 참고. 실제 프림 경로가 다르면 이 세 줄만
 #  고치면 된다.)

@@ -79,7 +79,7 @@ Pick 동작 도중 로봇팔이 좌표를 여러 번 물어볼 수 있는데, �
    Z = depth 값
    ```
 4. `fx, fy, cx0, cy0`는 Isaac Sim 실카메라 prim
-   (`P3020_mount_vgp20_rsd455_1/World1.usd`의
+   (`p3020_vgp20_rsd455/p3020_vgp20_rsd455.usd`의
    `/World/vgp20/rsd455/RSD455/Camera_Pseudo_Depth`)에서 읽은 실제
    `focalLength`(1.93) / `horizontalAperture`(3.896)로 계산한 값이다
    (해상도 640x480, `horizontal_fov_deg=90.53` — `config/vision.yaml` 주석

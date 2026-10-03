@@ -1,6 +1,6 @@
 """Standalone test harness for the AMR 3-phase movement, multi-box P3020
 pick-place setup, and wheel-sorter logic, using TEMP TEST placeholder
-coordinates against the current WIP Parcel_Sorting_Map (final AMR/cargo/
+coordinates against the current WIP parcel_sorting_map (final AMR/cargo/
 conveyor layout not baked in yet -- see the TEMP TEST VALUE comments in
 project_config/robot_config.py and robots/iw_hub/iw_hub_mission_agent.py).
 
@@ -39,7 +39,7 @@ from project_config.robot_config import (
 )
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Final_Real_Map" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "parcel_sorting_map" / "parcel_sorting_map.usd"
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
