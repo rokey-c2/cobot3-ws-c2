@@ -1,0 +1,467 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "cobot3-ws-c2 — ROS 2 Node Communication Architecture",
+    "subtitle": "Topics · Services · Actions · Host ROS 2 Jazzy ↔ Isaac Sim 5.1",
+    "output": ".archify/ros2-node-communication/cobot3-ros2-node-communication.architecture.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1500,
+      1180
+    ]
+  },
+  "components": [
+    {
+      "id": "nav_adapter",
+      "type": "backend",
+      "label": "ros2_mqtt_adapter",
+      "sublabel": "control_tower_ros2_mqtt_adapter",
+      "tag": "ROS Node",
+      "pos": [
+        40,
+        120
+      ],
+      "size": [
+        210,
+        78
+      ]
+    },
+    {
+      "id": "manual_adapter",
+      "type": "backend",
+      "label": "ros2_manual_mqtt_adapter",
+      "sublabel": "control_tower_manual_mqtt_adapter",
+      "tag": "ROS Node",
+      "pos": [
+        290,
+        120
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "process_adapter",
+      "type": "backend",
+      "label": "process_mqtt_adapter",
+      "sublabel": "control_tower_process_mqtt_adapter",
+      "tag": "ROS Node",
+      "pos": [
+        560,
+        120
+      ],
+      "size": [
+        230,
+        78
+      ]
+    },
+    {
+      "id": "pose_sync",
+      "type": "backend",
+      "label": "pose_sync_manager",
+      "sublabel": "control_tower_pose_sync_manager",
+      "tag": "ROS Node",
+      "pos": [
+        830,
+        120
+      ],
+      "size": [
+        225,
+        78
+      ]
+    },
+    {
+      "id": "mission",
+      "type": "backend",
+      "label": "amr_p3020_mission",
+      "sublabel": "Mission FSM",
+      "tag": "ROS Node",
+      "pos": [
+        260,
+        390
+      ],
+      "size": [
+        220,
+        82
+      ]
+    },
+    {
+      "id": "nav2",
+      "type": "backend",
+      "label": "Nav2 / AMCL",
+      "sublabel": "NavigateToPose · /initialpose · TF",
+      "tag": "ROS subsystem",
+      "pos": [
+        40,
+        390
+      ],
+      "size": [
+        180,
+        82
+      ]
+    },
+    {
+      "id": "pickplace",
+      "type": "backend",
+      "label": "PickPlace Action Server",
+      "sublabel": "p3020_pick_place_action_server",
+      "tag": "ROS Node",
+      "pos": [
+        540,
+        390
+      ],
+      "size": [
+        235,
+        82
+      ]
+    },
+    {
+      "id": "locate_relay",
+      "type": "backend",
+      "label": "locate_box_relay",
+      "sublabel": "LocateBox client → Point topic",
+      "tag": "ROS Node",
+      "pos": [
+        835,
+        390
+      ],
+      "size": [
+        205,
+        82
+      ]
+    },
+    {
+      "id": "vision",
+      "type": "backend",
+      "label": "locate_box_node",
+      "sublabel": "YOLO + depth 3D",
+      "tag": "ROS Node",
+      "pos": [
+        1090,
+        390
+      ],
+      "size": [
+        190,
+        82
+      ]
+    },
+    {
+      "id": "isaac_bridge",
+      "type": "backend",
+      "label": "isaac_amr_mission_bridge",
+      "sublabel": "AmrMissionBridge + attached ROS pubs/subs",
+      "tag": "rclpy Node",
+      "pos": [
+        420,
+        735
+      ],
+      "size": [
+        265,
+        88
+      ]
+    },
+    {
+      "id": "iw_graph",
+      "type": "external",
+      "label": "IW Hub ROS2 Graphs",
+      "sublabel": "cmd_vel · scan · odom · tf · clock",
+      "tag": "Isaac ROS Graph",
+      "pos": [
+        70,
+        735
+      ],
+      "size": [
+        225,
+        88
+      ]
+    },
+    {
+      "id": "p3020_runtime",
+      "type": "external",
+      "label": "P3020 Isaac Runtime",
+      "sublabel": "PickPlace agent + ROS bridge",
+      "tag": "Isaac Python",
+      "pos": [
+        760,
+        735
+      ],
+      "size": [
+        220,
+        88
+      ]
+    },
+    {
+      "id": "process_runtime",
+      "type": "external",
+      "label": "ProcessEquipmentBridge",
+      "sublabel": "attached to isaac_amr_mission_bridge",
+      "tag": "Python object",
+      "pos": [
+        1040,
+        735
+      ],
+      "size": [
+        225,
+        88
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Host ROS 2 Jazzy — Adapters",
+      "wraps": [
+        "nav_adapter",
+        "manual_adapter",
+        "process_adapter",
+        "pose_sync"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Host ROS 2 Jazzy — Mission / Action / Vision",
+      "wraps": [
+        "mission",
+        "nav2",
+        "pickplace",
+        "locate_relay",
+        "vision"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Isaac Sim 5.1 Runtime",
+      "wraps": [
+        "isaac_bridge",
+        "iw_graph",
+        "p3020_runtime",
+        "process_runtime"
+      ],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "nav-adapter-nav2",
+      "from": "nav_adapter",
+      "to": "nav2",
+      "label": "ACTION /navigate_to_pose",
+      "variant": "emphasis"
+    },
+    {
+      "id": "nav-adapter-cmdvel",
+      "from": "nav_adapter",
+      "to": "iw_graph",
+      "label": "TOPIC /cmd_vel (STOP)",
+      "variant": "dashed"
+    },
+    {
+      "id": "nav-adapter-lift",
+      "from": "nav_adapter",
+      "to": "isaac_bridge",
+      "label": "TOPIC /amr_a/lift_command",
+      "variant": "dashed"
+    },
+    {
+      "id": "lift-feedback",
+      "from": "isaac_bridge",
+      "to": "nav_adapter",
+      "label": "TOPICS lift_state · lift_result",
+      "variant": "dashed"
+    },
+    {
+      "id": "manual-cmdvel",
+      "from": "manual_adapter",
+      "to": "iw_graph",
+      "label": "TOPIC /cmd_vel",
+      "variant": "emphasis"
+    },
+    {
+      "id": "process-command",
+      "from": "process_adapter",
+      "to": "process_runtime",
+      "label": "TOPIC equipment/command",
+      "variant": "dashed"
+    },
+    {
+      "id": "process-feedback",
+      "from": "process_runtime",
+      "to": "process_adapter",
+      "label": "TOPICS equipment/status · process/event",
+      "variant": "dashed"
+    },
+    {
+      "id": "arrival-confirm",
+      "from": "process_adapter",
+      "to": "mission",
+      "label": "TOPIC /amr_a/p3020_arrival_confirm"
+    },
+    {
+      "id": "mission-state",
+      "from": "mission",
+      "to": "process_adapter",
+      "label": "TOPIC /amr_a/mission_state",
+      "variant": "dashed"
+    },
+    {
+      "id": "pose-from-isaac",
+      "from": "isaac_bridge",
+      "to": "pose_sync",
+      "label": "TOPICS map_pose · pose_source_session",
+      "variant": "dashed"
+    },
+    {
+      "id": "restore-to-isaac",
+      "from": "pose_sync",
+      "to": "isaac_bridge",
+      "label": "TOPIC /amr_a/restore_pose",
+      "variant": "dashed"
+    },
+    {
+      "id": "initialpose",
+      "from": "pose_sync",
+      "to": "nav2",
+      "label": "TOPIC /initialpose",
+      "variant": "emphasis"
+    },
+    {
+      "id": "tf-sync",
+      "from": "iw_graph",
+      "to": "pose_sync",
+      "label": "TF map→base_link",
+      "variant": "dashed"
+    },
+    {
+      "id": "mission-nav2",
+      "from": "mission",
+      "to": "nav2",
+      "label": "ACTION /navigate_to_pose",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mission-pickplace",
+      "from": "mission",
+      "to": "pickplace",
+      "label": "ACTION /p3020/pick_place",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mission-pickup",
+      "from": "mission",
+      "to": "isaac_bridge",
+      "label": "TOPIC /amr_a/pickup_command"
+    },
+    {
+      "id": "pickup-feedback",
+      "from": "isaac_bridge",
+      "to": "mission",
+      "label": "TOPIC /amr_a/pickup_state",
+      "variant": "dashed"
+    },
+    {
+      "id": "pickplace-command",
+      "from": "pickplace",
+      "to": "p3020_runtime",
+      "label": "TOPIC /arm_a/pick_place_command"
+    },
+    {
+      "id": "pickplace-status",
+      "from": "p3020_runtime",
+      "to": "pickplace",
+      "label": "TOPIC /arm_a/pick_place_status",
+      "variant": "dashed"
+    },
+    {
+      "id": "p3020-process-status",
+      "from": "p3020_runtime",
+      "to": "process_adapter",
+      "label": "TOPIC /arm_a/pick_place_status",
+      "variant": "dashed"
+    },
+    {
+      "id": "locate-service",
+      "from": "locate_relay",
+      "to": "vision",
+      "label": "SERVICE locate_box",
+      "variant": "emphasis"
+    },
+    {
+      "id": "box-position",
+      "from": "locate_relay",
+      "to": "p3020_runtime",
+      "label": "TOPIC /box_position_camera",
+      "variant": "dashed"
+    },
+    {
+      "id": "bridge-iw",
+      "from": "isaac_bridge",
+      "to": "iw_graph",
+      "label": "agent method calls / actuation",
+      "variant": "dashed"
+    },
+    {
+      "id": "bridge-p3020",
+      "from": "isaac_bridge",
+      "to": "p3020_runtime",
+      "label": "shared Isaac rclpy runtime",
+      "variant": "dashed"
+    },
+    {
+      "id": "bridge-process",
+      "from": "isaac_bridge",
+      "to": "process_runtime",
+      "label": "same rclpy Node attachment",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "ROS 2 Actions",
+      "items": [
+        "/navigate_to_pose: Nav2 server; clients = ros2_mqtt_adapter and amr_p3020_mission",
+        "/p3020/pick_place: server = p3020_pick_place_action_server; client = amr_p3020_mission"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Mission / Isaac Topics",
+      "items": [
+        "/amr_a/pickup_command → isaac_amr_mission_bridge; /amr_a/pickup_state ← bridge",
+        "/amr_a/lift_command → bridge; /amr_a/lift_state and /amr_a/lift_result ← bridge",
+        "/amr_a/map_pose and /amr_a/pose_source_session ← bridge; /amr_a/restore_pose → bridge"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Process Adapter Topics",
+      "items": [
+        "/controltower/equipment/command → ProcessEquipmentBridge",
+        "/controltower/equipment/status and /controltower/process/event ← ProcessEquipmentBridge",
+        "/amr_a/p3020_arrival_confirm → amr_p3020_mission; /amr_a/mission_state ← mission",
+        "/arm_a/pick_place_status is also observed by process_mqtt_adapter"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Vision Service Path",
+      "items": [
+        "locate_box_node provides LocateBox service 'locate_box'",
+        "locate_box_relay is the confirmed LocateBox client and publishes /box_position_camera",
+        "ConfirmGrasp service is implemented by locate_box_node, but no active client was found in the current default branch; therefore no live edge is drawn"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Scope",
+      "items": [
+        "This diagram prioritizes ROS 2 node-to-node communication; MQTT broker/backend links are intentionally omitted",
+        "ProcessEquipmentBridge is not an independent ROS Node; it attaches publishers/subscriptions to isaac_amr_mission_bridge"
+      ]
+    }
+  ]
+}
