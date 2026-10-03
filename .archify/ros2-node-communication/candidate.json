@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "cobot3-ws-c2 — ROS 2 Node Communication Architecture",
+    "title": "cobot3-ws-c2 — ROS 2 Node Communication Architecture (portfolio layout)",
     "subtitle": "Topics · Services · Actions · Host ROS 2 Jazzy ↔ Isaac Sim 5.1",
     "output": ".archify/ros2-node-communication/cobot3-ros2-node-communication.architecture.html",
     "quality_profile": "standard",
@@ -19,7 +19,7 @@
       "sublabel": "control_tower_ros2_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        40,
+        300,
         120
       ],
       "size": [
@@ -34,7 +34,7 @@
       "sublabel": "control_tower_manual_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        290,
+        20,
         120
       ],
       "size": [
@@ -49,7 +49,7 @@
       "sublabel": "control_tower_process_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        560,
+        600,
         120
       ],
       "size": [
@@ -64,7 +64,7 @@
       "sublabel": "control_tower_pose_sync_manager",
       "tag": "ROS Node",
       "pos": [
-        830,
+        930,
         120
       ],
       "size": [
@@ -79,7 +79,7 @@
       "sublabel": "Mission FSM",
       "tag": "ROS Node",
       "pos": [
-        260,
+        520,
         390
       ],
       "size": [
@@ -94,7 +94,7 @@
       "sublabel": "NavigateToPose · /initialpose · TF",
       "tag": "ROS subsystem",
       "pos": [
-        40,
+        300,
         390
       ],
       "size": [
@@ -109,7 +109,7 @@
       "sublabel": "p3020_pick_place_action_server",
       "tag": "ROS Node",
       "pos": [
-        540,
+        760,
         390
       ],
       "size": [
@@ -124,7 +124,7 @@
       "sublabel": "LocateBox client → Point topic",
       "tag": "ROS Node",
       "pos": [
-        835,
+        1010,
         390
       ],
       "size": [
@@ -139,7 +139,7 @@
       "sublabel": "YOLO + depth 3D",
       "tag": "ROS Node",
       "pos": [
-        1090,
+        1260,
         390
       ],
       "size": [
@@ -154,7 +154,7 @@
       "sublabel": "AmrMissionBridge + attached ROS pubs/subs",
       "tag": "rclpy Node",
       "pos": [
-        420,
+        410,
         735
       ],
       "size": [
@@ -169,7 +169,7 @@
       "sublabel": "cmd_vel · scan · odom · tf · clock",
       "tag": "Isaac ROS Graph",
       "pos": [
-        70,
+        20,
         735
       ],
       "size": [
@@ -199,7 +199,7 @@
       "sublabel": "attached to isaac_amr_mission_bridge",
       "tag": "Python object",
       "pos": [
-        1040,
+        1060,
         735
       ],
       "size": [
@@ -280,7 +280,7 @@
       "label": "TOPIC /cmd_vel",
       "variant": "emphasis",
       "labelAt": [
-        250,
+        145,
         660
       ]
     },
@@ -298,7 +298,7 @@
       "label": "TOPICS equipment/status · process/event",
       "variant": "dashed",
       "labelAt": [
-        1121,
+        1110,
         486
       ]
     },
@@ -308,8 +308,8 @@
       "to": "mission",
       "label": "TOPIC /amr_a/p3020_arrival_confirm",
       "labelAt": [
-        536,
-        212
+        560,
+        320
       ]
     },
     {
@@ -350,20 +350,20 @@
       "toSide": "bottom",
       "via": [
         [
-          5,
+          -40,
           779
         ],
         [
-          5,
+          -40,
           250
         ],
         [
-          942.5,
+          1042,
           250
         ]
       ],
       "labelAt": [
-        500,
+        560,
         238
       ]
     },
@@ -374,7 +374,7 @@
       "label": "ACTION /navigate_to_pose",
       "variant": "emphasis",
       "labelAt": [
-        240,
+        410,
         486
       ]
     },
@@ -385,7 +385,7 @@
       "label": "ACTION /p3020/pick_place",
       "variant": "emphasis",
       "labelAt": [
-        510,
+        690,
         486
       ]
     },
@@ -395,7 +395,7 @@
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/pickup_command",
       "labelAt": [
-        392,
+        500,
         837
       ]
     },
@@ -433,7 +433,7 @@
       "label": "SERVICE locate_box",
       "variant": "emphasis",
       "labelAt": [
-        1065,
+        1195,
         486
       ]
     },
@@ -451,7 +451,7 @@
       "label": "agent method calls / actuation",
       "variant": "dashed",
       "labelAt": [
-        358,
+        310,
         837
       ]
     },
@@ -462,7 +462,7 @@
       "label": "shared Isaac rclpy runtime",
       "variant": "dashed",
       "labelAt": [
-        723,
+        680,
         837
       ]
     },
@@ -473,7 +473,7 @@
       "label": "same rclpy Node attachment",
       "variant": "dashed",
       "labelAt": [
-        757,
+        900,
         837
       ]
     }
