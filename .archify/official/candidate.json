@@ -5,9 +5,9 @@
     "title": "cobot3-ws-c2 — ROS 2 Node & Runtime Architecture",
     "subtitle": "Control Tower · MQTT · ROS 2 Jazzy · Nav2 · Isaac Sim 5.1",
     "output": ".archify/official/cobot3-runtime.architecture.html",
-    "quality_profile": "showcase",
+    "quality_profile": "standard",
     "viewBox": [
-      1110,
+      1240,
       1080
     ]
   },
@@ -18,7 +18,7 @@
       "label": "React Control Tower",
       "sublabel": "Dashboard · Manual",
       "pos": [
-        35.2,
+        40,
         50
       ],
       "size": [
@@ -32,7 +32,7 @@
       "label": "FastAPI Backend",
       "sublabel": "REST API · MQTT client",
       "pos": [
-        237.6,
+        270,
         50
       ],
       "size": [
@@ -46,7 +46,7 @@
       "label": "Mosquitto Broker",
       "sublabel": "MQTT :1883",
       "pos": [
-        440,
+        500,
         50
       ],
       "size": [
@@ -60,7 +60,7 @@
       "label": "PostgreSQL",
       "sublabel": "Mission · State · Pose",
       "pos": [
-        237.6,
+        270,
         155
       ],
       "size": [
@@ -75,7 +75,7 @@
       "sublabel": "Navigation",
       "tag": "ROS Node",
       "pos": [
-        35.2,
+        40,
         280
       ],
       "size": [
@@ -90,7 +90,7 @@
       "sublabel": "Manual control",
       "tag": "ROS Node",
       "pos": [
-        246.4,
+        280,
         280
       ],
       "size": [
@@ -105,7 +105,7 @@
       "sublabel": "Equipment/process",
       "tag": "ROS Node",
       "pos": [
-        475.2,
+        540,
         280
       ],
       "size": [
@@ -120,7 +120,7 @@
       "sublabel": "Pose restore/sync",
       "tag": "ROS Node",
       "pos": [
-        695.2,
+        790,
         280
       ],
       "size": [
@@ -134,7 +134,7 @@
       "label": "Nav2 / AMCL",
       "sublabel": "iw_hub_navigation",
       "pos": [
-        246.4,
+        280,
         500
       ],
       "size": [
@@ -148,7 +148,7 @@
       "label": "amr_p3020_mission",
       "sublabel": "Main Mission FSM",
       "pos": [
-        475.2,
+        540,
         500
       ],
       "size": [
@@ -162,7 +162,7 @@
       "label": "PickPlace Action Server",
       "sublabel": "Action ↔ String",
       "pos": [
-        704,
+        800,
         500
       ],
       "size": [
@@ -176,7 +176,7 @@
       "label": "P3020 Vision Nodes",
       "sublabel": "IN + OUT · YOLO ONNX",
       "pos": [
-        915.2,
+        1040,
         500
       ],
       "size": [
@@ -191,7 +191,7 @@
       "sublabel": "ROS 2 ↔ Isaac bridge",
       "tag": "rclpy Node",
       "pos": [
-        475.2,
+        540,
         790
       ],
       "size": [
@@ -206,7 +206,7 @@
       "sublabel": "Agents · equipment bridge",
       "tag": "Python objects",
       "pos": [
-        690,
+        820,
         790
       ],
       "size": [
@@ -220,7 +220,7 @@
       "label": "IW Hub AMR",
       "sublabel": "Simulated robot",
       "pos": [
-        955,
+        1085,
         792
       ],
       "size": [
@@ -234,7 +234,7 @@
       "label": "IW Hub ROS2 Graphs",
       "sublabel": "LiDAR · Odom · TF · cmd_vel",
       "pos": [
-        955,
+        1085,
         920
       ],
       "size": [
@@ -306,7 +306,7 @@
       "toSide": "top",
       "route": "straight",
       "labelAt": [
-        325.6,
+        370,
         137
       ]
     },
@@ -320,16 +320,16 @@
       "toSide": "top",
       "via": [
         [
-          506,
+          575,
           240
         ],
         [
-          101.2,
+          115,
           240
         ]
       ],
       "labelAt": [
-        303.6,
+        345,
         240
       ]
     },
@@ -369,24 +369,24 @@
       "fromSide": "bottom",
       "toSide": "top",
       "labelAt": [
-        895.8,
+        1018,
         650
       ],
       "via": [
         [
-          545.6,
+          620,
           400
         ],
         [
-          897.6,
+          1020,
           400
         ],
         [
-          897.6,
+          1020,
           740
         ],
         [
-          558.8,
+          635,
           740
         ]
       ]
@@ -425,24 +425,24 @@
       "toSide": "top",
       "via": [
         [
-          781,
+          887.5,
           700
         ],
         [
-          668.8,
+          760,
           700
         ],
         [
-          668.8,
+          760,
           740
         ],
         [
-          558.8,
+          635,
           740
         ]
       ],
       "labelAt": [
-        712.8,
+        810,
         688
       ]
     },
@@ -455,16 +455,16 @@
       "toSide": "bottom",
       "via": [
         [
-          558.8,
+          635,
           750
         ],
         [
-          983.4,
+          1117.5,
           750
         ]
       ],
       "labelAt": [
-        950.4,
+        1080,
         738
       ]
     },
@@ -485,7 +485,7 @@
       "toSide": "left",
       "route": "straight",
       "labelAt": [
-        917,
+        1042,
         815
       ]
     },
