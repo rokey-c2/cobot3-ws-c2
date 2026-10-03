@@ -25,8 +25,8 @@ for(const f of document.querySelectorAll('iframe')){
   const bytes=Uint8Array.from(atob(payloads[f.dataset.view]),c=>c.charCodeAt(0));
   f.srcdoc=new TextDecoder().decode(bytes);
   f.addEventListener('load',()=>{
-    const fit=()=>{try{const d=f.contentDocument;f.style.height=Math.max(900,d.documentElement.scrollHeight,d.body.scrollHeight)+'px'}catch(e){}};
-    fit();f.contentDocument?.fonts.ready.then(fit);window.addEventListener('resize',fit);
+    const fit=()=>{try{if(!f.getClientRects().length)return;const d=f.contentDocument;const h=Math.max(900,d.documentElement.scrollHeight,d.body.scrollHeight);if(Math.abs(f.getBoundingClientRect().height-h)>2)f.style.height=h+'px'}catch(e){}};
+    fit();f.contentDocument?.fonts.ready.then(fit);window.addEventListener('resize',fit);new ResizeObserver(fit).observe(f.contentDocument.body);
   });
 }
 function setMode(mode){

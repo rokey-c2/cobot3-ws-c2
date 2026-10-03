@@ -72,10 +72,11 @@ try {
   const states=[];
   for(const mode of ['system','ros','both']){
     await run(`document.querySelector('[data-mode="${mode}"]').click()`);
-    await run(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+    await run(`Promise.all([...document.querySelectorAll('iframe')].filter(f=>f.getClientRects().length).map(f=>f.contentWindow.Archify.readerLayout.whenStable()))`);
+    await run(`new Promise((resolve,reject)=>{const started=Date.now();function poll(){const visible=[...document.querySelectorAll('iframe')].filter(f=>f.getClientRects().length);if(visible.every(f=>f.getBoundingClientRect().height>=f.contentDocument.documentElement.scrollHeight))return resolve();if(Date.now()-started>15000)return reject(new Error('Combined frame sizing timeout'));requestAnimationFrame(poll)}requestAnimationFrame(poll)})`);
     const state=await run(`({mode:${JSON.stringify(mode)},panels:Object.fromEntries(['system','ros'].map(id=>[id,!document.getElementById(id).hidden])),frames:[...document.querySelectorAll('iframe')].map(f=>({view:f.dataset.view,nodes:f.contentDocument.querySelectorAll('[data-node-id]').length,hasArchify:!!f.contentWindow.Archify,scrollHeight:f.contentDocument.documentElement.scrollHeight,frameHeight:f.getBoundingClientRect().height})),active:[...document.querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.mode)})`);
     const expected={system:mode!=='ros',ros:mode!=='system'};
-    if(JSON.stringify(state.panels)!==JSON.stringify(expected)||state.active[0]!==mode||state.frames.some(f=>!f.hasArchify||!f.nodes||f.frameHeight<f.scrollHeight))throw new Error('Combined tab/frame validation failed '+JSON.stringify(state));
+    if(JSON.stringify(state.panels)!==JSON.stringify(expected)||state.active[0]!==mode||state.frames.some(f=>!f.hasArchify||!f.nodes||(state.panels[f.view]&&f.frameHeight<f.scrollHeight)))throw new Error('Combined tab/frame validation failed '+JSON.stringify(state));
     states.push(state);
     const shot=await send('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync('.archify/final-combined/combined-'+mode+'.desktop.png',Buffer.from(shot.data,'base64'));
