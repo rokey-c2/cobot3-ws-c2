@@ -27,6 +27,15 @@ jobs:
           set -o pipefail
           CLI="$(find /tmp/archify -path '*/bin/archify.mjs' | head -n 1)"
           node "$CLI" finalize architecture .archify/final-ros2/candidate.json .archify/final-ros2/cobot3-ros2-node-communication.architecture.html --quality standard --json | tee .archify/final-ros2/finalize-receipt.json
+      - name: Capture browser evidence and official SVG exports
+        shell: bash
+        run: |
+          set -o pipefail
+          CLI="$(find /tmp/archify -path '*/bin/archify.mjs' | head -n 1)"
+          ROOT="$(dirname "$(dirname "$CLI")")"
+          node "$CLI" visual-check .archify/final-system/cobot3-system.architecture.html --require-provenance --json > .archify/final-system/visual-check-receipt.json
+          node "$CLI" visual-check .archify/final-ros2/cobot3-ros2-node-communication.architecture.html --require-provenance --json > .archify/final-ros2/visual-check-receipt.json
+          node .archify/export-and-audit.mjs "$ROOT" .archify/final-system/cobot3-system.architecture.html .archify/final-ros2/cobot3-ros2-node-communication.architecture.html
       - name: Upload corrected architectures
         if: always()
         uses: actions/upload-artifact@v4
