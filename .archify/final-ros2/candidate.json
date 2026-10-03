@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "cobot3-ws-c2 — ROS 2 Node Communication Architecture",
-    "subtitle": "Active code paths @ cf7feac · ACTION/TOPIC = ROS 2 · PYTHON/OBJECT = in-process relation · * PickPlace: simulate_p3020=false · arrival_confirm: manual_delivery=true",
+    "subtitle": "Active code paths @ cf7feac · ROS Node vs Python object ownership explicit · * PickPlace: simulate_p3020=false · arrival_confirm: manual_delivery=true",
     "output": ".archify/final-ros2/cobot3-ros2-node-communication.architecture.html",
     "quality_profile": "standard"
   },
@@ -45,11 +45,11 @@
       "sublabel": "control_tower_process_mqtt_adapter",
       "tag": "ROS Node",
       "pos": [
-        1600,
+        1420,
         40
       ],
       "size": [
-        245,
+        230,
         82
       ]
     },
@@ -195,12 +195,12 @@
       "sublabel": "OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent",
       "tag": "2 Python objects",
       "pos": [
-        860,
+        850,
         520
       ],
       "size": [
         340,
-        100
+        96
       ]
     },
     {
@@ -210,12 +210,12 @@
       "sublabel": "P3020OutRosBridge + P3020UnloadToBinAgent",
       "tag": "2 Python objects",
       "pos": [
-        1230,
+        1210,
         520
       ],
       "size": [
         335,
-        100
+        96
       ]
     },
     {
@@ -225,12 +225,12 @@
       "sublabel": "attached to isaac_amr_mission_bridge",
       "tag": "Python object",
       "pos": [
-        1600,
+        1570,
         520
       ],
       "size": [
-        260,
-        92
+        250,
+        88
       ]
     },
     {
@@ -296,24 +296,8 @@
       "label": "ACTION /navigate_to_pose",
       "variant": "emphasis",
       "labelAt": [
-        210,
-        160
-      ],
-      "fromSide": "left",
-      "toSide": "top",
-      "via": [
-        [
-          275,
-          81
-        ],
-        [
-          150,
-          81
-        ],
-        [
-          150,
-          220
-        ]
+        268.725,
+        186
       ]
     },
     {
@@ -323,24 +307,8 @@
       "label": "TOPIC /cmd_vel (STOP)",
       "variant": "dashed",
       "labelAt": [
-        65,
-        335
-      ],
-      "fromSide": "left",
-      "toSide": "left",
-      "via": [
-        [
-          285,
-          100
-        ],
-        [
-          10,
-          100
-        ],
-        [
-          10,
-          564
-        ]
+        270,
+        440
       ]
     },
     {
@@ -348,46 +316,14 @@
       "from": "nav_adapter",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/lift_command",
-      "variant": "dashed",
-      "labelAt": [
-        330,
-        300
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          360,
-          155
-        ],
-        [
-          360,
-          450
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "lift-feedback",
       "from": "isaac_bridge",
       "to": "nav_adapter",
       "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
-      "variant": "dashed",
-      "labelAt": [
-        555,
-        300
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          520,
-          450
-        ],
-        [
-          520,
-          155
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "manual-cmdvel",
@@ -421,46 +357,14 @@
       "from": "process_adapter",
       "to": "process_runtime",
       "label": "TOPIC /controltower/equipment/command",
-      "variant": "dashed",
-      "labelAt": [
-        1620,
-        310
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          1660,
-          165
-        ],
-        [
-          1660,
-          450
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "process-feedback",
       "from": "process_runtime",
       "to": "process_adapter",
       "label": "TOPICS equipment/status · process/event",
-      "variant": "dashed",
-      "labelAt": [
-        1825,
-        310
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          1790,
-          450
-        ],
-        [
-          1790,
-          165
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "arrival-confirm",
@@ -472,7 +376,7 @@
       "toSide": "top",
       "via": [
         [
-          1722,
+          1535,
           180
         ],
         [
@@ -481,7 +385,7 @@
         ]
       ],
       "labelAt": [
-        1050,
+        980,
         165
       ]
     },
@@ -499,12 +403,12 @@
           205
         ],
         [
-          1722,
+          1535,
           205
         ]
       ],
       "labelAt": [
-        1050,
+        980,
         220
       ]
     },
@@ -526,12 +430,12 @@
           230
         ],
         [
-          1722,
+          1535,
           230
         ]
       ],
       "labelAt": [
-        980,
+        900,
         245
       ]
     },
@@ -545,24 +449,24 @@
       "toSide": "bottom",
       "via": [
         [
-          1030,
+          1020,
           455
         ],
         [
-          1565,
+          1400,
           455
         ],
         [
-          1565,
+          1400,
           245
         ],
         [
-          1722,
+          1535,
           245
         ]
       ],
       "labelAt": [
-        1300,
+        1210,
         440
       ]
     },
@@ -576,24 +480,24 @@
       "toSide": "bottom",
       "via": [
         [
-          1398,
+          1377.5,
           470
         ],
         [
-          1580,
+          1410,
           470
         ],
         [
-          1580,
+          1410,
           260
         ],
         [
-          1722,
+          1535,
           260
         ]
       ],
       "labelAt": [
-        1480,
+        1330,
         485
       ]
     },
@@ -602,54 +506,14 @@
       "from": "isaac_bridge",
       "to": "pose_sync",
       "label": "TOPICS /amr_a/map_pose · /amr_a/pose_source_session",
-      "variant": "dashed",
-      "labelAt": [
-        330,
-        445
-      ],
-      "fromSide": "left",
-      "toSide": "bottom",
-      "via": [
-        [
-          295,
-          564
-        ],
-        [
-          295,
-          430
-        ],
-        [
-          150,
-          430
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "restore-to-isaac",
       "from": "pose_sync",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/restore_pose",
-      "variant": "dashed",
-      "labelAt": [
-        235,
-        350
-      ],
-      "fromSide": "bottom",
-      "toSide": "left",
-      "via": [
-        [
-          205,
-          170
-        ],
-        [
-          260,
-          170
-        ],
-        [
-          260,
-          520
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "initialpose",
@@ -658,20 +522,8 @@
       "label": "TOPIC /initialpose",
       "variant": "emphasis",
       "labelAt": [
-        135,
-        190
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          105,
-          165
-        ],
-        [
-          105,
-          220
-        ]
+        142,
+        136
       ]
     },
     {
@@ -681,24 +533,8 @@
       "label": "TF input to composed lookup†",
       "variant": "dashed",
       "labelAt": [
-        95,
-        455
-      ],
-      "fromSide": "top",
-      "toSide": "left",
-      "via": [
-        [
-          220,
-          470
-        ],
-        [
-          15,
-          470
-        ],
-        [
-          15,
-          81
-        ]
+        216,
+        478
       ]
     },
     {
@@ -728,292 +564,84 @@
       "from": "mission",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/pickup_command",
-      "variant": "emphasis",
-      "labelAt": [
-        350,
-        440
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          390,
-          405
-        ],
-        [
-          390,
-          475
-        ]
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "pickup-feedback",
       "from": "isaac_bridge",
       "to": "mission",
       "label": "TOPIC /amr_a/pickup_state",
-      "variant": "dashed",
-      "labelAt": [
-        540,
-        440
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          500,
-          475
-        ],
-        [
-          500,
-          405
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "pickplace-command",
       "from": "pickplace",
       "to": "p3020_in",
       "label": "BRIDGE SUB /arm_a/pick_place_command",
-      "variant": "emphasis",
-      "labelAt": [
-        790,
-        390
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          675,
-          405
-        ],
-        [
-          920,
-          405
-        ],
-        [
-          920,
-          500
-        ]
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "pickplace-status",
       "from": "p3020_in",
       "to": "pickplace",
       "label": "BRIDGE PUB /arm_a/pick_place_status",
-      "variant": "dashed",
-      "labelAt": [
-        1000,
-        375
-      ],
-      "fromSide": "top",
-      "toSide": "right",
-      "via": [
-        [
-          1110,
-          500
-        ],
-        [
-          1110,
-          390
-        ],
-        [
-          830,
-          390
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "in-rgb",
       "from": "p3020_in",
       "to": "vision_in",
       "label": "BRIDGE PUB /arm_a/rgb",
-      "variant": "dashed",
-      "labelAt": [
-        930,
-        445
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          970,
-          470
-        ],
-        [
-          970,
-          400
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "in-preview",
       "from": "isaac_bridge",
       "to": "vision_in",
-      "label": "NODE PUB /arm_a/preview · created in main_mission",
-      "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "left",
-      "via": [
-        [
-          455,
-          485
-        ],
-        [
-          840,
-          485
-        ],
-        [
-          840,
-          313
-        ]
-      ],
-      "labelAt": [
-        690,
-        470
-      ]
+      "label": "NODE PUB /arm_a/preview · main_mission",
+      "variant": "dashed"
     },
     {
       "id": "in-detect",
       "from": "vision_in",
       "to": "p3020_in",
       "label": "BRIDGE SUB /box_pixel · /box_pixel/result",
-      "variant": "emphasis",
-      "labelAt": [
-        875,
-        430
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          925,
-          390
-        ],
-        [
-          925,
-          485
-        ]
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "in-validated",
       "from": "p3020_in",
       "to": "vision_in",
       "label": "BRIDGE PUB /box_pixel/validated",
-      "variant": "dashed",
-      "labelAt": [
-        1130,
-        430
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          1080,
-          485
-        ],
-        [
-          1080,
-          390
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "out-rgb",
       "from": "p3020_out",
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/rgb",
-      "variant": "dashed",
-      "labelAt": [
-        1300,
-        445
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          1340,
-          470
-        ],
-        [
-          1340,
-          400
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "out-preview",
       "from": "isaac_bridge",
       "to": "vision_out",
-      "label": "NODE PUB /arm_b/preview · created in main_mission",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "right",
-      "via": [
-        [
-          455,
-          645
-        ],
-        [
-          1510,
-          645
-        ],
-        [
-          1510,
-          313
-        ]
-      ],
-      "labelAt": [
-        1160,
-        630
-      ]
+      "label": "NODE PUB /arm_b/preview · main_mission",
+      "variant": "dashed"
     },
     {
       "id": "out-detect",
       "from": "vision_out",
       "to": "p3020_out",
       "label": "BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result",
-      "variant": "emphasis",
-      "labelAt": [
-        1230,
-        430
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          1280,
-          390
-        ],
-        [
-          1280,
-          485
-        ]
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "out-validated",
       "from": "p3020_out",
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/box_pixel/validated",
-      "variant": "dashed",
-      "labelAt": [
-        1515,
-        430
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          1460,
-          485
-        ],
-        [
-          1460,
-          390
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "bridge-agent",
@@ -1044,19 +672,19 @@
       "label": "OBJECT attachment: same rclpy Node",
       "variant": "dashed",
       "labelAt": [
-        1470,
-        730
+        1450,
+        700
       ],
       "fromSide": "bottom",
       "toSide": "bottom",
       "via": [
         [
           455,
-          745
+          710
         ],
         [
-          1730,
-          745
+          1695,
+          710
         ]
       ]
     },
@@ -1068,18 +696,18 @@
       "variant": "dashed",
       "labelAt": [
         805,
-        650
+        640
       ],
       "fromSide": "bottom",
       "toSide": "bottom",
       "via": [
         [
           455,
-          665
+          650
         ],
         [
-          1030,
-          665
+          1020,
+          650
         ]
       ]
     },
@@ -1090,19 +718,19 @@
       "label": "OBJECT P3020OutRosBridge attached to same rclpy Node",
       "variant": "dashed",
       "labelAt": [
-        1120,
-        690
+        1110,
+        670
       ],
       "fromSide": "bottom",
       "toSide": "bottom",
       "via": [
         [
           455,
-          705
+          680
         ],
         [
-          1398,
-          705
+          1377.5,
+          680
         ]
       ]
     },
@@ -1111,46 +739,14 @@
       "from": "nav2",
       "to": "iw_graph",
       "label": "velocity control (/cmd_vel)‡",
-      "variant": "emphasis",
-      "labelAt": [
-        65,
-        445
-      ],
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          95,
-          405
-        ],
-        [
-          95,
-          485
-        ]
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "graph-nav2",
       "from": "iw_graph",
       "to": "nav2",
       "label": "sensor · odom · TF · clock inputs‡",
-      "variant": "dashed",
-      "labelAt": [
-        245,
-        445
-      ],
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          205,
-          485
-        ],
-        [
-          205,
-          405
-        ]
-      ]
+      "variant": "dashed"
     },
     {
       "id": "graph-amr",
@@ -1159,41 +755,8 @@
       "label": "ROS graph I/O / actuation",
       "variant": "dashed",
       "labelAt": [
-        430,
-        785
-      ],
-      "via": [
-        [
-          270,
-          564
-        ],
-        [
-          270,
-          800
-        ],
-        [
-          620,
-          800
-        ]
-      ]
-    }
-  ],
-  "cards": [
-    {
-      "dot": "cyan",
-      "title": "ROS interface ownership",
-      "items": [
-        "AmrMissionBridge is the one independent rclpy Node inside main_mission.",
-        "OptimizedP3020RosBridge, P3020OutRosBridge and ProcessEquipmentBridge are Python objects that register ROS interfaces on that shared Node.",
-        "RGB publishers are managed by the P3020 ROS Bridge objects; preview publishers are created directly in main_mission.py on the shared Node."
-      ]
-    },
-    {
-      "dot": "emerald",
-      "title": "Simulation objects",
-      "items": [
-        "OptimizedP3020PickPlaceAgent, P3020UnloadToBinAgent and MissionIwHubAgent are separate simulation-control Python objects, not ROS Nodes.",
-        "OUT has no /arm_b/pick_place_command subscription; do not mirror the IN command/action path."
+        435,
+        721
       ]
     }
   ]
