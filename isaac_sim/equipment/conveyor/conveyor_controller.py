@@ -51,7 +51,7 @@ class ConveyorController:
         return graph_speeds
 
     def _enable_conveyor_nodes(self, graph_prim):
-        """Some plain ConveyorBeltGraph segments in Parcel_Sorting_Map ship
+        """Some plain ConveyorBeltGraph segments in parcel_sorting_map ship
         with their IsaacConveyor node's inputs:enabled left unauthored
         (defaults to disabled) -- Velocity alone does nothing if the node
         itself is off. Force it on for every IsaacConveyor node under this

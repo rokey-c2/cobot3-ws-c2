@@ -1,4 +1,4 @@
-"""Open the new Parcel_Sorting_Map with nothing else spawned.
+"""Open the new parcel_sorting_map with nothing else spawned.
 
 Purpose: let the user look around the bare map in the Isaac Sim viewport
 and (once rviz2/map_server are also up) in rviz2, to read off real-world
@@ -27,7 +27,7 @@ from isaacsim.core.utils.stage import open_stage
 
 
 ISAAC_SIM_DIR = Path(__file__).resolve().parent
-WORLD_USD = ISAAC_SIM_DIR / "usd" / "Final_Real_Map" / "Parcel_Sorting_Map.usd"
+WORLD_USD = ISAAC_SIM_DIR / "usd" / "parcel_sorting_map" / "parcel_sorting_map.usd"
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")

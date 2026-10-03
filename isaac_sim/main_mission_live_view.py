@@ -27,7 +27,7 @@ TOP_VIEW_PUBLISH_PERIOD_SEC = 0.10
 AMR_CAMERA_RIG_NAME = "front_stereo_camera"
 _UNUSED_CAMERA_RIG_NAMES = ("intel_realsense_r200_depth",)
 
-# The Final_Real_Map working area is centred slightly left/below world origin.
+# The parcel_sorting_map working area is centred slightly left/below world origin.
 # A 32 m high camera with this lens keeps the complete inbound -> sorter ->
 # outbound line visible while leaving a small border around the warehouse.
 TOP_VIEW_POSITION = Gf.Vec3d(-3.5, -2.0, 32.0)

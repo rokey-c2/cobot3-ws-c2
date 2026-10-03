@@ -2,7 +2,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/Final_Real_Map/navigation/maps/Final.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/parcel_sorting_map/navigation/maps/parcel_sorting_map.yaml"
 
 LOADED_FOOTPRINT="[[0.70, 0.55], [0.70, -0.55], [-0.80, -0.55], [-0.80, 0.55]]"
 
