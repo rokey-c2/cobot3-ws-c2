@@ -29,7 +29,7 @@ jobs:
           CLI="$(find /tmp/archify -path '*/bin/archify.mjs' | head -n 1)"
           test -n "$CLI"
           mkdir -p .archify/official
-          node "$CLI" finalize architecture             .archify/official/candidate.json             .archify/official/cobot3-runtime.architecture.html             --quality showcase             --json | tee .archify/official/finalize-receipt.json
+          node "$CLI" finalize architecture             .archify/official/candidate.json             .archify/official/cobot3-runtime.architecture.html             --quality standard             --json | tee .archify/official/finalize-receipt.json
 
       - name: Upload Archify result
         if: always()
