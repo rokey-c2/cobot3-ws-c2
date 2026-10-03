@@ -210,7 +210,7 @@
       "tag": "Python objects",
       "pos": [
         800,
-        818
+        820
       ],
       "size": [
         175,
@@ -334,21 +334,81 @@
       "from": "mqtt",
       "to": "mqtt_manual",
       "label": "manual cmd/state",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          590,
+          285
+        ],
+        [
+          215,
+          285
+        ],
+        [
+          215,
+          486
+        ]
+      ],
+      "labelAt": [
+        360,
+        273
+      ]
     },
     {
       "id": "mqtt-process",
       "from": "mqtt",
       "to": "mqtt_process",
       "label": "equipment/process",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          590,
+          270
+        ],
+        [
+          235,
+          270
+        ],
+        [
+          235,
+          596
+        ]
+      ],
+      "labelAt": [
+        380,
+        258
+      ]
     },
     {
       "id": "mqtt-pose",
       "from": "mqtt",
       "to": "pose_sync",
       "label": "pose/restore",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          590,
+          255
+        ],
+        [
+          255,
+          255
+        ],
+        [
+          255,
+          706
+        ]
+      ],
+      "labelAt": [
+        400,
+        243
+      ]
     },
     {
       "id": "adapter-nav",
@@ -412,10 +472,27 @@
       "label": "pickup/lift cmd",
       "fromSide": "bottom",
       "toSide": "top",
-      "route": "straight",
       "labelAt": [
-        675,
-        675
+        590,
+        670
+      ],
+      "via": [
+        [
+          640,
+          560
+        ],
+        [
+          625,
+          560
+        ],
+        [
+          625,
+          780
+        ],
+        [
+          640,
+          780
+        ]
       ]
     },
     {
@@ -425,10 +502,27 @@
       "label": "pickup/lift state",
       "fromSide": "top",
       "toSide": "bottom",
-      "route": "straight",
       "labelAt": [
-        610,
-        675
+        700,
+        670
+      ],
+      "via": [
+        [
+          640,
+          780
+        ],
+        [
+          655,
+          780
+        ],
+        [
+          655,
+          560
+        ],
+        [
+          640,
+          560
+        ]
       ]
     },
     {
@@ -444,7 +538,7 @@
           770
         ],
         [
-          650,
+          640,
           770
         ]
       ],
@@ -469,7 +563,7 @@
       "toSide": "left",
       "route": "straight",
       "labelAt": [
-        780,
+        765,
         807
       ]
     },
@@ -484,7 +578,7 @@
       "route": "straight",
       "labelAt": [
         1020,
-        805
+        807
       ]
     },
     {
