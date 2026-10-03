@@ -317,7 +317,31 @@
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/lift_command",
       "variant": "dashed",
-      "labelDy": 25
+      "labelDy": 25,
+      "fromSide": "bottom",
+      "toSide": "left",
+      "via": [
+        [
+          360,
+          150
+        ],
+        [
+          360,
+          430
+        ],
+        [
+          300,
+          430
+        ],
+        [
+          300,
+          560
+        ]
+      ],
+      "labelAt": [
+        330,
+        330
+      ]
     },
     {
       "id": "lift-feedback",
@@ -325,7 +349,31 @@
       "to": "nav_adapter",
       "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
       "variant": "dashed",
-      "labelDy": 75
+      "labelDy": 75,
+      "fromSide": "left",
+      "toSide": "bottom",
+      "via": [
+        [
+          310,
+          580
+        ],
+        [
+          270,
+          580
+        ],
+        [
+          270,
+          150
+        ],
+        [
+          430,
+          150
+        ]
+      ],
+      "labelAt": [
+        210,
+        365
+      ]
     },
     {
       "id": "manual-cmdvel",
@@ -607,28 +655,124 @@
       "from": "mission",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/pickup_command",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          390,
+          380
+        ],
+        [
+          390,
+          470
+        ],
+        [
+          430,
+          470
+        ],
+        [
+          430,
+          520
+        ]
+      ],
+      "labelAt": [
+        345,
+        445
+      ]
     },
     {
       "id": "pickup-feedback",
       "from": "isaac_bridge",
       "to": "mission",
       "label": "TOPIC /amr_a/pickup_state",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          500,
+          520
+        ],
+        [
+          500,
+          455
+        ],
+        [
+          465,
+          455
+        ],
+        [
+          465,
+          356
+        ]
+      ],
+      "labelAt": [
+        535,
+        445
+      ]
     },
     {
       "id": "pickplace-command",
       "from": "pickplace",
       "to": "p3020_in",
       "label": "BRIDGE SUB /arm_a/pick_place_command",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          690,
+          380
+        ],
+        [
+          690,
+          450
+        ],
+        [
+          930,
+          450
+        ],
+        [
+          930,
+          520
+        ]
+      ],
+      "labelAt": [
+        790,
+        435
+      ]
     },
     {
       "id": "pickplace-status",
       "from": "p3020_in",
       "to": "pickplace",
       "label": "BRIDGE PUB /arm_a/pick_place_status",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          1040,
+          520
+        ],
+        [
+          1040,
+          425
+        ],
+        [
+          760,
+          425
+        ],
+        [
+          760,
+          356
+        ]
+      ],
+      "labelAt": [
+        905,
+        410
+      ]
     },
     {
       "id": "in-rgb",
@@ -636,56 +780,248 @@
       "to": "vision_in",
       "label": "BRIDGE PUB /arm_a/rgb",
       "variant": "dashed",
-      "labelDy": 25
+      "labelDy": 25,
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          960,
+          520
+        ],
+        [
+          960,
+          470
+        ],
+        [
+          1005,
+          470
+        ],
+        [
+          1005,
+          356
+        ]
+      ],
+      "labelAt": [
+        940,
+        455
+      ]
     },
     {
       "id": "in-preview",
       "from": "isaac_bridge",
       "to": "vision_in",
       "label": "NODE PUB /arm_a/preview · main_mission",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left",
+      "via": [
+        [
+          520,
+          520
+        ],
+        [
+          520,
+          400
+        ],
+        [
+          860,
+          400
+        ],
+        [
+          860,
+          313
+        ]
+      ],
+      "labelAt": [
+        680,
+        385
+      ]
     },
     {
       "id": "in-detect",
       "from": "vision_in",
       "to": "p3020_in",
       "label": "BRIDGE SUB /box_pixel · /box_pixel/result",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          1040,
+          356
+        ],
+        [
+          1040,
+          440
+        ],
+        [
+          1080,
+          440
+        ],
+        [
+          1080,
+          520
+        ]
+      ],
+      "labelAt": [
+        1110,
+        435
+      ]
     },
     {
       "id": "in-validated",
       "from": "p3020_in",
       "to": "vision_in",
       "label": "BRIDGE PUB /box_pixel/validated",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          1125,
+          520
+        ],
+        [
+          1125,
+          465
+        ],
+        [
+          1100,
+          465
+        ],
+        [
+          1100,
+          356
+        ]
+      ],
+      "labelAt": [
+        1160,
+        475
+      ]
     },
     {
       "id": "out-rgb",
       "from": "p3020_out",
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/rgb",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          1280,
+          520
+        ],
+        [
+          1280,
+          455
+        ],
+        [
+          1275,
+          455
+        ],
+        [
+          1275,
+          356
+        ]
+      ],
+      "labelAt": [
+        1230,
+        440
+      ]
     },
     {
       "id": "out-preview",
       "from": "isaac_bridge",
       "to": "vision_out",
       "label": "NODE PUB /arm_b/preview · main_mission",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left",
+      "via": [
+        [
+          550,
+          520
+        ],
+        [
+          550,
+          390
+        ],
+        [
+          1130,
+          390
+        ],
+        [
+          1130,
+          313
+        ]
+      ],
+      "labelAt": [
+        850,
+        375
+      ]
     },
     {
       "id": "out-detect",
       "from": "vision_out",
       "to": "p3020_out",
       "label": "BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          1320,
+          356
+        ],
+        [
+          1320,
+          430
+        ],
+        [
+          1360,
+          430
+        ],
+        [
+          1360,
+          520
+        ]
+      ],
+      "labelAt": [
+        1405,
+        415
+      ]
     },
     {
       "id": "out-validated",
       "from": "p3020_out",
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/box_pixel/validated",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          1440,
+          520
+        ],
+        [
+          1440,
+          465
+        ],
+        [
+          1380,
+          465
+        ],
+        [
+          1380,
+          356
+        ]
+      ],
+      "labelAt": [
+        1450,
+        480
+      ]
     },
     {
       "id": "bridge-agent",
@@ -783,14 +1119,62 @@
       "from": "nav2",
       "to": "iw_graph",
       "label": "velocity control (/cmd_vel)‡",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          100,
+          390
+        ],
+        [
+          100,
+          455
+        ],
+        [
+          95,
+          455
+        ],
+        [
+          95,
+          520
+        ]
+      ],
+      "labelAt": [
+        55,
+        445
+      ]
     },
     {
       "id": "graph-nav2",
       "from": "iw_graph",
       "to": "nav2",
       "label": "sensor · odom · TF · clock inputs‡",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          205,
+          520
+        ],
+        [
+          205,
+          430
+        ],
+        [
+          200,
+          430
+        ],
+        [
+          200,
+          356
+        ]
+      ],
+      "labelAt": [
+        245,
+        445
+      ]
     },
     {
       "id": "graph-amr",
@@ -801,6 +1185,17 @@
       "labelAt": [
         435,
         721
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "ROS interface ownership",
+      "items": [
+        "AmrMissionBridge is the independent rclpy Node. P3020 ROS Bridge objects and ProcessEquipmentBridge register interfaces on that shared Node.",
+        "RGB publishers are created by the P3020 ROS Bridge objects. /arm_a/preview and /arm_b/preview publishers are created in main_mission.py on the shared AmrMissionBridge Node.",
+        "P3020 PickPlace/Unload agents are simulation-control Python objects, not ROS nodes."
       ]
     }
   ]
