@@ -668,7 +668,10 @@
       "to": "vision_in",
       "label": "BRIDGE PUB /arm_a/rgb",
       "variant": "dashed",
-      "labelDy": 28
+      "labelAt": [
+        1030,
+        470
+      ]
     },
     {
       "id": "in-preview",
@@ -677,8 +680,8 @@
       "label": "NODE PUB /arm_a/preview · main_mission",
       "variant": "dashed",
       "labelAt": [
-        700,
-        390
+        790,
+        410
       ]
     },
     {
@@ -707,8 +710,8 @@
       "label": "BRIDGE PUB /arm_b/rgb",
       "variant": "dashed",
       "labelAt": [
-        1240,
-        470
+        1215,
+        500
       ]
     },
     {
@@ -718,8 +721,8 @@
       "label": "NODE PUB /arm_b/preview · main_mission",
       "variant": "dashed",
       "labelAt": [
-        1190,
-        390
+        1215,
+        365
       ]
     },
     {
@@ -728,7 +731,10 @@
       "to": "p3020_out",
       "label": "BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result",
       "variant": "emphasis",
-      "labelDy": -18
+      "labelAt": [
+        1370,
+        395
+      ]
     },
     {
       "id": "out-validated",
