@@ -109,7 +109,7 @@
       "sublabel": "p3020_pick_place_action_server",
       "tag": "ROS Node",
       "pos": [
-        760,
+        780,
         390
       ],
       "size": [
@@ -124,7 +124,7 @@
       "sublabel": "LocateBox client → Point topic",
       "tag": "ROS Node",
       "pos": [
-        1010,
+        1040,
         390
       ],
       "size": [
@@ -139,7 +139,7 @@
       "sublabel": "YOLO + depth 3D",
       "tag": "ROS Node",
       "pos": [
-        1260,
+        1280,
         390
       ],
       "size": [
@@ -184,7 +184,7 @@
       "sublabel": "PickPlace agent + ROS bridge",
       "tag": "Isaac Python",
       "pos": [
-        760,
+        780,
         735
       ],
       "size": [
@@ -199,7 +199,7 @@
       "sublabel": "attached to isaac_amr_mission_bridge",
       "tag": "Python object",
       "pos": [
-        1060,
+        1080,
         735
       ],
       "size": [
@@ -298,7 +298,7 @@
       "label": "TOPICS equipment/status · process/event",
       "variant": "dashed",
       "labelAt": [
-        1110,
+        1130,
         486
       ]
     },
@@ -324,14 +324,58 @@
       "from": "isaac_bridge",
       "to": "pose_sync",
       "label": "TOPICS map_pose · pose_source_session",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [
+        [
+          720,
+          779
+        ],
+        [
+          720,
+          620
+        ],
+        [
+          1042.5,
+          620
+        ],
+        [
+          1042.5,
+          250
+        ]
+      ],
+      "labelAt": [
+        875,
+        608
+      ]
     },
     {
       "id": "restore-to-isaac",
       "from": "pose_sync",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/restore_pose",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          1480,
+          159
+        ],
+        [
+          1480,
+          650
+        ],
+        [
+          542.5,
+          650
+        ]
+      ],
+      "labelAt": [
+        1230,
+        638
+      ]
     },
     {
       "id": "initialpose",
@@ -358,7 +402,7 @@
           250
         ],
         [
-          1042,
+          1042.5,
           250
         ]
       ],
@@ -385,7 +429,7 @@
       "label": "ACTION /p3020/pick_place",
       "variant": "emphasis",
       "labelAt": [
-        690,
+        750,
         486
       ]
     },
@@ -410,7 +454,11 @@
       "id": "pickplace-command",
       "from": "pickplace",
       "to": "p3020_runtime",
-      "label": "TOPIC /arm_a/pick_place_command"
+      "label": "TOPIC /arm_a/pick_place_command",
+      "labelAt": [
+        891,
+        486
+      ]
     },
     {
       "id": "pickplace-status",
@@ -433,7 +481,7 @@
       "label": "SERVICE locate_box",
       "variant": "emphasis",
       "labelAt": [
-        1195,
+        1225,
         486
       ]
     },
