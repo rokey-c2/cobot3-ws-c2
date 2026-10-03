@@ -307,7 +307,7 @@
       "label": "TOPIC /cmd_vel (STOP)",
       "variant": "dashed",
       "labelAt": [
-        270,
+        365,
         440
       ]
     },
@@ -325,7 +325,10 @@
       "to": "nav_adapter",
       "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
       "variant": "dashed",
-      "labelDy": 78
+      "labelAt": [
+        340,
+        500
+      ]
     },
     {
       "id": "manual-cmdvel",
@@ -500,8 +503,8 @@
         ]
       ],
       "labelAt": [
-        1330,
-        485
+        1355,
+        500
       ]
     },
     {
@@ -558,8 +561,8 @@
         ]
       ],
       "labelAt": [
-        385,
-        462
+        175,
+        470
       ]
     },
     {
@@ -612,7 +615,10 @@
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/pickup_command",
       "variant": "emphasis",
-      "labelDy": -18
+      "labelAt": [
+        390,
+        425
+      ]
     },
     {
       "id": "pickup-feedback",
@@ -620,7 +626,10 @@
       "to": "mission",
       "label": "TOPIC /amr_a/pickup_state",
       "variant": "dashed",
-      "labelDy": 22
+      "labelAt": [
+        520,
+        455
+      ]
     },
     {
       "id": "pickplace-command",
@@ -651,7 +660,11 @@
       "from": "isaac_bridge",
       "to": "vision_in",
       "label": "NODE PUB /arm_a/preview · main_mission",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        770,
+        395
+      ]
     },
     {
       "id": "in-detect",
@@ -682,7 +695,11 @@
       "from": "isaac_bridge",
       "to": "vision_out",
       "label": "NODE PUB /arm_b/preview · main_mission",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        1120,
+        395
+      ]
     },
     {
       "id": "out-detect",
@@ -698,7 +715,10 @@
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/box_pixel/validated",
       "variant": "dashed",
-      "labelDy": 22
+      "labelAt": [
+        1445,
+        405
+      ]
     },
     {
       "id": "bridge-agent",
