@@ -316,14 +316,16 @@
       "from": "nav_adapter",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/lift_command",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelDy": -80
     },
     {
       "id": "lift-feedback",
       "from": "isaac_bridge",
       "to": "nav_adapter",
       "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelDy": 45
     },
     {
       "id": "manual-cmdvel",
@@ -506,14 +508,58 @@
       "from": "isaac_bridge",
       "to": "pose_sync",
       "label": "TOPICS /amr_a/map_pose · /amr_a/pose_source_session",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left",
+      "via": [
+        [
+          455,
+          490
+        ],
+        [
+          -10,
+          490
+        ],
+        [
+          -10,
+          81
+        ],
+        [
+          20,
+          81
+        ]
+      ],
+      "labelAt": [
+        155,
+        450
+      ]
     },
     {
       "id": "restore-to-isaac",
       "from": "pose_sync",
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/restore_pose",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "top",
+      "via": [
+        [
+          10,
+          81
+        ],
+        [
+          10,
+          480
+        ],
+        [
+          455,
+          480
+        ]
+      ],
+      "labelAt": [
+        385,
+        462
+      ]
     },
     {
       "id": "initialpose",
@@ -592,7 +638,8 @@
       "from": "p3020_in",
       "to": "vision_in",
       "label": "BRIDGE PUB /arm_a/rgb",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelDy": 25
     },
     {
       "id": "in-preview",
