@@ -189,14 +189,14 @@ P3020 IN·OUT의 RGB/Depth 카메라와 YOLO 결과를 이용해 Pick & Place �
 
 # 1. 시스템 설계
 
-> **[Archify 아키텍쳐 뷰어 열기](https://majestic-chimera-5d5974.netlify.app/)** — 시스템 아키텍쳐, ROS 2 통신 아키텍쳐, 플로우차트, ERD를 로그인 없이 확인할 수 있습니다. 아래 그림을 클릭하면 뷰어로 이동하며, 메뉴에서 각 다이어그램을 선택해 검색·경로 탐색·확대 및 내보내기를 사용할 수 있습니다.
+> **[Archify 아키텍쳐 뷰어 열기](https://cobot3-ws-c2-architectures.netlify.app/)** — 시스템 아키텍쳐, ROS 2 통신 아키텍쳐, 플로우차트, ERD를 로그인 없이 확인할 수 있습니다. 아래 그림을 클릭하면 뷰어로 이동하며, 메뉴에서 각 다이어그램을 선택해 검색·경로 탐색·확대 및 내보내기를 사용할 수 있습니다.
 
 ## 시스템 아키텍쳐 · System Architecture
 
 React Control Tower부터 FastAPI·PostgreSQL·MQTT, Host ROS 2, Isaac Sim까지 전체 구성 요소와 연결을 보여줍니다. Web / Host ROS 2 / Isaac Sim은 논리적 실행 영역이며, 물리 PC 세 대를 의미하지 않습니다.
 
 <p align="center">
-  <a href="https://majestic-chimera-5d5974.netlify.app/">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
     <img src="docs/architecture/diagrams/system-architecture.svg" width="900" alt="시스템 아키텍쳐 — Control Tower, MQTT, Host ROS 2 및 Isaac Sim 구성과 연결">
   </a>
 </p>
@@ -213,7 +213,7 @@ React Control Tower부터 FastAPI·PostgreSQL·MQTT, Host ROS 2, Isaac Sim까지
 ROS 2 노드 사이의 토픽·액션과 Isaac Sim 프로세스 내부 연결을 구분합니다. 명령·피드백 방향, Nav2·Lift·Vision·P3020·MQTT Adapter의 연결을 확인할 수 있습니다.
 
 <p align="center">
-  <a href="https://majestic-chimera-5d5974.netlify.app/">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
     <img src="docs/architecture/diagrams/ros2-communication-architecture.svg" width="900" alt="ROS 2 통신 아키텍쳐 — 노드별 토픽, 액션, 명령 및 피드백 연결">
   </a>
 </p>
@@ -223,7 +223,7 @@ ROS 2 노드 사이의 토픽·액션과 Isaac Sim 프로세스 내부 연결을
 장비·상태·명령, 구역, Mission·진행 단계, 택배·처리 이력을 저장하는 **8개 테이블과 7개 관계**입니다. 컬럼과 PK·FK·UK, 관계의 수를 함께 표시합니다.
 
 <p align="center">
-  <a href="https://majestic-chimera-5d5974.netlify.app/">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
     <img src="docs/architecture/diagrams/erd.svg" width="900" alt="물류 관제 ERD — 8개 테이블의 컬럼, PK, FK, UK 및 관계">
   </a>
 </p>
@@ -235,7 +235,7 @@ ROS 2 노드 사이의 토픽·액션과 Isaac Sim 프로세스 내부 연결을
 AMR 운반 → P3020 IN 작업 → Conveyor·Sorter 분류 / AMR 복귀 순서로 공정을 보여줍니다. **START는 맨 위, END는 맨 아래**에 배치했으며, 대기·오류·Reject Bin 분기와 분류 / AMR 복귀의 병렬 흐름을 포함합니다.
 
 <p align="center">
-  <a href="https://majestic-chimera-5d5974.netlify.app/">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
     <img src="docs/architecture/diagrams/process-flowchart.svg" width="760" alt="전체 공정 플로우차트 — START부터 운반, IN 작업, 분류 및 AMR 복귀 후 END까지">
   </a>
 </p>
@@ -248,7 +248,7 @@ AMR 운반 → P3020 IN 작업 → Conveyor·Sorter 분류 / AMR 복귀 순서�
 - **오류 분기**: Nav2 실패, 비전 응답 오류, `DONE_FAIL`은 `MISSION ERROR`로 연결됩니다. Reject Bin에 빈 Slot이 없으면 `BIN_FULL`로 분기합니다.
 - **실행 조건**: PickPlace Action을 사용하는 `simulate_p3020=false` 기준입니다.
 
-[전체 다이어그램을 Archify 뷰어에서 살펴보기](https://majestic-chimera-5d5974.netlify.app/)
+[전체 다이어그램을 Archify 뷰어에서 살펴보기](https://cobot3-ws-c2-architectures.netlify.app/)
 
 ---
 
