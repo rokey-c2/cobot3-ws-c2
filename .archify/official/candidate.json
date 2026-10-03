@@ -7,7 +7,7 @@
     "output": ".archify/official/cobot3-runtime.architecture.html",
     "quality_profile": "showcase",
     "viewBox": [
-      1220,
+      1240,
       1120
     ]
   },
@@ -94,7 +94,7 @@
         450
       ],
       "size": [
-        150,
+        165,
         72
       ]
     },
@@ -209,11 +209,11 @@
       "sublabel": "Agents · Equipment Bridge",
       "tag": "Python objects",
       "pos": [
-        850,
+        820,
         820
       ],
       "size": [
-        170,
+        150,
         80
       ]
     },
@@ -223,11 +223,11 @@
       "label": "IW Hub AMR",
       "sublabel": "Simulated robot object",
       "pos": [
-        1060,
+        1065,
         820
       ],
       "size": [
-        140,
+        120,
         76
       ]
     },
@@ -237,11 +237,11 @@
       "label": "IW Hub ROS2 Graphs",
       "sublabel": "LiDAR · Odom · TF · cmd_vel",
       "pos": [
-        1060,
+        1065,
         950
       ],
       "size": [
-        140,
+        120,
         80
       ]
     }
@@ -311,7 +311,23 @@
       "from": "mqtt",
       "to": "mqtt_nav",
       "label": "nav cmd/state",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          590,
+          300
+        ],
+        [
+          115,
+          300
+        ]
+      ],
+      "labelAt": [
+        340,
+        288
+      ]
     },
     {
       "id": "mqtt-manual",
@@ -377,7 +393,14 @@
       "id": "mission-bridge",
       "from": "mission",
       "to": "bridge",
-      "label": "pickup/lift cmd"
+      "label": "pickup/lift cmd",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        675,
+        675
+      ]
     },
     {
       "id": "bridge-mission",
@@ -389,7 +412,23 @@
       "id": "action-bridge",
       "from": "action",
       "to": "bridge",
-      "label": "String command/status"
+      "label": "String command/status",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          935,
+          770
+        ],
+        [
+          650,
+          770
+        ]
+      ],
+      "labelAt": [
+        800,
+        758
+      ]
     },
     {
       "id": "bridge-vision",
@@ -402,14 +441,28 @@
       "from": "bridge",
       "to": "internal",
       "label": "Python API",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight",
+      "labelAt": [
+        780,
+        807
+      ]
     },
     {
       "id": "internal-amr",
       "from": "internal",
       "to": "amr",
       "label": "method calls",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight",
+      "labelAt": [
+        1017,
+        807
+      ]
     },
     {
       "id": "nav-sensor",
@@ -428,7 +481,14 @@
       "id": "sensor-amr",
       "from": "sensor",
       "to": "amr",
-      "label": "sensor / actuation"
+      "label": "sensor / actuation",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "straight",
+      "labelAt": [
+        1125,
+        925
+      ]
     }
   ],
   "cards": [
