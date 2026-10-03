@@ -169,7 +169,7 @@ source ros2_ws/install/setup.bash
 source .venv/bin/activate
 export ROS_DOMAIN_ID=110 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 python3 ros2_ws/install/vision_node/lib/vision_node/locate_box_node --ros-args \
-  -p model_path:=$(pwd)/isaac_sim/robots/p3020/vision/models/best.onnx
+  -p model_path:=$(pwd)/models/parcel_box_yolo_model/best.onnx
 
 # 터미널 3: 서비스 호출
 source /opt/ros/jazzy/setup.bash
