@@ -7,8 +7,8 @@
     "output": ".archify/official/cobot3-runtime.architecture.html",
     "quality_profile": "standard",
     "viewBox": [
-      1240,
-      1080
+      1440,
+      1100
     ]
   },
   "components": [
@@ -22,8 +22,8 @@
         50
       ],
       "size": [
-        150,
-        66
+        160,
+        68
       ]
     },
     {
@@ -36,8 +36,8 @@
         50
       ],
       "size": [
-        150,
-        66
+        170,
+        68
       ]
     },
     {
@@ -50,8 +50,8 @@
         50
       ],
       "size": [
-        150,
-        66
+        170,
+        68
       ]
     },
     {
@@ -61,11 +61,11 @@
       "sublabel": "Mission · State · Pose",
       "pos": [
         270,
-        155
+        160
       ],
       "size": [
-        150,
-        66
+        170,
+        68
       ]
     },
     {
@@ -79,8 +79,8 @@
         280
       ],
       "size": [
-        150,
-        70
+        170,
+        72
       ]
     },
     {
@@ -94,8 +94,8 @@
         280
       ],
       "size": [
-        170,
-        70
+        200,
+        72
       ]
     },
     {
@@ -105,12 +105,12 @@
       "sublabel": "Equipment/process",
       "tag": "ROS Node",
       "pos": [
-        540,
+        670,
         280
       ],
       "size": [
-        160,
-        70
+        180,
+        72
       ]
     },
     {
@@ -120,12 +120,12 @@
       "sublabel": "Pose restore/sync",
       "tag": "ROS Node",
       "pos": [
-        790,
+        1030,
         280
       ],
       "size": [
-        150,
-        70
+        170,
+        72
       ]
     },
     {
@@ -138,8 +138,8 @@
         500
       ],
       "size": [
-        150,
-        72
+        170,
+        74
       ]
     },
     {
@@ -152,8 +152,8 @@
         500
       ],
       "size": [
-        160,
-        72
+        180,
+        74
       ]
     },
     {
@@ -162,12 +162,12 @@
       "label": "PickPlace Action Server",
       "sublabel": "Action ↔ String",
       "pos": [
-        800,
+        820,
         500
       ],
       "size": [
-        175,
-        72
+        200,
+        74
       ]
     },
     {
@@ -176,12 +176,12 @@
       "label": "P3020 Vision Nodes",
       "sublabel": "IN + OUT · YOLO ONNX",
       "pos": [
-        1040,
+        1100,
         500
       ],
       "size": [
-        155,
-        72
+        180,
+        74
       ]
     },
     {
@@ -191,12 +191,12 @@
       "sublabel": "ROS 2 ↔ Isaac bridge",
       "tag": "rclpy Node",
       "pos": [
-        540,
+        655,
         790
       ],
       "size": [
-        190,
-        76
+        210,
+        78
       ]
     },
     {
@@ -206,12 +206,12 @@
       "sublabel": "Agents · equipment bridge",
       "tag": "Python objects",
       "pos": [
-        820,
+        930,
         790
       ],
       "size": [
-        180,
-        76
+        210,
+        78
       ]
     },
     {
@@ -220,12 +220,12 @@
       "label": "IW Hub AMR",
       "sublabel": "Simulated robot",
       "pos": [
-        1085,
+        1200,
         792
       ],
       "size": [
-        125,
-        72
+        160,
+        74
       ]
     },
     {
@@ -234,12 +234,12 @@
       "label": "IW Hub ROS2 Graphs",
       "sublabel": "LiDAR · Odom · TF · cmd_vel",
       "pos": [
-        1085,
+        1200,
         920
       ],
       "size": [
-        125,
-        76
+        160,
+        78
       ]
     }
   ],
@@ -320,16 +320,16 @@
       "toSide": "top",
       "via": [
         [
-          575,
+          585,
           240
         ],
         [
-          115,
+          125,
           240
         ]
       ],
       "labelAt": [
-        345,
+        350,
         240
       ]
     },
@@ -338,21 +338,69 @@
       "from": "mqtt",
       "to": "mqtt_manual",
       "label": "manual",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          585,
+          240
+        ],
+        [
+          380,
+          240
+        ]
+      ],
+      "labelAt": [
+        480,
+        240
+      ]
     },
     {
       "id": "mqtt-process",
       "from": "mqtt",
       "to": "mqtt_process",
       "label": "process",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          585,
+          240
+        ],
+        [
+          760,
+          240
+        ]
+      ],
+      "labelAt": [
+        665,
+        240
+      ]
     },
     {
       "id": "mqtt-pose",
       "from": "mqtt",
       "to": "pose_sync",
       "label": "pose",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          585,
+          240
+        ],
+        [
+          1115,
+          240
+        ]
+      ],
+      "labelAt": [
+        845,
+        240
+      ]
     },
     {
       "id": "adapter-nav",
@@ -368,27 +416,10 @@
       "label": "equipment/process",
       "fromSide": "bottom",
       "toSide": "top",
+      "route": "straight",
       "labelAt": [
-        1018,
-        650
-      ],
-      "via": [
-        [
-          620,
-          400
-        ],
-        [
-          1020,
-          400
-        ],
-        [
-          1020,
-          740
-        ],
-        [
-          635,
-          740
-        ]
+        790,
+        570
       ]
     },
     {
@@ -397,6 +428,9 @@
       "to": "nav",
       "label": "/navigate_to_pose",
       "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "right",
+      "route": "straight",
       "labelDy": -18
     },
     {
@@ -415,21 +449,21 @@
       "from": "mission",
       "to": "bridge",
       "label": "pickup/lift control",
-      "labelAt": [
-        620,
-        586
-      ],
       "fromSide": "bottom",
-      "toSide": "top",
+      "toSide": "left",
       "via": [
         [
-          620,
-          700
+          630,
+          690
         ],
         [
-          635,
-          700
+          630,
+          829
         ]
+      ],
+      "labelAt": [
+        595,
+        680
       ]
     },
     {
@@ -441,24 +475,16 @@
       "toSide": "top",
       "via": [
         [
-          887.5,
+          920,
           700
         ],
         [
           760,
           700
-        ],
-        [
-          760,
-          740
-        ],
-        [
-          635,
-          740
         ]
       ],
       "labelAt": [
-        810,
+        840,
         688
       ]
     },
@@ -467,21 +493,25 @@
       "from": "bridge",
       "to": "vision",
       "label": "RGB / detection",
-      "fromSide": "top",
+      "fromSide": "right",
       "toSide": "bottom",
       "via": [
         [
-          635,
-          750
+          1010,
+          829
         ],
         [
-          1117.5,
-          750
+          1010,
+          740
+        ],
+        [
+          1190,
+          740
         ]
       ],
       "labelAt": [
-        1080,
-        738
+        1095,
+        728
       ]
     },
     {
@@ -489,7 +519,10 @@
       "from": "bridge",
       "to": "internal",
       "label": "Python API",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight"
     },
     {
       "id": "internal-amr",
@@ -501,8 +534,8 @@
       "toSide": "left",
       "route": "straight",
       "labelAt": [
-        1042,
-        815
+        1168,
+        817
       ]
     },
     {
@@ -510,13 +543,40 @@
       "from": "nav",
       "to": "sensor",
       "label": "/cmd_vel",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "via": [
+        [
+          365,
+          640
+        ],
+        [
+          1120,
+          640
+        ],
+        [
+          1120,
+          959
+        ]
+      ],
+      "labelAt": [
+        760,
+        628
+      ]
     },
     {
       "id": "sensor-amr",
       "from": "sensor",
       "to": "amr",
-      "label": "sensor / actuation"
+      "label": "sensor / actuation",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "straight",
+      "labelAt": [
+        1335,
+        892
+      ]
     }
   ],
   "cards": [
