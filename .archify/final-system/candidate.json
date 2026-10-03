@@ -630,7 +630,7 @@
       "id": "lift-feedback",
       "from": "bridge",
       "to": "mqtt_nav",
-      "label": "TOPICS /amr_a/lift_state · /lift_result",
+      "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
       "variant": "dashed",
       "fromSide": "left",
       "toSide": "left",
@@ -661,7 +661,7 @@
       "id": "equipment-command",
       "from": "mqtt_process",
       "to": "bridge",
-      "label": "TOPIC equipment command",
+      "label": "TOPIC /controltower/equipment/command",
       "variant": "dashed",
       "fromSide": "bottom",
       "toSide": "top",
@@ -692,7 +692,7 @@
       "id": "process-feedback",
       "from": "bridge",
       "to": "mqtt_process",
-      "label": "TOPICS status · process events",
+      "label": "TOPICS /controltower/equipment/status · /controltower/process/event",
       "variant": "dashed",
       "fromSide": "top",
       "toSide": "bottom",
@@ -723,7 +723,7 @@
       "id": "arrival-confirm",
       "from": "mqtt_process",
       "to": "mission",
-      "label": "TOPIC arrival_confirm*",
+      "label": "TOPIC /amr_a/p3020_arrival_confirm*",
       "variant": "dashed",
       "fromSide": "bottom",
       "toSide": "top",
@@ -754,7 +754,7 @@
       "id": "mission-state",
       "from": "mission",
       "to": "mqtt_process",
-      "label": "TOPIC mission_state",
+      "label": "TOPIC /amr_a/mission_state",
       "variant": "dashed",
       "fromSide": "top",
       "toSide": "bottom",
@@ -820,7 +820,7 @@
       "id": "canonical-pose",
       "from": "bridge",
       "to": "pose_sync",
-      "label": "TOPICS map_pose · pose_source_session",
+      "label": "TOPICS /amr_a/map_pose · /amr_a/pose_source_session",
       "variant": "dashed",
       "fromSide": "right",
       "toSide": "bottom",
@@ -919,25 +919,25 @@
       "toSide": "top",
       "via": [
         [
-          920,
+          875,
           675
         ],
         [
-          855,
-          675
+          875,
+          745
         ],
         [
-          855,
-          780
+          885,
+          745
         ],
         [
-          920,
-          780
+          885,
+          790
         ]
       ],
       "labelAt": [
-        820,
-        725
+        835,
+        715
       ]
     },
     {
@@ -950,25 +950,25 @@
       "toSide": "bottom",
       "via": [
         [
-          920,
+          985,
           790
         ],
         [
-          975,
-          790
+          985,
+          720
         ],
         [
-          975,
-          675
+          965,
+          720
         ],
         [
-          920,
+          965,
           675
         ]
       ],
       "labelAt": [
-        1015,
-        725
+        1025,
+        715
       ]
     },
     {
@@ -981,20 +981,24 @@
       "toSide": "right",
       "via": [
         [
-          1250,
+          1210,
           700
         ],
         [
-          1070,
+          1110,
           700
         ],
         [
-          1070,
-          871
+          1110,
+          840
+        ],
+        [
+          1050,
+          840
         ]
       ],
       "labelAt": [
-        1135,
+        1145,
         685
       ]
     },
@@ -1008,29 +1012,29 @@
       "toSide": "bottom",
       "via": [
         [
-          1060,
-          871
+          1050,
+          855
         ],
         [
-          1060,
-          810
+          1050,
+          825
         ],
         [
-          1330,
-          810
+          1310,
+          825
         ],
         [
-          1330,
+          1310,
           650
         ],
         [
-          1250,
+          1240,
           650
         ]
       ],
       "labelAt": [
-        1210,
-        795
+        1200,
+        812
       ]
     },
     {
@@ -1043,25 +1047,25 @@
       "toSide": "left",
       "via": [
         [
-          720,
-          871
+          690,
+          855
         ],
         [
-          720,
-          760
+          690,
+          735
         ],
         [
-          1100,
-          760
+          1110,
+          735
         ],
         [
-          1100,
+          1110,
           574
         ]
       ],
       "labelAt": [
         900,
-        745
+        720
       ]
     },
     {
@@ -1074,20 +1078,24 @@
       "toSide": "right",
       "via": [
         [
-          920,
+          990,
           790
         ],
         [
-          1400,
+          1430,
           790
         ],
         [
-          1400,
-          574
+          1430,
+          600
+        ],
+        [
+          1360,
+          600
         ]
       ],
       "labelAt": [
-        1320,
+        1325,
         775
       ]
     }
@@ -1107,8 +1115,8 @@
       "items": [
         "ros2_manual_mqtt_adapter publishes manual velocity only.",
         "ros2_mqtt_adapter owns MQTT-driven NavigateToPose, STOP /cmd_vel, and manual lift command/state bridging.",
-        "Dashed MQTT broker edges denote brokered channels; the lower ROS/runtime edges show actual command and feedback directions.",
-        "amr_p3020_mission drives lift-related mission phases through /amr_a/pickup_command; it is not the /lift_command publisher."
+        "System edges below the MQTT layer preserve command/feedback direction; broker edges summarize MQTT channels rather than implying one-way-only transport.",
+        "amr_p3020_mission drives lift-related mission phases through /amr_a/pickup_command; it is not the /amr_a/lift_command publisher."
       ]
     },
     {
