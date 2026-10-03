@@ -583,8 +583,20 @@
       "label": "TF input to composed lookup†",
       "variant": "dashed",
       "labelAt": [
-        73,
-        370
+        55,
+        220
+      ],
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [
+        [
+          -30,
+          564
+        ],
+        [
+          -30,
+          81
+        ]
       ]
     },
     {
