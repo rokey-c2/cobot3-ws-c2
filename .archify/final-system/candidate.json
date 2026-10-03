@@ -5,11 +5,7 @@
     "title": "cobot3-ws-c2 — System Architecture",
     "subtitle": "Control Tower · MQTT · Host ROS 2 Jazzy · Isaac Sim Runtime · code-grounded @ cf7feac",
     "output": ".archify/final-system/cobot3-system.architecture.html",
-    "quality_profile": "standard",
-    "viewBox": [
-      1600,
-      1200
-    ]
+    "quality_profile": "standard"
   },
   "components": [
     {
@@ -203,14 +199,14 @@
       "id": "internal",
       "type": "external",
       "label": "Isaac Internal Components",
-      "sublabel": "MissionIwHubAgent · P3020 agents/ROS bridges · equipment bridge",
+      "sublabel": "AMR agent · P3020 agents/ROS bridges · equipment",
       "tag": "Python objects",
       "pos": [
         790,
         830
       ],
       "size": [
-        240,
+        260,
         82
       ]
     },
