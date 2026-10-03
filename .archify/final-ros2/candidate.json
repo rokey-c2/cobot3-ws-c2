@@ -195,11 +195,11 @@
       "sublabel": "OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent",
       "tag": "2 Python objects",
       "pos": [
-        850,
+        835,
         520
       ],
       "size": [
-        340,
+        335,
         96
       ]
     },
@@ -210,11 +210,11 @@
       "sublabel": "P3020OutRosBridge + P3020UnloadToBinAgent",
       "tag": "2 Python objects",
       "pos": [
-        1210,
+        1180,
         520
       ],
       "size": [
-        335,
+        310,
         96
       ]
     },
@@ -225,11 +225,11 @@
       "sublabel": "attached to isaac_amr_mission_bridge",
       "tag": "Python object",
       "pos": [
-        1570,
+        1505,
         520
       ],
       "size": [
-        250,
+        220,
         88
       ]
     },
@@ -451,7 +451,7 @@
       "toSide": "bottom",
       "via": [
         [
-          1020,
+          1002.5,
           455
         ],
         [
@@ -482,7 +482,7 @@
       "toSide": "bottom",
       "via": [
         [
-          1377.5,
+          1335,
           470
         ],
         [
@@ -719,7 +719,7 @@
       "label": "OBJECT attachment: same rclpy Node",
       "variant": "dashed",
       "labelAt": [
-        1450,
+        1395,
         700
       ],
       "fromSide": "bottom",
@@ -730,7 +730,7 @@
           710
         ],
         [
-          1695,
+          1615,
           710
         ]
       ]
@@ -742,7 +742,7 @@
       "label": "OBJECT OptimizedP3020RosBridge attached to same rclpy Node",
       "variant": "dashed",
       "labelAt": [
-        805,
+        790,
         640
       ],
       "fromSide": "bottom",
@@ -753,7 +753,7 @@
           650
         ],
         [
-          1020,
+          1002.5,
           650
         ]
       ]
@@ -765,7 +765,7 @@
       "label": "OBJECT P3020OutRosBridge attached to same rclpy Node",
       "variant": "dashed",
       "labelAt": [
-        1110,
+        1080,
         670
       ],
       "fromSide": "bottom",
@@ -776,7 +776,7 @@
           680
         ],
         [
-          1377.5,
+          1335,
           680
         ]
       ]
