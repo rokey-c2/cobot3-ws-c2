@@ -3,12 +3,12 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "cobot3-ws-c2 — ROS 2 Node & Runtime Architecture",
-    "subtitle": "Control Tower · Host ROS 2 · Isaac Sim",
+    "subtitle": "Control Tower · ROS 2 Jazzy · Nav2 · Isaac Sim 5.1 · P3020",
     "output": ".archify/official/cobot3-runtime.architecture.html",
     "quality_profile": "showcase",
     "viewBox": [
-      1240,
-      1180
+      1220,
+      1120
     ]
   },
   "components": [
@@ -18,11 +18,11 @@
       "label": "React Control Tower",
       "sublabel": "Dashboard · Manual · Streams",
       "pos": [
-        30,
+        40,
         60
       ],
       "size": [
-        150,
+        140,
         68
       ]
     },
@@ -32,11 +32,11 @@
       "label": "FastAPI Backend",
       "sublabel": "REST API · MQTT client",
       "pos": [
-        270,
+        280,
         60
       ],
       "size": [
-        150,
+        140,
         68
       ]
     },
@@ -45,13 +45,12 @@
       "type": "messagebus",
       "label": "Mosquitto Broker",
       "sublabel": "MQTT :1883",
-      "tag": "BROKER ×1",
       "pos": [
-        510,
+        520,
         60
       ],
       "size": [
-        150,
+        140,
         68
       ]
     },
@@ -61,11 +60,11 @@
       "label": "PostgreSQL",
       "sublabel": "Mission · State · Pose",
       "pos": [
-        270,
+        280,
         165
       ],
       "size": [
-        150,
+        140,
         68
       ]
     },
@@ -73,60 +72,60 @@
       "id": "mqtt_nav",
       "type": "backend",
       "label": "ros2_mqtt_adapter",
-      "sublabel": "MQTT ↔ NavigateToPose",
-      "tag": "MQTT client · ROS Node",
+      "sublabel": "Navigation adapter",
+      "tag": "ROS Node",
       "pos": [
-        30,
-        330
+        40,
+        340
       ],
       "size": [
-        170,
-        74
+        150,
+        72
       ]
     },
     {
       "id": "mqtt_manual",
       "type": "backend",
       "label": "ros2_manual_mqtt_adapter",
-      "sublabel": "Manual /cmd_vel · lift",
-      "tag": "MQTT client · ROS Node",
+      "sublabel": "Manual control adapter",
+      "tag": "ROS Node",
       "pos": [
-        30,
-        430
+        40,
+        450
       ],
       "size": [
-        170,
-        74
+        150,
+        72
       ]
     },
     {
       "id": "mqtt_process",
       "type": "backend",
       "label": "process_mqtt_adapter",
-      "sublabel": "Equipment / process events",
-      "tag": "MQTT client · ROS Node",
+      "sublabel": "Equipment/process adapter",
+      "tag": "ROS Node",
       "pos": [
-        30,
-        530
+        40,
+        560
       ],
       "size": [
-        170,
-        74
+        150,
+        72
       ]
     },
     {
       "id": "pose_sync",
       "type": "backend",
       "label": "pose_sync_manager",
-      "sublabel": "Map pose · restore · initialpose",
-      "tag": "MQTT client · ROS Node",
+      "sublabel": "Pose restore / initialpose",
+      "tag": "ROS Node",
       "pos": [
-        30,
-        630
+        40,
+        670
       ],
       "size": [
-        170,
-        74
+        150,
+        72
       ]
     },
     {
@@ -136,12 +135,12 @@
       "sublabel": "iw_hub_navigation",
       "tag": "Action Server",
       "pos": [
-        330,
-        330
+        320,
+        340
       ],
       "size": [
-        160,
-        74
+        150,
+        72
       ]
     },
     {
@@ -149,13 +148,13 @@
       "type": "backend",
       "label": "amr_p3020_mission",
       "sublabel": "Main Mission FSM",
-      "tag": "Orchestrator Node",
+      "tag": "Orchestrator",
       "pos": [
-        530,
+        560,
         450
       ],
       "size": [
-        170,
+        160,
         76
       ]
     },
@@ -163,10 +162,10 @@
       "id": "action",
       "type": "backend",
       "label": "PickPlace Action Server",
-      "sublabel": "Action ↔ String Topics",
+      "sublabel": "Action ↔ String",
       "tag": "/p3020/pick_place",
       "pos": [
-        820,
+        850,
         450
       ],
       "size": [
@@ -179,13 +178,12 @@
       "type": "backend",
       "label": "P3020 Vision Nodes",
       "sublabel": "IN + OUT · YOLO ONNX",
-      "tag": "2 detector nodes",
       "pos": [
-        1040,
+        1060,
         450
       ],
       "size": [
-        150,
+        140,
         76
       ]
     },
@@ -193,10 +191,10 @@
       "id": "bridge",
       "type": "backend",
       "label": "isaac_amr_mission_bridge",
-      "sublabel": "ROS 2 ↔ Isaac mission bridge",
+      "sublabel": "ROS 2 ↔ Isaac bridge",
       "tag": "rclpy Node",
       "pos": [
-        530,
+        560,
         820
       ],
       "size": [
@@ -205,108 +203,46 @@
       ]
     },
     {
-      "id": "iw_agent",
+      "id": "internal",
       "type": "external",
-      "label": "MissionIwHubAgent",
-      "sublabel": "Isaac internal Python component",
-      "tag": "NOT a ROS Node",
+      "label": "Isaac Internal Components",
+      "sublabel": "Agents · Equipment Bridge",
+      "tag": "Python objects",
       "pos": [
-        810,
+        850,
         820
       ],
       "size": [
-        160,
-        74
+        170,
+        80
       ]
     },
     {
       "id": "amr",
       "type": "external",
       "label": "IW Hub AMR",
-      "sublabel": "Simulated Mobile Robot",
-      "tag": "AMR object",
+      "sublabel": "Simulated robot object",
       "pos": [
         1060,
         820
       ],
       "size": [
-        150,
-        74
+        140,
+        76
       ]
     },
     {
       "id": "sensor",
       "type": "external",
       "label": "IW Hub ROS2 Graphs",
-      "sublabel": "LiDAR · Odom · TF · Camera",
-      "tag": "Sensor / Actuation",
+      "sublabel": "LiDAR · Odom · TF · cmd_vel",
       "pos": [
         1060,
         950
       ],
       "size": [
-        150,
-        76
-      ]
-    },
-    {
-      "id": "equip_bridge",
-      "type": "external",
-      "label": "ProcessEquipmentBridge",
-      "sublabel": "Attached to bridge rclpy Node",
-      "tag": "NOT a ROS Node",
-      "pos": [
-        530,
-        950
-      ],
-      "size": [
-        180,
-        74
-      ]
-    },
-    {
-      "id": "controllers",
-      "type": "external",
-      "label": "Conveyor + Sorter Controllers",
-      "sublabel": "ConveyorController · SorterController",
-      "tag": "Python components",
-      "pos": [
-        530,
-        1060
-      ],
-      "size": [
-        180,
-        74
-      ]
-    },
-    {
-      "id": "p3020_agent",
-      "type": "external",
-      "label": "P3020PickPlaceAgent",
-      "sublabel": "Isaac internal component",
-      "tag": "NOT a ROS Node",
-      "pos": [
-        810,
-        950
-      ],
-      "size": [
-        160,
-        74
-      ]
-    },
-    {
-      "id": "p3020_out",
-      "type": "external",
-      "label": "P3020OutAgent",
-      "sublabel": "Unload / bin handling",
-      "tag": "NOT a ROS Node",
-      "pos": [
-        810,
-        1060
-      ],
-      "size": [
-        160,
-        74
+        140,
+        80
       ]
     }
   ],
@@ -335,22 +271,18 @@
         "action",
         "vision"
       ],
-      "pad": 20
+      "pad": 22
     },
     {
       "kind": "region",
       "label": "Isaac Sim 5.1 Runtime",
       "wraps": [
         "bridge",
-        "iw_agent",
+        "internal",
         "amr",
-        "sensor",
-        "equip_bridge",
-        "controllers",
-        "p3020_agent",
-        "p3020_out"
+        "sensor"
       ],
-      "pad": 20
+      "pad": 22
     }
   ],
   "connections": [
@@ -359,618 +291,144 @@
       "from": "web",
       "to": "api",
       "label": "HTTP / REST",
-      "variant": "emphasis",
-      "fromSide": "right",
-      "toSide": "left",
-      "route": "straight",
-      "labelAt": [
-        225,
-        48
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "api-mqtt",
       "from": "api",
       "to": "mqtt",
       "label": "MQTT",
-      "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left",
-      "route": "straight",
-      "labelAt": [
-        465,
-        48
-      ]
+      "variant": "dashed"
     },
     {
       "id": "api-db",
       "from": "api",
       "to": "db",
-      "label": "SQL",
-      "variant": "security",
-      "fromSide": "bottom",
-      "toSide": "top",
-      "route": "straight",
-      "labelAt": [
-        445,
-        145
-      ]
+      "label": "SQL"
     },
     {
-      "id": "mqtt-nav-adapter",
+      "id": "mqtt-nav",
       "from": "mqtt",
       "to": "mqtt_nav",
       "label": "nav cmd/state",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "right",
-      "via": [
-        [
-          585,
-          280
-        ],
-        [
-          230,
-          280
-        ],
-        [
-          230,
-          367
-        ]
-      ],
-      "labelAt": [
-        390,
-        268
-      ]
+      "variant": "dashed"
     },
     {
-      "id": "mqtt-manual-adapter",
+      "id": "mqtt-manual",
       "from": "mqtt",
       "to": "mqtt_manual",
       "label": "manual cmd/state",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "right",
-      "via": [
-        [
-          610,
-          260
-        ],
-        [
-          245,
-          260
-        ],
-        [
-          245,
-          467
-        ]
-      ],
-      "labelAt": [
-        400,
-        248
-      ]
+      "variant": "dashed"
     },
     {
-      "id": "mqtt-process-adapter",
+      "id": "mqtt-process",
       "from": "mqtt",
       "to": "mqtt_process",
       "label": "equipment/process",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "right",
-      "via": [
-        [
-          635,
-          240
-        ],
-        [
-          260,
-          240
-        ],
-        [
-          260,
-          567
-        ]
-      ],
-      "labelAt": [
-        420,
-        228
-      ]
+      "variant": "dashed"
     },
     {
-      "id": "mqtt-pose-adapter",
+      "id": "mqtt-pose",
       "from": "mqtt",
       "to": "pose_sync",
       "label": "pose/restore",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "right",
-      "via": [
-        [
-          660,
-          220
-        ],
-        [
-          275,
-          220
-        ],
-        [
-          275,
-          667
-        ]
-      ],
-      "labelAt": [
-        440,
-        208
-      ]
+      "variant": "dashed"
     },
     {
       "id": "adapter-nav",
       "from": "mqtt_nav",
       "to": "nav",
       "label": "/navigate_to_pose",
-      "variant": "emphasis",
-      "fromSide": "right",
-      "toSide": "left",
-      "route": "straight",
-      "labelAt": [
-        265,
-        317
-      ]
-    },
-    {
-      "id": "manual-cmdvel",
-      "from": "mqtt_manual",
-      "to": "sensor",
-      "label": "/cmd_vel · lift",
-      "variant": "emphasis",
-      "fromSide": "left",
-      "toSide": "bottom",
-      "via": [
-        [
-          15,
-          467
-        ],
-        [
-          15,
-          1150
-        ],
-        [
-          1135,
-          1150
-        ],
-        [
-          1135,
-          1026
-        ]
-      ],
-      "labelAt": [
-        420,
-        1138
-      ]
-    },
-    {
-      "id": "process-equipment",
-      "from": "mqtt_process",
-      "to": "equip_bridge",
-      "label": "equipment cmd/status",
-      "fromSide": "right",
-      "toSide": "left",
-      "via": [
-        [
-          450,
-          567
-        ],
-        [
-          450,
-          987
-        ]
-      ],
-      "labelAt": [
-        425,
-        780
-      ]
-    },
-    {
-      "id": "pose-bridge",
-      "from": "bridge",
-      "to": "pose_sync",
-      "label": "map_pose · session",
-      "fromSide": "left",
-      "toSide": "right",
-      "via": [
-        [
-          470,
-          860
-        ],
-        [
-          470,
-          667
-        ]
-      ],
-      "labelAt": [
-        450,
-        760
-      ]
-    },
-    {
-      "id": "pose-restore",
-      "from": "pose_sync",
-      "to": "bridge",
-      "label": "restore_pose",
-      "fromSide": "right",
-      "toSide": "left",
-      "via": [
-        [
-          495,
-          667
-        ],
-        [
-          495,
-          840
-        ]
-      ],
-      "labelAt": [
-        515,
-        750
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "pose-nav",
       "from": "pose_sync",
       "to": "nav",
-      "label": "/initialpose · TF",
-      "fromSide": "right",
-      "toSide": "bottom",
-      "via": [
-        [
-          280,
-          667
-        ],
-        [
-          280,
-          420
-        ],
-        [
-          410,
-          420
-        ]
-      ],
-      "labelAt": [
-        300,
-        510
-      ]
+      "label": "/initialpose · TF"
+    },
+    {
+      "id": "manual-bridge",
+      "from": "mqtt_manual",
+      "to": "bridge",
+      "label": "manual / lift"
+    },
+    {
+      "id": "process-bridge",
+      "from": "mqtt_process",
+      "to": "bridge",
+      "label": "equipment/process"
     },
     {
       "id": "mission-nav",
       "from": "mission",
       "to": "nav",
       "label": "/navigate_to_pose",
-      "variant": "emphasis",
-      "fromSide": "left",
-      "toSide": "bottom",
-      "via": [
-        [
-          505,
-          488
-        ],
-        [
-          505,
-          420
-        ],
-        [
-          410,
-          420
-        ]
-      ],
-      "labelAt": [
-        505,
-        405
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "mission-action",
       "from": "mission",
       "to": "action",
       "label": "/p3020/pick_place",
-      "variant": "emphasis",
-      "fromSide": "right",
-      "toSide": "left",
-      "route": "straight",
-      "labelAt": [
-        760,
-        437
-      ]
+      "variant": "emphasis"
     },
     {
-      "id": "mission-bridge-cmd",
+      "id": "mission-bridge",
       "from": "mission",
       "to": "bridge",
-      "label": "pickup/lift cmd",
-      "fromSide": "bottom",
-      "toSide": "top",
-      "via": [
-        [
-          580,
-          610
-        ],
-        [
-          580,
-          800
-        ]
-      ],
-      "labelAt": [
-        555,
-        700
-      ]
+      "label": "pickup/lift cmd"
     },
     {
-      "id": "bridge-mission-state",
+      "id": "bridge-mission",
       "from": "bridge",
       "to": "mission",
-      "label": "pickup/lift state",
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          660,
-          800
-        ],
-        [
-          660,
-          610
-        ]
-      ],
-      "labelAt": [
-        685,
-        700
-      ]
+      "label": "pickup/lift state"
     },
     {
-      "id": "action-p3020-cmd",
+      "id": "action-bridge",
       "from": "action",
       "to": "bridge",
-      "label": "String command",
-      "fromSide": "bottom",
-      "toSide": "right",
-      "via": [
-        [
-          905,
-          610
-        ],
-        [
-          760,
-          610
-        ],
-        [
-          760,
-          860
-        ],
-        [
-          710,
-          860
-        ]
-      ],
-      "labelAt": [
-        785,
-        600
-      ]
-    },
-    {
-      "id": "bridge-action-status",
-      "from": "bridge",
-      "to": "action",
-      "label": "String status",
-      "fromSide": "right",
-      "toSide": "bottom",
-      "via": [
-        [
-          750,
-          860
-        ],
-        [
-          750,
-          640
-        ],
-        [
-          925,
-          640
-        ],
-        [
-          925,
-          526
-        ]
-      ],
-      "labelAt": [
-        800,
-        650
-      ]
-    },
-    {
-      "id": "bridge-agent",
-      "from": "bridge",
-      "to": "iw_agent",
-      "label": "Python API",
-      "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left",
-      "route": "straight",
-      "labelAt": [
-        760,
-        807
-      ]
-    },
-    {
-      "id": "agent-amr",
-      "from": "iw_agent",
-      "to": "amr",
-      "label": "method calls",
-      "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left",
-      "route": "straight",
-      "labelAt": [
-        1015,
-        807
-      ]
-    },
-    {
-      "id": "nav-sensor-cmd",
-      "from": "nav",
-      "to": "sensor",
-      "label": "/cmd_vel",
-      "variant": "emphasis",
-      "fromSide": "right",
-      "toSide": "right",
-      "via": [
-        [
-          1218,
-          367
-        ],
-        [
-          1218,
-          988
-        ]
-      ],
-      "labelAt": [
-        1195,
-        650
-      ]
-    },
-    {
-      "id": "sensor-nav-state",
-      "from": "sensor",
-      "to": "nav",
-      "label": "/scan · /odom · /tf · /clock",
-      "fromSide": "right",
-      "toSide": "right",
-      "via": [
-        [
-          1230,
-          988
-        ],
-        [
-          1230,
-          367
-        ]
-      ],
-      "labelAt": [
-        1205,
-        760
-      ]
-    },
-    {
-      "id": "sensor-amr",
-      "from": "sensor",
-      "to": "amr",
-      "label": "sensor / actuation",
-      "fromSide": "top",
-      "toSide": "bottom",
-      "route": "straight",
-      "labelAt": [
-        1125,
-        925
-      ]
-    },
-    {
-      "id": "bridge-p3020",
-      "from": "bridge",
-      "to": "p3020_agent",
-      "label": "attach",
-      "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left",
-      "via": [
-        [
-          760,
-          860
-        ],
-        [
-          760,
-          987
-        ]
-      ],
-      "labelAt": [
-        775,
-        930
-      ]
-    },
-    {
-      "id": "bridge-p3020-out",
-      "from": "bridge",
-      "to": "p3020_out",
-      "label": "attach",
-      "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left",
-      "via": [
-        [
-          785,
-          880
-        ],
-        [
-          785,
-          1097
-        ]
-      ],
-      "labelAt": [
-        800,
-        1035
-      ]
-    },
-    {
-      "id": "bridge-equip",
-      "from": "bridge",
-      "to": "equip_bridge",
-      "label": "same rclpy Node",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "top",
-      "route": "straight",
-      "labelAt": [
-        650,
-        925
-      ]
-    },
-    {
-      "id": "equip-controllers",
-      "from": "equip_bridge",
-      "to": "controllers",
-      "label": "Python API",
-      "variant": "dashed",
-      "fromSide": "bottom",
-      "toSide": "top",
-      "route": "straight",
-      "labelAt": [
-        645,
-        1042
-      ]
+      "label": "String command/status"
     },
     {
       "id": "bridge-vision",
       "from": "bridge",
       "to": "vision",
-      "label": "RGB / detection",
-      "fromSide": "top",
-      "toSide": "bottom",
-      "via": [
-        [
-          620,
-          780
-        ],
-        [
-          1115,
-          780
-        ],
-        [
-          1115,
-          526
-        ]
-      ],
-      "labelAt": [
-        930,
-        768
-      ]
+      "label": "RGB / detection"
+    },
+    {
+      "id": "bridge-internal",
+      "from": "bridge",
+      "to": "internal",
+      "label": "Python API",
+      "variant": "dashed"
+    },
+    {
+      "id": "internal-amr",
+      "from": "internal",
+      "to": "amr",
+      "label": "method calls",
+      "variant": "dashed"
+    },
+    {
+      "id": "nav-sensor",
+      "from": "nav",
+      "to": "sensor",
+      "label": "/cmd_vel",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sensor-nav",
+      "from": "sensor",
+      "to": "nav",
+      "label": "/scan · /odom · /tf · /clock"
+    },
+    {
+      "id": "sensor-amr",
+      "from": "sensor",
+      "to": "amr",
+      "label": "sensor / actuation"
     }
   ],
   "cards": [
@@ -978,35 +436,38 @@
       "dot": "cyan",
       "title": "ROS 2 Actions",
       "items": [
-        "/navigate_to_pose — Nav2 server; mission + ros2_mqtt_adapter are clients",
-        "/p3020/pick_place — Host ROS 2 PickPlace Action Server; mission is the client"
+        "/navigate_to_pose — Nav2 server; amr_p3020_mission and ros2_mqtt_adapter are clients",
+        "/p3020/pick_place — Host ROS 2 PickPlace Action Server; amr_p3020_mission is the client"
       ]
     },
     {
       "dot": "emerald",
-      "title": "MQTT Adapter Processes",
+      "title": "Four MQTT Adapter Nodes",
       "items": [
-        "Four independent MQTT clients: ros2_mqtt_adapter, ros2_manual_mqtt_adapter, process_mqtt_adapter, pose_sync_manager",
-        "Mosquitto is the central broker; FastAPI is another MQTT client",
-        "React talks to FastAPI through HTTP/REST"
+        "ros2_mqtt_adapter — navigation command/state",
+        "ros2_manual_mqtt_adapter — manual cmd_vel and lift control",
+        "process_mqtt_adapter — equipment commands, status and process events",
+        "pose_sync_manager — map_pose, restore_pose, /initialpose and TF checks"
       ]
     },
     {
       "dot": "rose",
-      "title": "ROS vs Isaac Internal Calls",
+      "title": "Isaac Internal Components",
       "items": [
-        "ROS-labelled edges represent ROS 2 Topic / Action communication",
-        "Dashed Python API edges inside Isaac Sim are in-process calls, not ROS topics",
-        "MissionIwHubAgent, ProcessEquipmentBridge and P3020 agents are not independent ROS nodes"
+        "MissionIwHubAgent",
+        "P3020PickPlaceAgent and P3020OutAgent",
+        "ProcessEquipmentBridge",
+        "ConveyorController and WheelSorterController",
+        "These are attached Python components, not independent ROS 2 nodes"
       ]
     },
     {
       "dot": "cyan",
-      "title": "AMR Navigation Loop",
+      "title": "Navigation Loop",
       "items": [
         "Nav2 sends /cmd_vel through IW Hub ROS2 Graphs",
         "IW Hub ROS2 Graphs returns /scan, /odom, /tf and /clock",
-        "IW Hub AMR is the simulated robot object; isaac_amr_mission_bridge is the ROS ↔ Isaac bridge node"
+        "IW Hub AMR is the simulated robot; isaac_amr_mission_bridge is the rclpy bridge node"
       ]
     }
   ]
