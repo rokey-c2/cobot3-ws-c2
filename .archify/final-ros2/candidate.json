@@ -318,8 +318,6 @@
       "label": "TOPIC /amr_a/lift_command",
       "variant": "dashed",
       "labelDy": 25,
-      "fromSide": "bottom",
-      "toSide": "left",
       "via": [
         [
           360,
@@ -350,8 +348,6 @@
       "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
       "variant": "dashed",
       "labelDy": 75,
-      "fromSide": "left",
-      "toSide": "bottom",
       "via": [
         [
           310,
@@ -656,8 +652,6 @@
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/pickup_command",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "top",
       "via": [
         [
           390,
@@ -687,8 +681,6 @@
       "to": "mission",
       "label": "TOPIC /amr_a/pickup_state",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           500,
@@ -718,8 +710,6 @@
       "to": "p3020_in",
       "label": "BRIDGE SUB /arm_a/pick_place_command",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "top",
       "via": [
         [
           690,
@@ -749,8 +739,6 @@
       "to": "pickplace",
       "label": "BRIDGE PUB /arm_a/pick_place_status",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           1040,
@@ -781,8 +769,6 @@
       "label": "BRIDGE PUB /arm_a/rgb",
       "variant": "dashed",
       "labelDy": 25,
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           960,
@@ -812,8 +798,6 @@
       "to": "vision_in",
       "label": "NODE PUB /arm_a/preview · main_mission",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "left",
       "via": [
         [
           520,
@@ -843,8 +827,6 @@
       "to": "p3020_in",
       "label": "BRIDGE SUB /box_pixel · /box_pixel/result",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "top",
       "via": [
         [
           1040,
@@ -874,8 +856,6 @@
       "to": "vision_in",
       "label": "BRIDGE PUB /box_pixel/validated",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           1125,
@@ -905,8 +885,6 @@
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/rgb",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           1280,
@@ -936,8 +914,6 @@
       "to": "vision_out",
       "label": "NODE PUB /arm_b/preview · main_mission",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "left",
       "via": [
         [
           550,
@@ -967,8 +943,6 @@
       "to": "p3020_out",
       "label": "BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "top",
       "via": [
         [
           1320,
@@ -998,8 +972,6 @@
       "to": "vision_out",
       "label": "BRIDGE PUB /arm_b/box_pixel/validated",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           1440,
@@ -1120,8 +1092,6 @@
       "to": "iw_graph",
       "label": "velocity control (/cmd_vel)‡",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "top",
       "via": [
         [
           100,
@@ -1151,8 +1121,6 @@
       "to": "nav2",
       "label": "sensor · odom · TF · clock inputs‡",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           205,
