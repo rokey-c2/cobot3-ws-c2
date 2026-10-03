@@ -210,7 +210,7 @@
       "sublabel": "P3020OutRosBridge + P3020UnloadToBinAgent",
       "tag": "2 Python objects",
       "pos": [
-        1180,
+        1181,
         520
       ],
       "size": [
@@ -578,7 +578,11 @@
       "from": "iw_graph",
       "to": "pose_sync",
       "label": "TF input to composed lookup†",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        73,
+        370
+      ]
     },
     {
       "id": "mission-nav2",
