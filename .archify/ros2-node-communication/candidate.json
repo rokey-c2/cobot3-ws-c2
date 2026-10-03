@@ -292,7 +292,11 @@
       "from": "process_runtime",
       "to": "process_adapter",
       "label": "TOPICS equipment/status · process/event",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        1121,
+        486
+      ]
     },
     {
       "id": "arrival-confirm",
@@ -333,21 +337,33 @@
       "from": "iw_graph",
       "to": "pose_sync",
       "label": "TF map→base_link",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        638,
+        486
+      ]
     },
     {
       "id": "mission-nav2",
       "from": "mission",
       "to": "nav2",
       "label": "ACTION /navigate_to_pose",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelAt": [
+        240,
+        486
+      ]
     },
     {
       "id": "mission-pickplace",
       "from": "mission",
       "to": "pickplace",
       "label": "ACTION /p3020/pick_place",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelAt": [
+        510,
+        486
+      ]
     },
     {
       "id": "mission-pickup",
@@ -387,7 +403,11 @@
       "from": "locate_relay",
       "to": "vision",
       "label": "SERVICE locate_box",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelAt": [
+        1065,
+        486
+      ]
     },
     {
       "id": "box-position",
@@ -401,21 +421,33 @@
       "from": "isaac_bridge",
       "to": "iw_graph",
       "label": "agent method calls / actuation",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        358,
+        837
+      ]
     },
     {
       "id": "bridge-p3020",
       "from": "isaac_bridge",
       "to": "p3020_runtime",
       "label": "shared Isaac rclpy runtime",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        723,
+        837
+      ]
     },
     {
       "id": "bridge-process",
       "from": "isaac_bridge",
       "to": "process_runtime",
       "label": "same rclpy Node attachment",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        757,
+        837
+      ]
     }
   ],
   "cards": [
