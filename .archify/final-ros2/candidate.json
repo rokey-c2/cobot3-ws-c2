@@ -317,7 +317,7 @@
       "to": "isaac_bridge",
       "label": "TOPIC /amr_a/lift_command",
       "variant": "dashed",
-      "labelDy": -80
+      "labelDy": 25
     },
     {
       "id": "lift-feedback",
@@ -325,7 +325,7 @@
       "to": "nav_adapter",
       "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
       "variant": "dashed",
-      "labelDy": 45
+      "labelDy": 75
     },
     {
       "id": "manual-cmdvel",
