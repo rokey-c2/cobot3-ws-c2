@@ -1,4 +1,4 @@
-path: /content/parcel_yolo/parcel_yolo
+# 학습 때는 train_yolo_colab.ipynb가 Colab 세션의 데이터셋 경로를 다시 씁니다.
 train: images/train
 val: images/val
 nc: 1

@@ -39,7 +39,7 @@ class LocateBoxNode(Node):
         self.declare_parameter('image_width', 640)
         self.declare_parameter('image_height', 480)
         # 640x480, 수평 FOV 90.53도는 Isaac Sim 카메라 prim
-        # (P3020_mount_vgp20_rsd455_1/World1.usd,
+        # (p3020_vgp20_rsd455/p3020_vgp20_rsd455.usd,
         # /World/vgp20/rsd455/RSD455/Camera_Pseudo_Depth)의 실측
         # focalLength=1.93 / horizontalAperture=3.896 로부터 계산한 값
         # (config/vision.yaml 주석 참고). bag 재생(실카메라 없음) 등 다른

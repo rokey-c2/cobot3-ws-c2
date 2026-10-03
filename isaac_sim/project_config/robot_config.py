@@ -14,7 +14,7 @@ CARD_BOX_USD = (
 )
 
 
-# TEMP TEST VALUE -- Parcel_Sorting_Map final AMR/cargo layout is not baked
+# TEMP TEST VALUE -- parcel_sorting_map final AMR/cargo layout is not baked
 # in yet (map still WIP). Placeholder spawn in open floor away from the
 # conveyor (x=-6..0, y~0) and from p3020_in (0.2,-1.5)/p3020_out (-14.2,-2.6).
 # Kept ~3 m from the cargo dock (TARGET_ROOT_Y in iw_hub_mission_agent.py)
@@ -55,7 +55,7 @@ TEST_OBSTACLES = []
 
 
 # TEMP TEST VALUE -- source_prim_name updated to match the guard prim that
-# actually exists in Parcel_Sorting_Map ("cargo_box_gaurd_size_200_fix"; the
+# actually exists in parcel_sorting_map ("cargo_box_gaurd_size_200_fix"; the
 # old "..._201" name from the previous map no longer exists). z=0.5 keeps
 # cargo_guard_clone.py's fixed BASELINE_* collision geometry's leg bottom at
 # world Z=0 (floor) -- this is independent of the cloned visual mesh's own
@@ -74,7 +74,7 @@ CARGO_REGISTRY = [
 
 
 # Cargo pod is baked into the map (not code-spawned). In
-# Parcel_Sorting_Map it's at
+# parcel_sorting_map it's at
 # /World/cargo_box_gaurd_size_200_fix_02, translate (9, -3, 0.5).
 #
 # User decision: 4 boxes made the pod rock (uneven weight distribution as
