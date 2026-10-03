@@ -419,7 +419,7 @@
       "route": "straight",
       "labelAt": [
         790,
-        570
+        588
       ]
     },
     {
@@ -492,27 +492,7 @@
       "id": "bridge-vision",
       "from": "bridge",
       "to": "vision",
-      "label": "RGB / detection",
-      "fromSide": "right",
-      "toSide": "bottom",
-      "via": [
-        [
-          1010,
-          829
-        ],
-        [
-          1010,
-          740
-        ],
-        [
-          1190,
-          740
-        ]
-      ],
-      "labelAt": [
-        1095,
-        728
-      ]
+      "label": "RGB / detection"
     },
     {
       "id": "bridge-internal",
@@ -535,7 +515,7 @@
       "route": "straight",
       "labelAt": [
         1168,
-        817
+        882
       ]
     },
     {
@@ -543,27 +523,7 @@
       "from": "nav",
       "to": "sensor",
       "label": "/cmd_vel",
-      "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "left",
-      "via": [
-        [
-          365,
-          640
-        ],
-        [
-          1120,
-          640
-        ],
-        [
-          1120,
-          959
-        ]
-      ],
-      "labelAt": [
-        760,
-        628
-      ]
+      "variant": "emphasis"
     },
     {
       "id": "sensor-amr",
