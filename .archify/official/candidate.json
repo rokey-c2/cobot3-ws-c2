@@ -7,8 +7,8 @@
     "output": ".archify/official/cobot3-runtime.architecture.html",
     "quality_profile": "showcase",
     "viewBox": [
-      2200,
-      1500
+      1220,
+      1140
     ]
   },
   "components": [
@@ -18,12 +18,12 @@
       "label": "React Control Tower",
       "sublabel": "Dashboard · Manual · Streams",
       "pos": [
-        100,
-        110
+        55,
+        70
       ],
       "size": [
-        190,
-        78
+        160,
+        68
       ]
     },
     {
@@ -32,12 +32,12 @@
       "label": "FastAPI Backend",
       "sublabel": "REST API · MQTT client",
       "pos": [
-        360,
-        110
+        265,
+        70
       ],
       "size": [
-        190,
-        78
+        165,
+        68
       ]
     },
     {
@@ -47,12 +47,12 @@
       "sublabel": "MQTT :1883",
       "tag": "BROKER ×1",
       "pos": [
-        620,
-        110
+        480,
+        70
       ],
       "size": [
-        190,
-        78
+        165,
+        68
       ]
     },
     {
@@ -61,12 +61,12 @@
       "label": "PostgreSQL",
       "sublabel": "Mission · State · Pose",
       "pos": [
-        360,
-        245
+        265,
+        170
       ],
       "size": [
-        190,
-        78
+        165,
+        68
       ]
     },
     {
@@ -76,12 +76,12 @@
       "sublabel": "MQTT ↔ NavigateToPose",
       "tag": "MQTT client · ROS Node",
       "pos": [
-        120,
-        480
+        55,
+        330
       ],
       "size": [
-        250,
-        86
+        190,
+        74
       ]
     },
     {
@@ -91,12 +91,12 @@
       "sublabel": "Manual /cmd_vel · lift",
       "tag": "MQTT client · ROS Node",
       "pos": [
-        120,
-        610
+        55,
+        430
       ],
       "size": [
-        250,
-        86
+        190,
+        74
       ]
     },
     {
@@ -106,12 +106,12 @@
       "sublabel": "Equipment / process events",
       "tag": "MQTT client · ROS Node",
       "pos": [
-        120,
-        740
+        55,
+        530
       ],
       "size": [
-        250,
-        86
+        190,
+        74
       ]
     },
     {
@@ -121,12 +121,12 @@
       "sublabel": "Map pose · restore · initialpose",
       "tag": "MQTT client · ROS Node",
       "pos": [
-        120,
-        870
+        55,
+        630
       ],
       "size": [
-        250,
-        86
+        190,
+        74
       ]
     },
     {
@@ -136,12 +136,12 @@
       "sublabel": "iw_hub_navigation",
       "tag": "Action Server",
       "pos": [
-        560,
-        480
+        330,
+        330
       ],
       "size": [
-        220,
-        86
+        165,
+        74
       ]
     },
     {
@@ -151,12 +151,12 @@
       "sublabel": "Main Mission FSM",
       "tag": "Orchestrator Node",
       "pos": [
-        930,
-        610
+        560,
+        430
       ],
       "size": [
-        240,
-        90
+        180,
+        76
       ]
     },
     {
@@ -166,12 +166,12 @@
       "sublabel": "Action ↔ String Topics",
       "tag": "/p3020/pick_place",
       "pos": [
-        1300,
-        610
+        790,
+        430
       ],
       "size": [
-        245,
-        90
+        190,
+        76
       ]
     },
     {
@@ -181,12 +181,12 @@
       "sublabel": "IN + OUT · YOLO ONNX",
       "tag": "2 detector nodes",
       "pos": [
-        1680,
-        610
+        990,
+        430
       ],
       "size": [
-        245,
-        90
+        170,
+        76
       ]
     },
     {
@@ -196,12 +196,12 @@
       "sublabel": "ROS 2 ↔ Isaac mission bridge",
       "tag": "rclpy Node",
       "pos": [
-        930,
-        1110
+        560,
+        800
       ],
       "size": [
-        270,
-        94
+        200,
+        80
       ]
     },
     {
@@ -211,12 +211,12 @@
       "sublabel": "Isaac internal Python component",
       "tag": "NOT a ROS Node",
       "pos": [
-        1300,
-        1110
+        805,
+        800
       ],
       "size": [
-        245,
-        86
+        175,
+        74
       ]
     },
     {
@@ -226,12 +226,12 @@
       "sublabel": "Simulated Mobile Robot",
       "tag": "AMR object",
       "pos": [
-        1680,
-        1110
+        1000,
+        800
       ],
       "size": [
-        245,
-        86
+        160,
+        74
       ]
     },
     {
@@ -241,12 +241,12 @@
       "sublabel": "LiDAR · Odom · TF · Camera",
       "tag": "Sensor / Actuation",
       "pos": [
-        1680,
-        1270
+        1000,
+        920
       ],
       "size": [
-        245,
-        90
+        160,
+        76
       ]
     },
     {
@@ -256,12 +256,12 @@
       "sublabel": "Attached to bridge rclpy Node",
       "tag": "NOT a ROS Node",
       "pos": [
-        930,
-        1270
+        560,
+        920
       ],
       "size": [
-        270,
-        88
+        200,
+        74
       ]
     },
     {
@@ -271,12 +271,12 @@
       "sublabel": "ConveyorController · SorterController",
       "tag": "Python components",
       "pos": [
-        930,
-        1390
+        560,
+        1020
       ],
       "size": [
-        270,
-        88
+        200,
+        74
       ]
     },
     {
@@ -286,12 +286,12 @@
       "sublabel": "Isaac internal component",
       "tag": "NOT a ROS Node",
       "pos": [
-        1300,
-        1270
+        805,
+        920
       ],
       "size": [
-        245,
-        86
+        175,
+        74
       ]
     },
     {
@@ -301,12 +301,12 @@
       "sublabel": "Unload / bin handling",
       "tag": "NOT a ROS Node",
       "pos": [
-        1300,
-        1390
+        805,
+        1020
       ],
       "size": [
-        245,
-        86
+        175,
+        74
       ]
     }
   ],
@@ -320,7 +320,7 @@
         "mqtt",
         "db"
       ],
-      "pad": 38
+      "pad": 24
     },
     {
       "kind": "region",
@@ -335,7 +335,7 @@
         "action",
         "vision"
       ],
-      "pad": 44
+      "pad": 24
     },
     {
       "kind": "region",
@@ -350,7 +350,7 @@
         "p3020_agent",
         "p3020_out"
       ],
-      "pad": 44
+      "pad": 24
     }
   ],
   "connections": [
