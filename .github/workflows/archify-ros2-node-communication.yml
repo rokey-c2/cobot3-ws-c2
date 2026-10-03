@@ -1,0 +1,50 @@
+name: Archify ROS2 node communication
+
+on:
+  push:
+    branches:
+      - archify-ros2-node-communication-20261003
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download canonical Archify v3.0.1
+        run: |
+          curl -L --fail --retry 3 \
+            https://github.com/tt-a1i/archify/releases/download/v3.0.1/archify.zip \
+            -o /tmp/archify.zip
+          echo "b0b23bd28db314f04ca8ab9620fe20f8c1ac6474a3546bd8fe4679508aa1b7f5  /tmp/archify.zip" | sha256sum -c -
+          mkdir -p /tmp/archify
+          unzip -q /tmp/archify.zip -d /tmp/archify
+          find /tmp/archify -maxdepth 4 -name archify.mjs -print
+
+      - name: Run official Archify finalize
+        shell: bash
+        run: |
+          set -o pipefail
+          CLI="$(find /tmp/archify -path '*/bin/archify.mjs' | head -n 1)"
+          test -n "$CLI"
+          mkdir -p .archify/ros2-node-communication
+          node "$CLI" finalize architecture \
+            .archify/ros2-node-communication/candidate.json \
+            .archify/ros2-node-communication/cobot3-ros2-node-communication.architecture.html \
+            --quality standard \
+            --json | tee .archify/ros2-node-communication/finalize-receipt.json
+
+      - name: Upload Archify result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobot3-ros2-node-communication-archify
+          if-no-files-found: warn
+          path: |
+            .archify/ros2-node-communication/candidate.json
+            .archify/ros2-node-communication/cobot3-ros2-node-communication.architecture.html
+            .archify/ros2-node-communication/*.json
