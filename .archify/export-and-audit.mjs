@@ -55,4 +55,30 @@ try {
     console.log(JSON.stringify({file,svg:out,labelBackgroundOverlaps:audit.labelBackgroundOverlaps}));
     if (audit.labelBackgroundOverlaps.length) throw new Error('Overlapping edge label backgrounds');
   }
+  const template = fs.readFileSync('.archify/portfolio-wrapper.template.html','utf8');
+  const payloads = {system:fs.readFileSync(files[0]).toString('base64'),ros:fs.readFileSync(files[1]).toString('base64')};
+  const combined = template.replace('PAYLOADS',JSON.stringify(payloads)).replace('DOC_COMMIT',process.env.GITHUB_SHA.slice(0,7));
+  fs.mkdirSync('.archify/final-combined',{recursive:true});
+  const combinedPath='.archify/final-combined/03_combined_portfolio_architecture.html';
+  fs.writeFileSync(combinedPath,combined);
+  const loaded = browser.cdp.waitFor('Page.loadEventFired', session);
+  await send('Page.navigate',{url:pathToFileURL(path.resolve(combinedPath)).href});
+  await loaded;
+  await run(`Promise.all([...document.querySelectorAll('iframe')].map(async f=>{
+    const started=Date.now();
+    while(!f.contentWindow?.Archify?.readerLayout){if(Date.now()-started>15000)throw new Error('Combined iframe timeout');await new Promise(r=>setTimeout(r,20));}
+    await f.contentDocument.fonts.ready;await f.contentWindow.Archify.readerLayout.whenStable();
+  }))`);
+  const states=[];
+  for(const mode of ['system','ros','both']){
+    await run(`document.querySelector('[data-mode="${mode}"]').click()`);
+    await run(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+    const state=await run(`({mode:${JSON.stringify(mode)},panels:Object.fromEntries(['system','ros'].map(id=>[id,!document.getElementById(id).hidden])),frames:[...document.querySelectorAll('iframe')].map(f=>({view:f.dataset.view,nodes:f.contentDocument.querySelectorAll('[data-node-id]').length,hasArchify:!!f.contentWindow.Archify,scrollHeight:f.contentDocument.documentElement.scrollHeight,frameHeight:f.getBoundingClientRect().height})),active:[...document.querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.mode)})`);
+    const expected={system:mode!=='ros',ros:mode!=='system'};
+    if(JSON.stringify(state.panels)!==JSON.stringify(expected)||state.active[0]!==mode||state.frames.some(f=>!f.hasArchify||!f.nodes||f.frameHeight<f.scrollHeight))throw new Error('Combined tab/frame validation failed '+JSON.stringify(state));
+    states.push(state);
+    const shot=await send('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync('.archify/final-combined/combined-'+mode+'.desktop.png',Buffer.from(shot.data,'base64'));
+  }
+  fs.writeFileSync('.archify/final-combined/combined-browser-audit.json',JSON.stringify({status:'pass',method:'Chrome CDP, srcdoc loads, tab visibility, frame content/height; viewport 1920x1080',states},null,2)+'\n');
 } finally { await browser.close(); }
