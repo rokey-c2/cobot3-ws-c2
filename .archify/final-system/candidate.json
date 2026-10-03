@@ -915,8 +915,6 @@
       "to": "internal",
       "label": "TOPIC /arm_a/pick_place_command",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "top",
       "via": [
         [
           875,
@@ -946,8 +944,6 @@
       "to": "action",
       "label": "TOPIC /arm_a/pick_place_status",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "bottom",
       "via": [
         [
           985,
@@ -977,8 +973,6 @@
       "to": "internal",
       "label": "TOPICS detection / result",
       "variant": "emphasis",
-      "fromSide": "bottom",
-      "toSide": "right",
       "via": [
         [
           1210,
@@ -1008,8 +1002,6 @@
       "to": "vision",
       "label": "RGB · P3020 ROS Bridge PUB",
       "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "bottom",
       "via": [
         [
           1050,
@@ -1043,8 +1035,6 @@
       "to": "vision",
       "label": "Preview · shared Node PUB (main_mission)",
       "variant": "dashed",
-      "fromSide": "right",
-      "toSide": "left",
       "via": [
         [
           690,
@@ -1074,8 +1064,6 @@
       "to": "vision",
       "label": "Validated result → detector HUD",
       "variant": "dashed",
-      "fromSide": "top",
-      "toSide": "right",
       "via": [
         [
           990,
