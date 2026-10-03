@@ -337,11 +337,7 @@
       "from": "iw_graph",
       "to": "pose_sync",
       "label": "TF map→base_link",
-      "variant": "dashed",
-      "labelAt": [
-        638,
-        486
-      ]
+      "variant": "dashed"
     },
     {
       "id": "mission-nav2",
@@ -369,7 +365,11 @@
       "id": "mission-pickup",
       "from": "mission",
       "to": "isaac_bridge",
-      "label": "TOPIC /amr_a/pickup_command"
+      "label": "TOPIC /amr_a/pickup_command",
+      "labelAt": [
+        392,
+        837
+      ]
     },
     {
       "id": "pickup-feedback",
