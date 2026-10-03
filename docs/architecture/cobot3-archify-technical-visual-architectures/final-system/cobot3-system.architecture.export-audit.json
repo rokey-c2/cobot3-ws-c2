@@ -1,0 +1,263 @@
+{
+  "method": "official Archify.exportMenu.run(svg-light), Chrome CDP; label rectangle geometry only",
+  "labels": [
+    {
+      "id": "web-api",
+      "x": 243.60000610351562,
+      "y": 70,
+      "width": 62.79999923706055,
+      "height": 14
+    },
+    {
+      "id": "api-mqtt",
+      "x": 520,
+      "y": 70,
+      "width": 30,
+      "height": 14
+    },
+    {
+      "id": "api-db",
+      "x": 390,
+      "y": 135,
+      "width": 30,
+      "height": 14
+    },
+    {
+      "id": "mqtt-nav",
+      "x": 469,
+      "y": 239,
+      "width": 154,
+      "height": 14
+    },
+    {
+      "id": "mqtt-manual",
+      "x": 595,
+      "y": 168.5,
+      "width": 154,
+      "height": 14
+    },
+    {
+      "id": "mqtt-process",
+      "x": 618,
+      "y": 256,
+      "width": 154,
+      "height": 14
+    },
+    {
+      "id": "mqtt-pose",
+      "x": 940.5999755859375,
+      "y": 175,
+      "width": 158.8000030517578,
+      "height": 14
+    },
+    {
+      "id": "manual-graph",
+      "x": 361,
+      "y": 617,
+      "width": 82,
+      "height": 14
+    },
+    {
+      "id": "mission-nav",
+      "x": 401.3999938964844,
+      "y": 554,
+      "width": 77.19999694824219,
+      "height": 14
+    },
+    {
+      "id": "mission-action",
+      "x": 709.2000122070312,
+      "y": 554,
+      "width": 91.5999984741211,
+      "height": 14
+    },
+    {
+      "id": "bridge-internal",
+      "x": 641.4000244140625,
+      "y": 916,
+      "width": 197.1999969482422,
+      "height": 14
+    },
+    {
+      "id": "internal-amr",
+      "x": 1025.800048828125,
+      "y": 916,
+      "width": 168.39999389648438,
+      "height": 14
+    },
+    {
+      "id": "sensor-amr",
+      "x": 1215,
+      "y": 949.5,
+      "width": 130,
+      "height": 14
+    },
+    {
+      "id": "web-vision-mjpeg",
+      "x": 1120.5999755859375,
+      "y": 140,
+      "width": 158.8000030517578,
+      "height": 14
+    },
+    {
+      "id": "adapter-nav",
+      "x": 167.39999389648438,
+      "y": 430,
+      "width": 125.19999694824219,
+      "height": 14
+    },
+    {
+      "id": "adapter-stop",
+      "x": 16.600000381469727,
+      "y": 690,
+      "width": 110.80000305175781,
+      "height": 14
+    },
+    {
+      "id": "nav-graph",
+      "x": 142.8000030517578,
+      "y": 710,
+      "width": 144.39999389648438,
+      "height": 14
+    },
+    {
+      "id": "graph-nav",
+      "x": 298.3999938964844,
+      "y": 740,
+      "width": 173.1999969482422,
+      "height": 14
+    },
+    {
+      "id": "mission-pickup-command",
+      "x": 450.20001220703125,
+      "y": 725,
+      "width": 139.60000610351562,
+      "height": 14
+    },
+    {
+      "id": "pickup-state-feedback",
+      "x": 600,
+      "y": 725,
+      "width": 130,
+      "height": 14
+    },
+    {
+      "id": "lift-command",
+      "x": 115,
+      "y": 755,
+      "width": 130,
+      "height": 14
+    },
+    {
+      "id": "lift-feedback",
+      "x": 32,
+      "y": 835,
+      "width": 226,
+      "height": 14
+    },
+    {
+      "id": "equipment-command",
+      "x": 666.2000122070312,
+      "y": 680,
+      "width": 187.60000610351562,
+      "height": 14
+    },
+    {
+      "id": "process-feedback",
+      "x": 634.2000122070312,
+      "y": 640,
+      "width": 331.6000061035156,
+      "height": 14
+    },
+    {
+      "id": "arrival-confirm",
+      "x": 586,
+      "y": 405,
+      "width": 178,
+      "height": 14
+    },
+    {
+      "id": "mission-state",
+      "x": 667.5999755859375,
+      "y": 505,
+      "width": 134.8000030517578,
+      "height": 14
+    },
+    {
+      "id": "restore-pose",
+      "x": 1030,
+      "y": 690,
+      "width": 130,
+      "height": 14
+    },
+    {
+      "id": "canonical-pose",
+      "x": 1262.5999755859375,
+      "y": 810,
+      "width": 254.8000030517578,
+      "height": 14
+    },
+    {
+      "id": "initialpose",
+      "x": 591.7999877929688,
+      "y": 465,
+      "width": 96.4000015258789,
+      "height": 14
+    },
+    {
+      "id": "tf-pose",
+      "x": 1397.4000244140625,
+      "y": 690,
+      "width": 125.19999694824219,
+      "height": 14
+    },
+    {
+      "id": "action-command",
+      "x": 740.5999755859375,
+      "y": 715,
+      "width": 158.8000030517578,
+      "height": 14
+    },
+    {
+      "id": "action-status",
+      "x": 938,
+      "y": 715,
+      "width": 154,
+      "height": 14
+    },
+    {
+      "id": "vision-detection",
+      "x": 1070,
+      "y": 675,
+      "width": 130,
+      "height": 14
+    },
+    {
+      "id": "vision-rgb",
+      "x": 1142.5999755859375,
+      "y": 785,
+      "width": 134.8000030517578,
+      "height": 14
+    },
+    {
+      "id": "vision-preview",
+      "x": 799,
+      "y": 735,
+      "width": 202,
+      "height": 14
+    },
+    {
+      "id": "vision-validated",
+      "x": 1240.5999755859375,
+      "y": 765,
+      "width": 158.8000030517578,
+      "height": 14
+    }
+  ],
+  "labelBackgroundOverlaps": [],
+  "exportReceipt": {
+    "data-last-export-format": "svg",
+    "data-last-export-bytes": "187003",
+    "data-last-export-canonical": "true"
+  }
+}

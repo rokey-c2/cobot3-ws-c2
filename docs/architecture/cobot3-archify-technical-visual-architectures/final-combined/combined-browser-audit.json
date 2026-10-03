@@ -1,0 +1,102 @@
+{
+  "status": "pass",
+  "method": "Chrome CDP, srcdoc loads, tab visibility, frame content/height + local link existence; viewport 1920x1080",
+  "combinedLinkAudit": [
+    {
+      "target": ".archify/final-system/cobot3-system.architecture.html",
+      "exists": true
+    },
+    {
+      "target": ".archify/final-system/cobot3-system.architecture.svg",
+      "exists": true
+    },
+    {
+      "target": ".archify/final-ros2/cobot3-ros2-node-communication.architecture.html",
+      "exists": true
+    },
+    {
+      "target": ".archify/final-ros2/cobot3-ros2-node-communication.architecture.svg",
+      "exists": true
+    }
+  ],
+  "states": [
+    {
+      "mode": "system",
+      "panels": {
+        "system": true,
+        "ros": false
+      },
+      "frames": [
+        {
+          "view": "system",
+          "nodes": 32,
+          "hasArchify": true,
+          "scrollHeight": 2261,
+          "frameHeight": 2261
+        },
+        {
+          "view": "ros",
+          "nodes": 32,
+          "hasArchify": true,
+          "scrollHeight": 0,
+          "frameHeight": 0
+        }
+      ],
+      "active": [
+        "system"
+      ]
+    },
+    {
+      "mode": "ros",
+      "panels": {
+        "system": false,
+        "ros": true
+      },
+      "frames": [
+        {
+          "view": "system",
+          "nodes": 32,
+          "hasArchify": true,
+          "scrollHeight": 2260,
+          "frameHeight": 0
+        },
+        {
+          "view": "ros",
+          "nodes": 32,
+          "hasArchify": true,
+          "scrollHeight": 1649,
+          "frameHeight": 1649
+        }
+      ],
+      "active": [
+        "ros"
+      ]
+    },
+    {
+      "mode": "both",
+      "panels": {
+        "system": true,
+        "ros": true
+      },
+      "frames": [
+        {
+          "view": "system",
+          "nodes": 32,
+          "hasArchify": true,
+          "scrollHeight": 2261,
+          "frameHeight": 2261
+        },
+        {
+          "view": "ros",
+          "nodes": 32,
+          "hasArchify": true,
+          "scrollHeight": 1649,
+          "frameHeight": 1649
+        }
+      ],
+      "active": [
+        "both"
+      ]
+    }
+  ]
+}
