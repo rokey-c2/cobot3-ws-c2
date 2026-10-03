@@ -1,0 +1,21 @@
+mdl 1.4;
+
+using ::OmniPBR import OmniPBR;
+import ::tex::gamma_mode;
+import ::state::normal;
+import ::base::mono_mode;
+
+export material Rubber_Black_Rough_A(*)
+ = OmniPBR(
+	albedo_add: 0.7199999690055847,
+	albedo_brightness: 1.0,
+	albedo_desaturation: 0.0,
+	diffuse_texture: texture_2d("../Textures/T_Rubber_Black_Rough_A_Albedo.png", ::tex::gamma_srgb),
+	diffuse_tint: color(0.020172894, 0.020172693, 0.020172693),
+	enable_ORM_texture: true,
+	metallic_texture_influence: 1.0,
+	normalmap_texture: texture_2d("../Textures/T_Rubber_Black_Rough_A_Normal.png", ::tex::gamma_linear),
+	ORM_texture: texture_2d("../Textures/T_Rubber_Black_Rough_A_ORM.png", ::tex::gamma_linear),
+	reflection_roughness_constant: 0.5,
+	reflection_roughness_texture_influence: 0.5,
+	texture_scale: float2(3, 3));

@@ -76,7 +76,7 @@ Existing PostgreSQL volumes are not re-initialized by these scripts.
 
 `./scripts/install_ros_dependencies.sh` installs dependencies declared by actual ROS packages under `ros2_ws/src`.
 
-Some directories under `ros2_ws/src` are currently project scaffolding rather than installable ROS packages. In particular, `logistics_bringup`, `mission_manager`, and `sorter_controller` do not currently contain `package.xml`/build metadata. Their source is still placeholder/TODO-level, so this setup change does not invent package metadata for them. Add proper metadata when those components become real runnable ROS packages.
+`ros2_ws/src` contains four ROS packages: `amr_controller`, `arm_controller`, `logistics_interfaces`, and `vision_node`.
 
 The NVIDIA `iw_hub_navigation` package is not part of this repository. `scripts/run_ros2.sh` expects the separate Isaac ROS Jazzy workspace at `$HOME/IsaacSim-ros_workspaces/jazzy_ws/install/setup.bash` when the package is not already sourced.
 

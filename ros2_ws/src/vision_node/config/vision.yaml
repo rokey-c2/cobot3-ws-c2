@@ -12,7 +12,7 @@ locate_box_node:
     # CameraInterface(resolution=(640,480))와 일치해야 함). horizontal_fov_deg는
     # 더 이상 60도 placeholder가 아니라, 실제 Isaac Sim 카메라 prim
     # (/World/vgp20/rsd455/RSD455/Camera_Pseudo_Depth,
-    # isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/World1.usd)에서
+    # isaac_sim/assets/p3020/p3020_vgp20_rsd455/p3020_vgp20_rsd455.usd)에서
     # focalLength=1.93, horizontalAperture=3.896 을 읽어 계산한 값이다:
     #   Isaac Sim의 Camera 클래스는 square pixel을 강제하므로(camera.py
     #   _sync_apertures_with_aspect_ratio), verticalAperture는 자동으로

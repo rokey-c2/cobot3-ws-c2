@@ -87,8 +87,8 @@ IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter 
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/rviz2-and-termial-x10.gif">
-    <img src="docs/screenshots/rviz2-and-termial-x10.gif" alt="RViz2 and Terminal Navigation" width="900">
+  <a href="docs/screenshots/rviz2-and-terminal-x10.gif">
+    <img src="docs/screenshots/rviz2-and-terminal-x10.gif" alt="RViz2 and Terminal Navigation" width="900">
   </a>
   <br>
   <sub><b>RViz2 + Terminal · 10×</b><br>Nav2 주행 화면과 실행 로그 동시 확인</sub>
@@ -371,7 +371,7 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 최종 Warehouse 메인 USD:
 
 ```text
-isaac_sim/usd/Final_Real_Map/Parcel_Sorting_Map.usd
+isaac_sim/usd/parcel_sorting_map/parcel_sorting_map.usd
 ```
 
 `isaac_sim/main_mission.py`가 위 USD를 메인 Warehouse stage로 사용합니다.
@@ -379,7 +379,7 @@ isaac_sim/usd/Final_Real_Map/Parcel_Sorting_Map.usd
 Nav2 map:
 
 ```text
-isaac_sim/usd/Final_Real_Map/navigation/maps/Final.yaml
+isaac_sim/usd/parcel_sorting_map/navigation/maps/parcel_sorting_map.yaml
 ```
 
 ## 메인 Isaac 실행 Python
@@ -400,20 +400,26 @@ scripts/run_isaac_mission.sh
 ## P3020 Asset / URDF
 
 ```text
-isaac_sim/assets/p3020/p3020.urdf
+isaac_sim/assets/p3020/p3020.urdf                 # Lula IK용 URDF (xacro/에서 생성, meshes/ 참조)
 isaac_sim/assets/p3020/p3020_description.yaml
-isaac_sim/assets/p3020/P3020_mount_vgp20/
-isaac_sim/assets/p3020/P3020_mount_vgp20_rsd455_1/
+isaac_sim/assets/p3020/p3020_vgp20_rsd455/        # P3020 + VGP20 그리퍼 + RealSense D455 단독 USD
 isaac_sim/assets/p3020/meshes/
-isaac_sim/assets/vgp20/
+isaac_sim/assets/p3020/xacro/
 ```
 
-그 외 Warehouse / conveyor / wheel sorter / parcel 관련 asset은 다음 위치에 있습니다.
+메인 Warehouse USD 폴더 구성:
 
 ```text
-isaac_sim/assets/
-isaac_sim/usd/
+isaac_sim/usd/parcel_sorting_map/
+├── parcel_sorting_map.usd           # 메인 Warehouse stage
+├── SubUSDs/p3020_vgp20_rsd455.usd   # 맵에 배치된 P3020 IN·OUT (assets/p3020/p3020_vgp20_rsd455 사본)
+├── cargo/cargo_box_guard_200.usd    # Cargo Pod 가드
+├── truck/truck.usd
+├── navigation/maps/parcel_sorting_map.yaml / .png   # Nav2 map
+└── omniverse-content-production.*/  # 맵이 참조하는 Isaac Sim 기본 에셋 사본
 ```
+
+> 맵의 모든 USD 참조는 `parcel_sorting_map.usd` 기준 상대경로(`./SubUSDs/...`, `./cargo/...`)입니다.
 
 > 제출 ZIP에는 `usd`, `usda`, `urdf`, mesh 및 이들이 참조하는 asset 파일을 함께 포함해야 합니다.
 
@@ -494,13 +500,10 @@ models/parcel_box_yolo_model/best.onnx
 
 ```text
 ros2_ws/src/
-├── amr_controller
-├── arm_controller
-├── logistics_bringup
-├── logistics_interfaces
-├── mission_manager
-├── sorter_controller
-└── vision_node
+├── amr_controller         # AMR-P3020 Mission
+├── arm_controller         # P3020 PickPlace Action Server
+├── logistics_interfaces   # PickPlace.action, LocateBox.srv 등
+└── vision_node            # locate_box_node (/locate_box 서비스 방식 검출, docs/architecture/locate_box_pipeline.md)
 ```
 
 외부 NVIDIA Isaac Sim ROS Jazzy workspace에서 사용하는 패키지:
@@ -967,7 +970,7 @@ cd cobot3-ws-c2
 ```bash
 ls README.md requirements.txt
 ls ros2_ws/src
-ls isaac_sim/usd/Final_Real_Map
+ls isaac_sim/usd/parcel_sorting_map
 ls isaac_sim/assets/p3020
 ```
 

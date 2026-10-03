@@ -102,7 +102,8 @@ def _ensure_ros2_bridge_ld_path():
     marker = "P3020_ROS2_LD_FIXED"
     if os.environ.get(marker) == "1":
         return
-    ros2_lib = os.path.expanduser("~/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib")
+    isaac_sim_dir = os.environ.get("ISAAC_SIM_DIR", os.path.expanduser("~/isaacsim"))
+    ros2_lib = os.path.join(isaac_sim_dir, "exts", "isaacsim.ros2.bridge", "jazzy", "lib")
     if not os.path.isdir(ros2_lib):
         return
     env = os.environ.copy()
@@ -166,7 +167,7 @@ from isaacsim.robot_motion.motion_generation import (
 # ══════════════════════════════════════════════════════════════
 ASSETS_DIR = _ISAAC_SIM_DIR / "assets" / "p3020"
 
-WORLD_USD        = str(ASSETS_DIR / "P3020_mount_vgp20_rsd455_1/World1.usd")
+WORLD_USD        = str(ASSETS_DIR / "p3020_vgp20_rsd455/p3020_vgp20_rsd455.usd")
 URDF_PATH        = str(ASSETS_DIR / "p3020.urdf")
 DESCRIPTION_PATH = str(ASSETS_DIR / "p3020_description.yaml")
 
@@ -209,7 +210,7 @@ SPEC_REACH = 2.0   # 여유를 두고 살짝 보수적으로 (스펙상 2030mm)
 # 시뮬레이션을 처음 불러왔을 때 USD에 저장돼 있던 자세를 그대로 캡처해서 쓴다.
 
 # TCP 오프셋: link_6 로컬 좌표계에서 흡착 컵(16개 중심)까지의 거리.
-# World1.usd의 정적 USD 계층 구조에서 link_6^-1 * vgp20 * (0,-0.064,0) 로 직접
+# p3020_vgp20_rsd455.usd의 정적 USD 계층 구조에서 link_6^-1 * vgp20 * (0,-0.064,0) 로 직접
 # 계산한 값 (자세와 무관하게 고정된 관계). 기존 (0,0,0.15) 추측치는 10cm 넘게 틀렸었다.
 TCP_OFFSET = np.array([0.0049, 0.0321, 0.0942])
 
@@ -520,7 +521,7 @@ def find_prim_path(root_path, name):
 
 
 def disable_baked_camera_graph(stage):
-    """World1.usd 안에 /World/Graph/camra_graph 라는 OmniGraph가 이미 박혀 있다
+    """p3020_vgp20_rsd455.usd 안에 /World/Graph/camra_graph 라는 OmniGraph가 이미 박혀 있다
     (아마 예전에 GUI Action Graph로 만들었던 게 asset에 그대로 남은 것). 이 그래프의
     RGBPublish/DepthPublish 노드가 각각 /rgb, /depth 로 독자적으로 발행하는데,
     카메라 경로가 RSD455가 아니라 기본 뷰포트를 가리키는 듯 늘 새까만 화면을

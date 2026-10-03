@@ -45,8 +45,8 @@ ISAAC_SIM_DIR = Path(__file__).resolve().parent
 WORLD_USD = (
     ISAAC_SIM_DIR
     / "usd"
-    / "Final_Real_Map"
-    / "Parcel_Sorting_Map.usd"
+    / "parcel_sorting_map"
+    / "parcel_sorting_map.usd"
 )
 
 VISION_RGB_PUBLISH_INTERVAL_STEPS = 6

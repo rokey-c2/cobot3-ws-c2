@@ -101,7 +101,7 @@ DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
 
-# Parcel_Sorting_Map에서 직접 확인한 P3020(arm #1, /World/p3020_in) 베이스
+# parcel_sorting_map에서 직접 확인한 P3020(arm #1, /World/p3020_in) 베이스
 # 월드 좌표/방향. 헤드리스로 직접 측정함 -- 맵 재구성 후 p3020_in 자체가
 # Z축 53.5도 회전된 채로 배치되어 있어서(스탠드가 아니라 팔 프림 본인의
 # 정적 orient), 회전이 없다고 가정하면 IK 타겟이 그만큼 어긋난다.
@@ -673,7 +673,7 @@ def pixel_to_world_xy(pixel, depth_map, camera, frame=None):
 
 
 def _disable_baked_camera_graph(stage):
-    """P3020 원본 애셋(P3020_mount_vgp20_rsd455_1)에는 /World/Graph/camra_graph
+    """P3020 원본 애셋(p3020_vgp20_rsd455)에는 /World/Graph/camra_graph
     라는 OmniGraph가 이미 박혀 있어서(GUI로 예전에 만들어졌던 게 애셋에 그대로
     남은 것으로 보임), 이 그래프의 RGBPublish/DepthPublish 노드가
     카메라용 ROS 토픽을 발행할 수 있다. 통합 맵에서는 /World/Graph가 아니라

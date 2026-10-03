@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Lightweight map_server + rviz2, deliberately WITHOUT AMCL/Nav2.
 #
-# Purpose: display Final.yaml's occupancy grid in rviz2 so the
+# Purpose: display parcel_sorting_map.yaml's occupancy grid in rviz2 so the
 # user can read off real-world (map-frame) coordinates for AMR/cargo/parcel
 # placement. The full run_ros2.sh stack requires a live robot publishing
 # /clock + lidar + odom and a valid initial pose to bring AMCL up -- none of
@@ -9,7 +9,7 @@
 set -eo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAP_FILE="$ROOT_DIR/isaac_sim/usd/Final_Real_Map/navigation/maps/Final.yaml"
+MAP_FILE="$ROOT_DIR/isaac_sim/usd/parcel_sorting_map/navigation/maps/parcel_sorting_map.yaml"
 RVIZ_CONFIG="$ROOT_DIR/rviz/map_view.rviz"
 
 source /opt/ros/jazzy/setup.bash
