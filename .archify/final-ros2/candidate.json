@@ -195,7 +195,7 @@
       "sublabel": "OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent",
       "tag": "2 Python objects",
       "pos": [
-        835,
+        838,
         520
       ],
       "size": [
@@ -359,7 +359,8 @@
       "from": "process_adapter",
       "to": "process_runtime",
       "label": "TOPIC /controltower/equipment/command",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelDy": 24
     },
     {
       "id": "process-feedback",
@@ -451,7 +452,7 @@
       "toSide": "bottom",
       "via": [
         [
-          1002.5,
+          1005.5,
           455
         ],
         [
@@ -577,11 +578,7 @@
       "from": "iw_graph",
       "to": "pose_sync",
       "label": "TF input to composed lookup†",
-      "variant": "dashed",
-      "labelAt": [
-        216,
-        478
-      ]
+      "variant": "dashed"
     },
     {
       "id": "mission-nav2",
@@ -753,7 +750,7 @@
           650
         ],
         [
-          1002.5,
+          1005.5,
           650
         ]
       ]
