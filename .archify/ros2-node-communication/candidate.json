@@ -278,7 +278,11 @@
       "from": "manual_adapter",
       "to": "iw_graph",
       "label": "TOPIC /cmd_vel",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelAt": [
+        250,
+        660
+      ]
     },
     {
       "id": "process-command",
@@ -302,7 +306,11 @@
       "id": "arrival-confirm",
       "from": "process_adapter",
       "to": "mission",
-      "label": "TOPIC /amr_a/p3020_arrival_confirm"
+      "label": "TOPIC /amr_a/p3020_arrival_confirm",
+      "labelAt": [
+        536,
+        212
+      ]
     },
     {
       "id": "mission-state",
@@ -342,11 +350,11 @@
       "toSide": "bottom",
       "via": [
         [
-          20,
+          5,
           779
         ],
         [
-          20,
+          5,
           250
         ],
         [
