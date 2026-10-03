@@ -337,7 +337,27 @@
       "from": "iw_graph",
       "to": "pose_sync",
       "label": "TF map→base_link",
-      "variant": "dashed"
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "bottom",
+      "via": [
+        [
+          20,
+          779
+        ],
+        [
+          20,
+          250
+        ],
+        [
+          942.5,
+          250
+        ]
+      ],
+      "labelAt": [
+        500,
+        238
+      ]
     },
     {
       "id": "mission-nav2",
