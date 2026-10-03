@@ -221,7 +221,7 @@
       "sublabel": "Simulated robot",
       "pos": [
         1085,
-        790
+        792
       ],
       "size": [
         125,
@@ -321,16 +321,16 @@
       "via": [
         [
           575,
-          220
+          240
         ],
         [
           115,
-          220
+          240
         ]
       ],
       "labelAt": [
         345,
-        208
+        240
       ]
     },
     {
@@ -368,10 +368,27 @@
       "label": "equipment/process",
       "fromSide": "bottom",
       "toSide": "top",
-      "route": "straight",
       "labelAt": [
-        592,
-        690
+        480,
+        650
+      ],
+      "via": [
+        [
+          620,
+          400
+        ],
+        [
+          500,
+          400
+        ],
+        [
+          500,
+          740
+        ],
+        [
+          635,
+          740
+        ]
       ]
     },
     {
@@ -402,7 +419,31 @@
       "id": "action-bridge",
       "from": "action",
       "to": "bridge",
-      "label": "String command/status"
+      "label": "String command/status",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          887.5,
+          700
+        ],
+        [
+          760,
+          700
+        ],
+        [
+          760,
+          740
+        ],
+        [
+          635,
+          740
+        ]
+      ],
+      "labelAt": [
+        810,
+        688
+      ]
     },
     {
       "id": "bridge-vision",
@@ -428,7 +469,7 @@
       "route": "straight",
       "labelAt": [
         1042,
-        777
+        815
       ]
     },
     {
