@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 3.0.1">
   <meta name="archify-reader-contract" content="declared-wide-v1">
-  <title>cobot3-ws-c2 — ROS 2 Node Communication Architecture Diagram</title>
+  <title>cobot3-ws-c2 — System Architecture Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4978,9 +4978,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
            data-preset-badge-blueprint="BLUEPRINT / REV 01"
            data-preset-badge-editorial="EDITORIAL / FIELD NOTE">
         <div class="pulse-dot"></div>
-        <h1>cobot3-ws-c2 — ROS 2 Node Communication Architecture</h1>
+        <h1>cobot3-ws-c2 — System Architecture</h1>
       </div>
-      <p class="subtitle">Active code paths @ cf7feac · ROS Node vs Python object ownership explicit · * PickPlace: simulate_p3020=false · arrival_confirm: manual_delivery=true</p>
+      <p class="subtitle">Control Tower · MQTT · Host ROS 2 Jazzy · Isaac Sim Runtime · code-grounded @ cf7feac</p>
     </div>
 
 
@@ -4988,9 +4988,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
-      <svg viewBox="-60 0 1849 932" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="standard" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
-        <title id="archify-diagram-title">cobot3-ws-c2 — ROS 2 Node Communication Architecture</title>
-        <desc id="archify-diagram-description">Active code paths @ cf7feac · ROS Node vs Python object ownership explicit · * PickPlace: simulate_p3020=false · arrival_confirm: manual_delivery=true</desc>
+      <svg viewBox="0 0 1563 1160" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="standard" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
+        <title id="archify-diagram-title">cobot3-ws-c2 — System Architecture</title>
+        <desc id="archify-diagram-description">Control Tower · MQTT · Host ROS 2 Jazzy · Isaac Sim Runtime · code-grounded @ cf7feac</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5014,509 +5014,448 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Host ROS 2 Jazzy — Adapters" x="18" y="13" width="1654" height="129" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Control Tower / Web" x="42" y="29" width="736" height="226" rx="12" class="c-region" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" data-composition-frame-label="Host ROS 2 Jazzy — Mission / Navigation / Vision" x="16" y="243" width="1398" height="133" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" data-composition-frame-label="Host ROS 2 Jazzy" x="50" y="274" width="1330" height="359" rx="12" class="c-region" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Isaac Sim 5.1 Runtime" x="16" y="493" width="1733" height="371" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Isaac Sim 5.1 Runtime" x="160" y="804" width="1230" height="288" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <g data-graph-role="automatic-crossover" style="--step:0">
-          <path data-graph-role="automatic-crossover-underlay" d="M 402.5 122 L 402.5 138 Q 402.5 146 394.5 146 L 292 146 Q 284 146 284 154 L 284 305 Q 284 313 276 313 L 260 313" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="nav_adapter" data-edge-to="nav2" data-edge-label="ACTION /navigate_to_pose" data-edge-key="0" data-edge-id="nav-adapter-nav2" data-composition-points="402.5,122;402.5,146;284,146;284,313;260,313" data-composition-crossover="halo" d="M 402.5 122 L 402.5 138 Q 402.5 146 394.5 146 L 292 146 Q 284 146 284 154 L 284 305 Q 284 313 276 313 L 260 313" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:1">
-          <path data-graph-role="automatic-crossover-underlay" d="M 300 81 L 292.5 81 Q 285 81 285 88.5 L 285 556.5 Q 285 564 277.5 564 L 270 564" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="nav_adapter" data-edge-to="iw_graph" data-edge-label="TOPIC /cmd_vel (STOP)" data-edge-key="1" data-edge-id="nav-adapter-cmdvel" data-composition-points="300,81;285,81;285,564;270,564" data-composition-crossover="halo" d="M 300 81 L 292.5 81 Q 285 81 285 88.5 L 285 556.5 Q 285 564 277.5 564 L 270 564" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
+        <path data-edge-from="web" data-edge-to="api" data-edge-label="HTTP / REST" data-edge-key="0" data-edge-id="web-api" data-composition-points="240,90;310,90" d="M 240 90 L 310 90" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="api" data-edge-to="mqtt" data-edge-label="MQTT" data-edge-key="1" data-edge-id="api-mqtt" data-composition-points="500,90;570,90" d="M 500 90 L 570 90" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <g data-graph-role="automatic-crossover" style="--step:2">
-          <path data-graph-role="automatic-crossover-underlay" d="M 402.5 122 L 402.5 138 Q 402.5 146 394.5 146 L 304 146 Q 296 146 296 154 L 296 556 Q 296 564 304 564 L 320 564" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="nav_adapter" data-edge-to="isaac_bridge" data-edge-label="TOPIC /amr_a/lift_command" data-edge-key="2" data-edge-id="nav-adapter-lift" data-composition-points="402.5,122;402.5,146;296,146;296,564;320,564" data-composition-crossover="halo" data-composition-independent="true" d="M 402.5 122 L 402.5 138 Q 402.5 146 394.5 146 L 304 146 Q 296 146 296 154 L 296 556 Q 296 564 304 564 L 320 564" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 405 125 L 405 165" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="api" data-edge-to="db" data-edge-label="SQL" data-edge-key="2" data-edge-id="api-db" data-composition-points="405,125;405,165" data-composition-crossover="halo" d="M 405 125 L 405 165" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:3">
-          <path data-graph-role="automatic-crossover-underlay" d="M 320 564 L 304 564 Q 296 564 296 556 L 296 154 Q 296 146 304 146 L 394.5 146 Q 402.5 146 402.5 138 L 402.5 122" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="isaac_bridge" data-edge-to="nav_adapter" data-edge-label="TOPICS /amr_a/lift_state · /amr_a/lift_result" data-edge-key="3" data-edge-id="lift-feedback" data-composition-points="320,564;296,564;296,146;402.5,146;402.5,122" data-composition-crossover="halo" d="M 320 564 L 304 564 Q 296 564 296 556 L 296 154 Q 296 146 304 146 L 394.5 146 Q 402.5 146 402.5 138 L 402.5 122" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 665 125 L 665 268 Q 665 276 657 276 L 173 276 Q 165 276 165 284 L 165 300" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mqtt" data-edge-to="mqtt_nav" data-edge-label="MQTT channel · navigation/lift" data-edge-key="3" data-edge-id="mqtt-nav" data-composition-points="665,125;665,276;165,276;165,300" data-composition-crossover="halo" d="M 665 125 L 665 268 Q 665 276 657 276 L 173 276 Q 165 276 165 284 L 165 300" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
-        <path data-edge-from="manual_adapter" data-edge-to="iw_graph" data-edge-label="TOPIC /cmd_vel" data-edge-key="4" data-edge-id="manual-cmdvel" data-composition-points="665,122;665,240;290,240;290,564;270,564" d="M 665 122 L 665 232 Q 665 240 657 240 L 298 240 Q 290 240 290 248 L 290 556 Q 290 564 282 564 L 270 564" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-graph-role="automatic-crossover" style="--step:4">
+          <path data-graph-role="automatic-crossover-underlay" d="M 651 125 L 651 180.5 Q 651 188.5 659 188.5 L 685 188.5 Q 693 188.5 693 196.5 L 693 255 Q 693 263 685 263 L 428 263 Q 420 263 420 271 L 420 300" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mqtt" data-edge-to="mqtt_manual" data-edge-label="MQTT channel · manual velocity" data-edge-key="4" data-edge-id="mqtt-manual" data-composition-points="651,125;651,188.5;693,188.5;693,263;420,263;420,300" data-composition-crossover="halo" data-composition-independent="true" d="M 651 125 L 651 180.5 Q 651 188.5 659 188.5 L 685 188.5 Q 693 188.5 693 196.5 L 693 255 Q 693 263 685 263 L 428 263 Q 420 263 420 271 L 420 300" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        </g>
         <g data-graph-role="automatic-crossover" style="--step:5">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1528 122 L 1528 313 Q 1528 321 1536 321 L 1600 321 Q 1608 321 1608 329 L 1608 520" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="process_adapter" data-edge-to="process_runtime" data-edge-label="TOPIC /controltower/equipment/command" data-edge-key="5" data-edge-id="process-command" data-composition-points="1528,122;1528,321;1608,321;1608,520" data-composition-crossover="halo" data-composition-independent="true" d="M 1528 122 L 1528 313 Q 1528 321 1536 321 L 1600 321 Q 1608 321 1608 329 L 1608 520" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 665 125 L 665 268 Q 665 276 673 276 L 717 276 Q 725 276 725 284 L 725 300" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mqtt" data-edge-to="mqtt_process" data-edge-label="MQTT channel · process/control" data-edge-key="5" data-edge-id="mqtt-process" data-composition-points="665,125;665,276;725,276;725,300" data-composition-crossover="halo" data-composition-independent="true" d="M 665 125 L 665 268 Q 665 276 673 276 L 717 276 Q 725 276 725 284 L 725 300" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:6">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1622 520 L 1622 154 Q 1622 146 1614 146 L 1550 146 Q 1542 146 1542 138 L 1542 122" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="process_runtime" data-edge-to="process_adapter" data-edge-label="TOPICS equipment/status · process/event" data-edge-key="6" data-edge-id="process-feedback" data-composition-points="1622,520;1622,146;1542,146;1542,122" data-composition-crossover="halo" data-composition-independent="true" d="M 1622 520 L 1622 154 Q 1622 146 1614 146 L 1550 146 Q 1542 146 1542 138 L 1542 122" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 760 90 L 1012 90 Q 1020 90 1020 98 L 1020 300" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mqtt" data-edge-to="pose_sync" data-edge-label="MQTT channel · pose persistence" data-edge-key="6" data-edge-id="mqtt-pose" data-composition-points="760,90;1020,90;1020,300" data-composition-crossover="halo" data-composition-independent="true" d="M 760 90 L 1012 90 Q 1020 90 1020 98 L 1020 300" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
-        <path data-edge-from="process_adapter" data-edge-to="mission" data-edge-label="TOPIC /amr_a/p3020_arrival_confirm*" data-edge-key="7" data-edge-id="arrival-confirm" data-composition-points="1535,122;1535,180;425,180;425,270" d="M 1535 122 L 1535 172 Q 1535 180 1527 180 L 433 180 Q 425 180 425 188 L 425 270" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="mission" data-edge-to="process_adapter" data-edge-label="TOPIC /amr_a/mission_state" data-edge-key="8" data-edge-id="mission-state" data-composition-points="425,270;425,205;1535,205;1535,122" d="M 425 270 L 425 213 Q 425 205 433 205 L 1527 205 Q 1535 205 1535 197 L 1535 122" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="isaac_bridge" data-edge-to="process_adapter" data-edge-label="TOPIC /amr_a/pickup_state" data-edge-key="9" data-edge-id="pickup-process-status" data-composition-points="320,564;280,564;280,230;1535,230;1535,122" d="M 320 564 L 288 564 Q 280 564 280 556 L 280 238 Q 280 230 288 230 L 1527 230 Q 1535 230 1535 222 L 1535 122" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="p3020_in" data-edge-to="process_adapter" data-edge-label="BRIDGE PUB /arm_a/pick_place_status" data-edge-key="10" data-edge-id="arm-a-process-status" data-composition-points="1005.5,520;1005.5,455;1400,455;1400,245;1535,245;1535,122" d="M 1005.5 520 L 1005.5 463 Q 1005.5 455 1013.5 455 L 1392 455 Q 1400 455 1400 447 L 1400 253 Q 1400 245 1408 245 L 1527 245 Q 1535 245 1535 237 L 1535 122" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="p3020_out" data-edge-to="process_adapter" data-edge-label="BRIDGE PUB /arm_b/pick_place_status" data-edge-key="11" data-edge-id="arm-b-process-status" data-composition-points="1336,520;1336,470;1410,470;1410,260;1535,260;1535,122" d="M 1336 520 L 1336 478 Q 1336 470 1344 470 L 1402 470 Q 1410 470 1410 462 L 1410 268 Q 1410 260 1418 260 L 1527 260 Q 1535 260 1535 252 L 1535 122" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="isaac_bridge" data-edge-to="pose_sync" data-edge-label="TOPICS /amr_a/map_pose · /amr_a/pose_source_session" data-edge-key="12" data-edge-id="pose-from-isaac" data-composition-points="455,520;455,490;-10,490;-10,81;20,81;40,81" d="M 455 520 L 455 498 Q 455 490 447 490 L -2 490 Q -10 490 -10 482 L -10 89 Q -10 81 -2 81 L 12 81 Q 20 81 28 81 L 40 81" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="pose_sync" data-edge-to="isaac_bridge" data-edge-label="TOPIC /amr_a/restore_pose" data-edge-key="13" data-edge-id="restore-to-isaac" data-composition-points="40,81;10,81;10,480;455,480;455,520" d="M 40 81 L 18 81 Q 10 81 10 89 L 10 472 Q 10 480 18 480 L 447 480 Q 455 480 455 488 L 455 520" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <g data-graph-role="automatic-crossover" style="--step:14">
-          <path data-graph-role="automatic-crossover-underlay" d="M 150 122 L 150 270" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="pose_sync" data-edge-to="nav2" data-edge-label="TOPIC /initialpose" data-edge-key="14" data-edge-id="initialpose" data-composition-points="150,122;150,270" data-composition-crossover="halo" d="M 150 122 L 150 270" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g data-graph-role="automatic-crossover" style="--step:7">
+          <path data-graph-role="automatic-crossover-underlay" d="M 310 338 L 294 338 Q 286 338 286 346 L 286 524 Q 286 532 294 532 L 375 532 Q 383 532 383 540 L 383 958 Q 383 966 375 966 L 298 966 Q 290 966 290 974 L 290 990" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mqtt_manual" data-edge-to="sensor" data-edge-label="manual /cmd_vel" data-edge-key="7" data-edge-id="manual-graph" data-composition-points="310,338;286,338;286,532;383,532;383,966;290,966;290,990" data-composition-crossover="halo" d="M 310 338 L 294 338 Q 286 338 286 346 L 286 524 Q 286 532 294 532 L 375 532 Q 383 532 383 540 L 383 958 Q 383 966 375 966 L 298 966 Q 290 966 290 974 L 290 990" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
-        <path data-edge-from="iw_graph" data-edge-to="pose_sync" data-edge-label="TF input to composed lookup†" data-edge-key="15" data-edge-id="tf-sync" data-composition-points="40,564;-30,564;-30,81;40,81" d="M 40 564 L -22 564 Q -30 564 -30 556 L -30 89 Q -30 81 -22 81 L 40 81" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <g data-graph-role="automatic-crossover" style="--step:16">
-          <path data-graph-role="automatic-crossover-underlay" d="M 320 313 L 260 313" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="mission" data-edge-to="nav2" data-edge-label="ACTION /navigate_to_pose" data-edge-key="16" data-edge-id="mission-nav2" data-composition-points="320,313;260,313" data-composition-crossover="halo" d="M 320 313 L 260 313" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="mission" data-edge-to="nav" data-edge-label="NavigateToPose" data-edge-key="8" data-edge-id="mission-nav" data-composition-points="500,574;380,574" d="M 500 574 L 380 574" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="mission" data-edge-to="action" data-edge-label="PickPlace action*" data-edge-key="9" data-edge-id="mission-action" data-composition-points="700,574;810,574" d="M 700 574 L 810 574" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="bridge" data-edge-to="internal" data-edge-label="Python object attachment / method calls" data-edge-key="10" data-edge-id="bridge-internal" data-composition-points="690,871;790,871" d="M 690 871 L 790 871" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="internal" data-edge-to="amr" data-edge-label="agent articulation / lift control" data-edge-key="11" data-edge-id="internal-amr" data-composition-points="1050,871;1190,869" data-composition-route="straight" d="M 1050 871 L 1190 869" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <g data-graph-role="automatic-crossover" style="--step:12">
+          <path data-graph-role="automatic-crossover-underlay" d="M 400 1031 L 1272 1031 Q 1280 1031 1280 1023 L 1280 908" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="sensor" data-edge-to="amr" data-edge-label="ROS graph I/O / actuation" data-edge-key="12" data-edge-id="sensor-amr" data-composition-points="400,1031;1280,1031;1280,908" data-composition-crossover="halo" data-composition-independent="true" d="M 400 1031 L 1272 1031 Q 1280 1031 1280 1023 L 1280 908" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
-        <g data-graph-role="automatic-crossover" style="--step:17">
-          <path data-graph-role="automatic-crossover-underlay" d="M 530 313 L 600 313" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="mission" data-edge-to="pickplace" data-edge-label="ACTION /p3020/pick_place*" data-edge-key="17" data-edge-id="mission-pickplace" data-composition-points="530,313;600,313" data-composition-crossover="halo" d="M 530 313 L 600 313" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:18">
-          <path data-graph-role="automatic-crossover-underlay" d="M 425 356 L 425 430 Q 425 438 433 438 L 447 438 Q 455 438 455 446 L 455 520" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="mission" data-edge-to="isaac_bridge" data-edge-label="TOPIC /amr_a/pickup_command" data-edge-key="18" data-edge-id="mission-pickup" data-composition-points="425,356;425,438;455,438;455,520" data-composition-crossover="halo" d="M 425 356 L 425 430 Q 425 438 433 438 L 447 438 Q 455 438 455 446 L 455 520" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:19">
-          <path data-graph-role="automatic-crossover-underlay" d="M 455 520 L 455 446 Q 455 438 447 438 L 433 438 Q 425 438 425 430 L 425 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="isaac_bridge" data-edge-to="mission" data-edge-label="TOPIC /amr_a/pickup_state" data-edge-key="19" data-edge-id="pickup-feedback" data-composition-points="455,520;455,438;425,438;425,356" data-composition-crossover="halo" d="M 455 520 L 455 446 Q 455 438 447 438 L 433 438 Q 425 438 425 430 L 425 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:20">
-          <path data-graph-role="automatic-crossover-underlay" d="M 715 356 L 715 430 Q 715 438 723 438 L 997.5 438 Q 1005.5 438 1005.5 446 L 1005.5 520" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="pickplace" data-edge-to="p3020_in" data-edge-label="BRIDGE SUB /arm_a/pick_place_command" data-edge-key="20" data-edge-id="pickplace-command" data-composition-points="715,356;715,438;1005.5,438;1005.5,520" data-composition-crossover="halo" d="M 715 356 L 715 430 Q 715 438 723 438 L 997.5 438 Q 1005.5 438 1005.5 446 L 1005.5 520" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:21">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1005.5 520 L 1005.5 446 Q 1005.5 438 997.5 438 L 723 438 Q 715 438 715 430 L 715 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="p3020_in" data-edge-to="pickplace" data-edge-label="BRIDGE PUB /arm_a/pick_place_status" data-edge-key="21" data-edge-id="pickplace-status" data-composition-points="1005.5,520;1005.5,438;715,438;715,356" data-composition-crossover="halo" data-composition-independent="true" d="M 1005.5 520 L 1005.5 446 Q 1005.5 438 997.5 438 L 723 438 Q 715 438 715 430 L 715 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:22">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1005.5 520 L 1005.5 367 Q 1005.5 359 1013.5 359 L 1149 359 Q 1157 359 1157 351 L 1157 237 Q 1157 229 1149 229 L 1013 229 Q 1005 229 1005 237 L 1005 270" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="p3020_in" data-edge-to="vision_in" data-edge-label="BRIDGE PUB /arm_a/rgb" data-edge-key="22" data-edge-id="in-rgb" data-composition-points="1005.5,520;1005.5,359;1157,359;1157,229;1005,229;1005,270" data-composition-crossover="halo" d="M 1005.5 520 L 1005.5 367 Q 1005.5 359 1013.5 359 L 1149 359 Q 1157 359 1157 351 L 1157 237 Q 1157 229 1149 229 L 1013 229 Q 1005 229 1005 237 L 1005 270" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:23">
-          <path data-graph-role="automatic-crossover-underlay" d="M 320 564 L 304 564 Q 296 564 296 556 L 296 388 Q 296 380 304 380 L 997 380 Q 1005 380 1005 372 L 1005 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="isaac_bridge" data-edge-to="vision_in" data-edge-label="NODE PUB /arm_a/preview · main_mission" data-edge-key="23" data-edge-id="in-preview" data-composition-points="320,564;296,564;296,380;1005,380;1005,356" data-composition-crossover="halo" d="M 320 564 L 304 564 Q 296 564 296 556 L 296 388 Q 296 380 304 380 L 997 380 Q 1005 380 1005 372 L 1005 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:24">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1005 356 L 1005 417 Q 1005 425 997 425 L 977.6 425 Q 969.6 425 969.6 433 L 969.6 471 Q 969.6 479 977.6 479 L 997.5 479 Q 1005.5 479 1005.5 487 L 1005.5 520" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="vision_in" data-edge-to="p3020_in" data-edge-label="BRIDGE SUB /box_pixel · /box_pixel/result" data-edge-key="24" data-edge-id="in-detect" data-composition-points="1005,356;1005,425;969.6,425;969.6,479;1005.5,479;1005.5,520" data-composition-crossover="halo" d="M 1005 356 L 1005 417 Q 1005 425 997 425 L 977.6 425 Q 969.6 425 969.6 433 L 969.6 471 Q 969.6 479 977.6 479 L 997.5 479 Q 1005.5 479 1005.5 487 L 1005.5 520" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:25">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1005.5 520 L 1005.5 487 Q 1005.5 479 997.5 479 L 977.6 479 Q 969.6 479 969.6 471 L 969.6 367 Q 969.6 359 977.6 359 L 1149 359 Q 1157 359 1157 351 L 1157 237 Q 1157 229 1149 229 L 1013 229 Q 1005 229 1005 237 L 1005 270" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="p3020_in" data-edge-to="vision_in" data-edge-label="BRIDGE PUB /box_pixel/validated" data-edge-key="25" data-edge-id="in-validated" data-composition-points="1005.5,520;1005.5,479;969.6,479;969.6,359;1157,359;1157,229;1005,229;1005,270" data-composition-crossover="halo" d="M 1005.5 520 L 1005.5 487 Q 1005.5 479 997.5 479 L 977.6 479 Q 969.6 479 969.6 471 L 969.6 367 Q 969.6 359 977.6 359 L 1149 359 Q 1157 359 1157 351 L 1157 237 Q 1157 229 1149 229 L 1013 229 Q 1005 229 1005 237 L 1005 270" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:26">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1336 520 L 1336 388 Q 1336 380 1328 380 L 1283 380 Q 1275 380 1275 372 L 1275 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="p3020_out" data-edge-to="vision_out" data-edge-label="BRIDGE PUB /arm_b/rgb" data-edge-key="26" data-edge-id="out-rgb" data-composition-points="1336,520;1336,380;1275,380;1275,356" data-composition-crossover="halo" d="M 1336 520 L 1336 388 Q 1336 380 1328 380 L 1283 380 Q 1275 380 1275 372 L 1275 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:27">
-          <path data-graph-role="automatic-crossover-underlay" d="M 320 564 L 304 564 Q 296 564 296 556 L 296 388 Q 296 380 304 380 L 1267 380 Q 1275 380 1275 372 L 1275 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="isaac_bridge" data-edge-to="vision_out" data-edge-label="NODE PUB /arm_b/preview · main_mission" data-edge-key="27" data-edge-id="out-preview" data-composition-points="320,564;296,564;296,380;1275,380;1275,356" data-composition-crossover="halo" d="M 320 564 L 304 564 Q 296 564 296 556 L 296 388 Q 296 380 304 380 L 1267 380 Q 1275 380 1275 372 L 1275 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:28">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1275 356 L 1275 480 Q 1275 488 1283 488 L 1328 488 Q 1336 488 1336 496 L 1336 520" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="vision_out" data-edge-to="p3020_out" data-edge-label="BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result" data-edge-key="28" data-edge-id="out-detect" data-composition-points="1275,356;1275,488;1336,488;1336,520" data-composition-crossover="halo" d="M 1275 356 L 1275 480 Q 1275 488 1283 488 L 1328 488 Q 1336 488 1336 496 L 1336 520" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:29">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1336 520 L 1336 388 Q 1336 380 1328 380 L 1283 380 Q 1275 380 1275 372 L 1275 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="p3020_out" data-edge-to="vision_out" data-edge-label="BRIDGE PUB /arm_b/box_pixel/validated" data-edge-key="29" data-edge-id="out-validated" data-composition-points="1336,520;1336,380;1275,380;1275,356" data-composition-crossover="halo" d="M 1336 520 L 1336 388 Q 1336 380 1328 380 L 1283 380 Q 1275 380 1275 372 L 1275 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:30">
-          <path data-graph-role="automatic-crossover-underlay" d="M 590 564 L 620 564" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="isaac_bridge" data-edge-to="iw_agent" data-edge-label="PYTHON method calls" data-edge-key="30" data-edge-id="bridge-agent" data-composition-points="590,564;620,564" data-composition-crossover="halo" d="M 590 564 L 620 564" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:31">
-          <path data-graph-role="automatic-crossover-underlay" d="M 725 520 L 725 487 Q 725 479 717 479 L 625 479 Q 617 479 617 487 L 617 724 Q 617 732 625 732 L 712 732 Q 720 732 720 740 L 720 756" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="iw_agent" data-edge-to="amr" data-edge-label="PYTHON articulation / wheel / lift control" data-edge-key="31" data-edge-id="agent-amr" data-composition-points="725,520;725,479;617,479;617,732;720,732;720,756" data-composition-crossover="halo" d="M 725 520 L 725 487 Q 725 479 717 479 L 625 479 Q 617 479 617 487 L 617 724 Q 617 732 625 732 L 712 732 Q 720 732 720 740 L 720 756" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <path data-edge-from="isaac_bridge" data-edge-to="process_runtime" data-edge-label="OBJECT attachment: same rclpy Node" data-edge-key="32" data-edge-id="bridge-process" data-composition-points="455,608;455,710;1615,710;1615,608" d="M 455 608 L 455 702 Q 455 710 463 710 L 1607 710 Q 1615 710 1615 702 L 1615 608" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="isaac_bridge" data-edge-to="p3020_in" data-edge-label="OBJECT OptimizedP3020RosBridge attached to same rclpy Node" data-edge-key="33" data-edge-id="bridge-p3020-in" data-composition-points="455,608;455,650;1005.5,650;1005.5,616" d="M 455 608 L 455 642 Q 455 650 463 650 L 997.5 650 Q 1005.5 650 1005.5 642 L 1005.5 616" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="isaac_bridge" data-edge-to="p3020_out" data-edge-label="OBJECT P3020OutRosBridge attached to same rclpy Node" data-edge-key="34" data-edge-id="bridge-p3020-out" data-composition-points="455,608;455,680;1336,680;1336,616" d="M 455 608 L 455 672 Q 455 680 463 680 L 1328 680 Q 1336 680 1336 672 L 1336 616" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <g data-graph-role="automatic-crossover" style="--step:35">
-          <path data-graph-role="automatic-crossover-underlay" d="M 158.05 356 L 158.05 417 Q 158.05 425 150.05 425 L 16 425 Q 8 425 8 433 L 8 624 Q 8 632 16 632 L 147 632 Q 155 632 155 624 L 155 608" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="nav2" data-edge-to="iw_graph" data-edge-label="velocity control (/cmd_vel)‡" data-edge-key="35" data-edge-id="nav2-graph" data-composition-points="158.05,356;158.05,425;8,425;8,632;155,632;155,608" data-composition-crossover="halo" data-composition-independent="true" d="M 158.05 356 L 158.05 417 Q 158.05 425 150.05 425 L 16 425 Q 8 425 8 433 L 8 624 Q 8 632 16 632 L 147 632 Q 155 632 155 624 L 155 608" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:36">
-          <path data-graph-role="automatic-crossover-underlay" d="M 139.95 608 L 139.95 663 Q 139.95 671 131.95 671 L -14.200000000000003 671 Q -22.200000000000003 671 -22.200000000000003 663 L -22.200000000000003 388 Q -22.200000000000003 380 -14.200000000000003 380 L 135 380 Q 143 380 143 372 L 143 356" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="iw_graph" data-edge-to="nav2" data-edge-label="sensor · odom · TF · clock inputs‡" data-edge-key="36" data-edge-id="graph-nav2" data-composition-points="139.95,608;139.95,671;-22.200000000000003,671;-22.200000000000003,380;143,380;143,356" data-composition-crossover="halo" data-composition-independent="true" d="M 139.95 608 L 139.95 663 Q 139.95 671 131.95 671 L -14.200000000000003 671 Q -22.200000000000003 671 -22.200000000000003 663 L -22.200000000000003 388 Q -22.200000000000003 380 -14.200000000000003 380 L 135 380 Q 143 380 143 372 L 143 356" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:37">
-          <path data-graph-role="automatic-crossover-underlay" d="M 155 608 L 155 624 Q 155 632 163 632 L 588 632 Q 596 632 596 640 L 596 792 Q 596 800 604 800 L 620 800" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="iw_graph" data-edge-to="amr" data-edge-label="ROS graph I/O / actuation" data-edge-key="37" data-edge-id="graph-amr" data-composition-points="155,608;155,632;596,632;596,800;620,800" data-composition-crossover="halo" d="M 155 608 L 155 624 Q 155 632 163 632 L 588 632 Q 596 632 596 640 L 596 792 Q 596 800 604 800 L 620 800" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        </g>
+        <path data-edge-from="web" data-edge-to="vision" data-edge-label="HTTP MJPEG IN/OUT (:8091/:8093)" data-edge-key="13" data-edge-id="web-vision-mjpeg" data-composition-points="240,90;250,90;250,140;1450,140;1450,574;1360,574" d="M 240 90 L 245 90 Q 250 90 250 95 L 250 132 Q 250 140 258 140 L 1442 140 Q 1450 140 1450 148 L 1450 566 Q 1450 574 1442 574 L 1360 574" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="mqtt_nav" data-edge-to="nav" data-edge-label="ACTION /navigate_to_pose" data-edge-key="14" data-edge-id="adapter-nav" data-composition-points="165,376;165,455;285,455;285,535" d="M 165 376 L 165 447 Q 165 455 173 455 L 277 455 Q 285 455 285 463 L 285 535" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="mqtt_nav" data-edge-to="sensor" data-edge-label="TOPIC /cmd_vel (STOP)" data-edge-key="15" data-edge-id="adapter-stop" data-composition-points="70,338;10,338;10,1031;180,1031" d="M 70 338 L 18 338 Q 10 338 10 346 L 10 1023 Q 10 1031 18 1031 L 180 1031" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="nav" data-edge-to="sensor" data-edge-label="velocity control (/cmd_vel)‡" data-edge-key="16" data-edge-id="nav-graph" data-composition-points="285,613;285,660;235,660;235,930;290,930;290,990" d="M 285 613 L 285 652 Q 285 660 277 660 L 243 660 Q 235 660 235 668 L 235 922 Q 235 930 243 930 L 282 930 Q 290 930 290 938 L 290 990" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="sensor" data-edge-to="nav" data-edge-label="sensor · odom · TF · clock inputs‡" data-edge-key="17" data-edge-id="graph-nav" data-composition-points="290,990;290,950;345,950;345,660;285,660;285,613" d="M 290 990 L 290 958 Q 290 950 298 950 L 337 950 Q 345 950 345 942 L 345 668 Q 345 660 337 660 L 293 660 Q 285 660 285 652 L 285 613" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="mission" data-edge-to="bridge" data-edge-label="TOPIC /amr_a/pickup_command" data-edge-key="18" data-edge-id="mission-pickup-command" data-composition-points="600,613;600,670;545,670;545,780;575,780;575,830" d="M 600 613 L 600 662 Q 600 670 592 670 L 553 670 Q 545 670 545 678 L 545 772 Q 545 780 553 780 L 567 780 Q 575 780 575 788 L 575 830" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="bridge" data-edge-to="mission" data-edge-label="TOPIC /amr_a/pickup_state" data-edge-key="19" data-edge-id="pickup-state-feedback" data-composition-points="575,830;575,790;625,790;625,670;600,670;600,613" d="M 575 830 L 575 798 Q 575 790 583 790 L 617 790 Q 625 790 625 782 L 625 678 Q 625 670 617 670 L 608 670 Q 600 670 600 662 L 600 613" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="mqtt_nav" data-edge-to="bridge" data-edge-label="TOPIC /amr_a/lift_command" data-edge-key="20" data-edge-id="lift-command" data-composition-points="70,338;40,338;40,780;400,780;400,871;460,871" d="M 70 338 L 48 338 Q 40 338 40 346 L 40 772 Q 40 780 48 780 L 392 780 Q 400 780 400 788 L 400 863 Q 400 871 408 871 L 460 871" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="bridge" data-edge-to="mqtt_nav" data-edge-label="TOPICS /amr_a/lift_state · /amr_a/lift_result" data-edge-key="21" data-edge-id="lift-feedback" data-composition-points="460,871;400,871;80,871;80,338;40,338;70,338" d="M 460 871 L 408 871 Q 400 871 392 871 L 88 871 Q 80 871 80 863 L 80 346 Q 80 338 72 338 L 48 338 Q 40 338 48 338 L 70 338" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="mqtt_process" data-edge-to="bridge" data-edge-label="TOPIC /controltower/equipment/command" data-edge-key="22" data-edge-id="equipment-command" data-composition-points="725,376;725,455;740,455;740,780;575,780;575,830" d="M 725 376 L 725 447.5 Q 725 455 732.5 455 L 732.5 455 Q 740 455 740 462.5 L 740 772 Q 740 780 732 780 L 583 780 Q 575 780 575 788 L 575 830" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="bridge" data-edge-to="mqtt_process" data-edge-label="TOPICS /controltower/equipment/status · /controltower/process/event" data-edge-key="23" data-edge-id="process-feedback" data-composition-points="575,830;575,790;770,790;770,455;725,455;725,376" d="M 575 830 L 575 798 Q 575 790 583 790 L 762 790 Q 770 790 770 782 L 770 463 Q 770 455 762 455 L 733 455 Q 725 455 725 447 L 725 376" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="mqtt_process" data-edge-to="mission" data-edge-label="TOPIC /amr_a/p3020_arrival_confirm*" data-edge-key="24" data-edge-id="arrival-confirm" data-composition-points="725,376;725,430;650,430;650,500;600,500;600,535" d="M 725 376 L 725 422 Q 725 430 717 430 L 658 430 Q 650 430 650 438 L 650 492 Q 650 500 642 500 L 608 500 Q 600 500 600 508 L 600 535" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="mission" data-edge-to="mqtt_process" data-edge-label="TOPIC /amr_a/mission_state" data-edge-key="25" data-edge-id="mission-state" data-composition-points="600,535;600,500;785,500;785,430;725,430;725,376" d="M 600 535 L 600 508 Q 600 500 608 500 L 777 500 Q 785 500 785 492 L 785 438 Q 785 430 777 430 L 733 430 Q 725 430 725 422 L 725 376" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pose_sync" data-edge-to="bridge" data-edge-label="TOPIC /amr_a/restore_pose" data-edge-key="26" data-edge-id="restore-pose" data-composition-points="1020,376;1020,450;1080,450;1080,940;730,940;730,871;690,871" d="M 1020 376 L 1020 442 Q 1020 450 1028 450 L 1072 450 Q 1080 450 1080 458 L 1080 932 Q 1080 940 1072 940 L 738 940 Q 730 940 730 932 L 730 879 Q 730 871 722 871 L 690 871" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="bridge" data-edge-to="pose_sync" data-edge-label="TOPICS /amr_a/map_pose · /amr_a/pose_source_session" data-edge-key="27" data-edge-id="canonical-pose" data-composition-points="690,871;730,871;730,960;1450,960;1450,450;1020,450;1020,376" d="M 690 871 L 722 871 Q 730 871 730 879 L 730 952 Q 730 960 738 960 L 1442 960 Q 1450 960 1450 952 L 1450 458 Q 1450 450 1442 450 L 1028 450 Q 1020 450 1020 442 L 1020 376" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="pose_sync" data-edge-to="nav" data-edge-label="TOPIC /initialpose" data-edge-key="28" data-edge-id="initialpose" data-composition-points="920,338;880,338;880,490;420,490;420,574;380,574" d="M 920 338 L 888 338 Q 880 338 880 346 L 880 482 Q 880 490 872 490 L 428 490 Q 420 490 420 498 L 420 566 Q 420 574 412 574 L 380 574" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="sensor" data-edge-to="pose_sync" data-edge-label="TF map→base_link lookup†" data-edge-key="29" data-edge-id="tf-pose" data-composition-points="400,1031;440,1031;1500,1031;1500,338;1120,338" d="M 400 1031 L 432 1031 Q 440 1031 448 1031 L 1492 1031 Q 1500 1031 1500 1023 L 1500 346 Q 1500 338 1492 338 L 1120 338" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="action" data-edge-to="internal" data-edge-label="TOPIC /arm_a/pick_place_command" data-edge-key="30" data-edge-id="action-command" data-composition-points="920,613;920,675;855,675;855,780;920,780;920,830" d="M 920 613 L 920 667 Q 920 675 912 675 L 863 675 Q 855 675 855 683 L 855 772 Q 855 780 863 780 L 912 780 Q 920 780 920 788 L 920 830" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="internal" data-edge-to="action" data-edge-label="TOPIC /arm_a/pick_place_status" data-edge-key="31" data-edge-id="action-status" data-composition-points="920,830;920,790;975,790;975,675;920,675;920,613" d="M 920 830 L 920 798 Q 920 790 928 790 L 967 790 Q 975 790 975 782 L 975 683 Q 975 675 967 675 L 928 675 Q 920 675 920 667 L 920 613" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="vision" data-edge-to="internal" data-edge-label="TOPICS detection / result" data-edge-key="32" data-edge-id="vision-detection" data-composition-points="1250,613;1250,700;1070,700;1070,871;1050,871" d="M 1250 613 L 1250 692 Q 1250 700 1242 700 L 1078 700 Q 1070 700 1070 708 L 1070 863 Q 1070 871 1062 871 L 1050 871" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="internal" data-edge-to="vision" data-edge-label="RGB · P3020 ROS Bridge PUB" data-edge-key="33" data-edge-id="vision-rgb" data-composition-points="1050,871;1060,871;1060,810;1330,810;1330,650;1250,650;1250,613" d="M 1050 871 L 1055 871 Q 1060 871 1060 866 L 1060 818 Q 1060 810 1068 810 L 1322 810 Q 1330 810 1330 802 L 1330 658 Q 1330 650 1322 650 L 1258 650 Q 1250 650 1250 642 L 1250 613" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="bridge" data-edge-to="vision" data-edge-label="Preview · shared Node PUB (main_mission)" data-edge-key="34" data-edge-id="vision-preview" data-composition-points="690,871;720,871;720,760;1100,760;1100,574;1140,574" d="M 690 871 L 712 871 Q 720 871 720 863 L 720 768 Q 720 760 728 760 L 1092 760 Q 1100 760 1100 752 L 1100 582 Q 1100 574 1108 574 L 1140 574" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="internal" data-edge-to="vision" data-edge-label="Validated result → detector HUD" data-edge-key="35" data-edge-id="vision-validated" data-composition-points="920,830;920,790;1400,790;1400,574;1360,574" d="M 920 830 L 920 798 Q 920 790 928 790 L 1392 790 Q 1400 790 1400 782 L 1400 582 Q 1400 574 1392 574 L 1360 574" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
-        <g id="node-nav_adapter" data-node-id="nav_adapter" data-node-label="ros2_mqtt_adapter" tabindex="0" role="button" aria-label="Focus ros2_mqtt_adapter, control_tower_ros2_mqtt_adapter, Host ROS 2 Jazzy — Adapters" aria-pressed="false" data-node-kind="backend" data-node-sublabel="control_tower_ros2_mqtt_adapter" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Adapters">
-          <title>ros2_mqtt_adapter · control_tower_ros2_mqtt_adapter · Host ROS 2 Jazzy — Adapters · ROS Node</title>
-          <rect x="300" y="40" width="205" height="82" rx="6" class="c-mask"/>
-          <rect x="300" y="40" width="205" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(306 46) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+        <g id="node-web" data-node-id="web" data-node-label="React Control Tower" tabindex="0" role="button" aria-label="Focus React Control Tower, Dashboard · Manual, Control Tower / Web" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Dashboard · Manual" data-node-context="Control Tower / Web">
+          <title>React Control Tower · Dashboard · Manual · Control Tower / Web</title>
+          <rect x="60" y="55" width="180" height="70" rx="6" class="c-mask"/>
+          <rect x="60" y="55" width="180" height="70" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(66 61) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="402.5" y="79" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ros2_mqtt_adapter</text>
-        <text data-detail="context" x="402.5" y="95" class="t-muted" font-size="9" text-anchor="middle">control_tower_ros2_mqtt_adapter</text>
-        <text data-detail="fine" x="402.5" y="114" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="150" y="88" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">React Control Tower</text>
+        <text data-detail="context" x="150" y="104" class="t-muted" font-size="9" text-anchor="middle">Dashboard · Manual</text>
         </g>
 
-        <g id="node-manual_adapter" data-node-id="manual_adapter" data-node-label="ros2_manual_mqtt_adapter" tabindex="0" role="button" aria-label="Focus ros2_manual_mqtt_adapter, control_tower_manual_mqtt_adapter, Host ROS 2 Jazzy — Adapters" aria-pressed="false" data-node-kind="backend" data-node-sublabel="control_tower_manual_mqtt_adapter" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Adapters">
-          <title>ros2_manual_mqtt_adapter · control_tower_manual_mqtt_adapter · Host ROS 2 Jazzy — Adapters · ROS Node</title>
-          <rect x="550" y="40" width="230" height="82" rx="6" class="c-mask"/>
-          <rect x="550" y="40" width="230" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(556 46) scale(0.6875)">
+        <g id="node-api" data-node-id="api" data-node-label="FastAPI Backend" tabindex="0" role="button" aria-label="Focus FastAPI Backend, REST API · MQTT client, Control Tower / Web" aria-pressed="false" data-node-kind="backend" data-node-sublabel="REST API · MQTT client" data-node-context="Control Tower / Web">
+          <title>FastAPI Backend · REST API · MQTT client · Control Tower / Web</title>
+          <rect x="310" y="55" width="190" height="70" rx="6" class="c-mask"/>
+          <rect x="310" y="55" width="190" height="70" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(316 61) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="665" y="79" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ros2_manual_mqtt_adapter</text>
-        <text data-detail="context" x="665" y="95" class="t-muted" font-size="9" text-anchor="middle">control_tower_manual_mqtt_adapter</text>
-        <text data-detail="fine" x="665" y="114" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="405" y="88" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">FastAPI Backend</text>
+        <text data-detail="context" x="405" y="104" class="t-muted" font-size="9" text-anchor="middle">REST API · MQTT client</text>
         </g>
 
-        <g id="node-process_adapter" data-node-id="process_adapter" data-node-label="process_mqtt_adapter" tabindex="0" role="button" aria-label="Focus process_mqtt_adapter, control_tower_process_mqtt_adapter, Host ROS 2 Jazzy — Adapters" aria-pressed="false" data-node-kind="backend" data-node-sublabel="control_tower_process_mqtt_adapter" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Adapters">
-          <title>process_mqtt_adapter · control_tower_process_mqtt_adapter · Host ROS 2 Jazzy — Adapters · ROS Node</title>
-          <rect x="1420" y="40" width="230" height="82" rx="6" class="c-mask"/>
-          <rect x="1420" y="40" width="230" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1426 46) scale(0.6875)">
+        <g id="node-mqtt" data-node-id="mqtt" data-node-label="Mosquitto Broker" tabindex="0" role="button" aria-label="Focus Mosquitto Broker, MQTT :1883, Control Tower / Web" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="MQTT :1883" data-node-context="Control Tower / Web">
+          <title>Mosquitto Broker · MQTT :1883 · Control Tower / Web</title>
+          <rect x="570" y="55" width="190" height="70" rx="6" class="c-mask"/>
+          <rect x="570" y="55" width="190" height="70" rx="6" class="c-messagebus" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(576 61) scale(0.6875)">
+            <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
+            <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
+            <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
+            <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="665" y="88" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Mosquitto Broker</text>
+        <text data-detail="context" x="665" y="104" class="t-muted" font-size="9" text-anchor="middle">MQTT :1883</text>
+        </g>
+
+        <g id="node-db" data-node-id="db" data-node-label="PostgreSQL" tabindex="0" role="button" aria-label="Focus PostgreSQL, Mission · State · Pose, Control Tower / Web" aria-pressed="false" data-node-kind="database" data-node-sublabel="Mission · State · Pose" data-node-context="Control Tower / Web">
+          <title>PostgreSQL · Mission · State · Pose · Control Tower / Web</title>
+          <rect x="310" y="165" width="190" height="70" rx="6" class="c-mask"/>
+          <rect x="310" y="165" width="190" height="70" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(316 171) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="405" y="198" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">PostgreSQL</text>
+        <text data-detail="context" x="405" y="214" class="t-muted" font-size="9" text-anchor="middle">Mission · State · Pose</text>
+        </g>
+
+        <g id="node-mqtt_nav" data-node-id="mqtt_nav" data-node-label="ros2_mqtt_adapter" tabindex="0" role="button" aria-label="Focus ros2_mqtt_adapter, Navigation, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Navigation" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy">
+          <title>ros2_mqtt_adapter · Navigation · Host ROS 2 Jazzy · ROS Node</title>
+          <rect x="70" y="300" width="190" height="76" rx="6" class="c-mask"/>
+          <rect x="70" y="300" width="190" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(76 306) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1535" y="79" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">process_mqtt_adapter</text>
-        <text data-detail="context" x="1535" y="95" class="t-muted" font-size="9" text-anchor="middle">control_tower_process_mqtt_adapter</text>
-        <text data-detail="fine" x="1535" y="114" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="165" y="336" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ros2_mqtt_adapter</text>
+        <text data-detail="context" x="165" y="352" class="t-muted" font-size="9" text-anchor="middle">Navigation</text>
+        <text data-detail="fine" x="165" y="368" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
         </g>
 
-        <g id="node-pose_sync" data-node-id="pose_sync" data-node-label="pose_sync_manager" tabindex="0" role="button" aria-label="Focus pose_sync_manager, control_tower_pose_sync_manager, Host ROS 2 Jazzy — Adapters" aria-pressed="false" data-node-kind="backend" data-node-sublabel="control_tower_pose_sync_manager" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Adapters">
-          <title>pose_sync_manager · control_tower_pose_sync_manager · Host ROS 2 Jazzy — Adapters · ROS Node</title>
-          <rect x="40" y="40" width="220" height="82" rx="6" class="c-mask"/>
-          <rect x="40" y="40" width="220" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(46 46) scale(0.6875)">
+        <g id="node-mqtt_manual" data-node-id="mqtt_manual" data-node-label="ros2_manual_mqtt_adapter" tabindex="0" role="button" aria-label="Focus ros2_manual_mqtt_adapter, Manual velocity control, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Manual velocity control" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy">
+          <title>ros2_manual_mqtt_adapter · Manual velocity control · Host ROS 2 Jazzy · ROS Node</title>
+          <rect x="310" y="300" width="220" height="76" rx="6" class="c-mask"/>
+          <rect x="310" y="300" width="220" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(316 306) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="150" y="79" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">pose_sync_manager</text>
-        <text data-detail="context" x="150" y="95" class="t-muted" font-size="9" text-anchor="middle">control_tower_pose_sync_manager</text>
-        <text data-detail="fine" x="150" y="114" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="420" y="336" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ros2_manual_mqtt_adapter</text>
+        <text data-detail="context" x="420" y="352" class="t-muted" font-size="9" text-anchor="middle">Manual velocity control</text>
+        <text data-detail="fine" x="420" y="368" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
         </g>
 
-        <g id="node-nav2" data-node-id="nav2" data-node-label="Nav2 / AMCL" tabindex="0" role="button" aria-label="Focus Nav2 / AMCL, navigation · localization · TF, Host ROS 2 Jazzy — Mission / Navigation / Vision" aria-pressed="false" data-node-kind="backend" data-node-sublabel="navigation · localization · TF" data-node-tag="ROS Runtime" data-node-context="Host ROS 2 Jazzy — Mission / Navigation / Vision">
-          <title>Nav2 / AMCL · navigation · localization · TF · Host ROS 2 Jazzy — Mission / Navigation / Vision · ROS Runtime</title>
-          <rect x="40" y="270" width="220" height="86" rx="6" class="c-mask"/>
-          <rect x="40" y="270" width="220" height="86" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(46 276) scale(0.6875)">
+        <g id="node-mqtt_process" data-node-id="mqtt_process" data-node-label="process_mqtt_adapter" tabindex="0" role="button" aria-label="Focus process_mqtt_adapter, Equipment/process, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Equipment/process" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy">
+          <title>process_mqtt_adapter · Equipment/process · Host ROS 2 Jazzy · ROS Node</title>
+          <rect x="620" y="300" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="620" y="300" width="210" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(626 306) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="150" y="311" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Nav2 / AMCL</text>
-        <text data-detail="context" x="150" y="327" class="t-muted" font-size="9" text-anchor="middle">navigation · localization · TF</text>
-        <text data-detail="fine" x="150" y="348" class="t-backend" font-size="7" text-anchor="middle">ROS Runtime</text>
+          <text data-node-label="" data-detail-anchor="" x="725" y="336" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">process_mqtt_adapter</text>
+        <text data-detail="context" x="725" y="352" class="t-muted" font-size="9" text-anchor="middle">Equipment/process</text>
+        <text data-detail="fine" x="725" y="368" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
         </g>
 
-        <g id="node-mission" data-node-id="mission" data-node-label="amr_p3020_mission" tabindex="0" role="button" aria-label="Focus amr_p3020_mission, Mission FSM, Host ROS 2 Jazzy — Mission / Navigation / Vision" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Mission FSM" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Mission / Navigation / Vision">
-          <title>amr_p3020_mission · Mission FSM · Host ROS 2 Jazzy — Mission / Navigation / Vision · ROS Node</title>
-          <rect x="320" y="270" width="210" height="86" rx="6" class="c-mask"/>
-          <rect x="320" y="270" width="210" height="86" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(326 276) scale(0.6875)">
+        <g id="node-pose_sync" data-node-id="pose_sync" data-node-label="pose_sync_manager" tabindex="0" role="button" aria-label="Focus pose_sync_manager, Pose restore/sync, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Pose restore/sync" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy">
+          <title>pose_sync_manager · Pose restore/sync · Host ROS 2 Jazzy · ROS Node</title>
+          <rect x="920" y="300" width="200" height="76" rx="6" class="c-mask"/>
+          <rect x="920" y="300" width="200" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(926 306) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="425" y="311" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">amr_p3020_mission</text>
-        <text data-detail="context" x="425" y="327" class="t-muted" font-size="9" text-anchor="middle">Mission FSM</text>
-        <text data-detail="fine" x="425" y="348" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="1020" y="336" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">pose_sync_manager</text>
+        <text data-detail="context" x="1020" y="352" class="t-muted" font-size="9" text-anchor="middle">Pose restore/sync</text>
+        <text data-detail="fine" x="1020" y="368" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
         </g>
 
-        <g id="node-pickplace" data-node-id="pickplace" data-node-label="PickPlace Action Server" tabindex="0" role="button" aria-label="Focus PickPlace Action Server, p3020_pick_place_action_server, Host ROS 2 Jazzy — Mission / Navigation / Vision" aria-pressed="false" data-node-kind="backend" data-node-sublabel="p3020_pick_place_action_server" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Mission / Navigation / Vision">
-          <title>PickPlace Action Server · p3020_pick_place_action_server · Host ROS 2 Jazzy — Mission / Navigation / Vision · ROS Node</title>
-          <rect x="600" y="270" width="230" height="86" rx="6" class="c-mask"/>
-          <rect x="600" y="270" width="230" height="86" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(606 276) scale(0.6875)">
+        <g id="node-nav" data-node-id="nav" data-node-label="Nav2 / AMCL" tabindex="0" role="button" aria-label="Focus Nav2 / AMCL, iw_hub_navigation, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="iw_hub_navigation" data-node-context="Host ROS 2 Jazzy">
+          <title>Nav2 / AMCL · iw_hub_navigation · Host ROS 2 Jazzy</title>
+          <rect x="190" y="535" width="190" height="78" rx="6" class="c-mask"/>
+          <rect x="190" y="535" width="190" height="78" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(196 541) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="715" y="311" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">PickPlace Action Server</text>
-        <text data-detail="context" x="715" y="327" class="t-muted" font-size="9" text-anchor="middle">p3020_pick_place_action_server</text>
-        <text data-detail="fine" x="715" y="348" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="285" y="572" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Nav2 / AMCL</text>
+        <text data-detail="context" x="285" y="588" class="t-muted" font-size="9" text-anchor="middle">iw_hub_navigation</text>
         </g>
 
-        <g id="node-vision_in" data-node-id="vision_in" data-node-label="P3020 IN Detector" tabindex="0" role="button" aria-label="Focus P3020 IN Detector, p3020_in_box_detector · YOLO ONNX, Host ROS 2 Jazzy — Mission / Navigation / Vision" aria-pressed="false" data-node-kind="backend" data-node-sublabel="p3020_in_box_detector · YOLO ONNX" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Mission / Navigation / Vision">
-          <title>P3020 IN Detector · p3020_in_box_detector · YOLO ONNX · Host ROS 2 Jazzy — Mission / Navigation / Vision · ROS Node</title>
-          <rect x="890" y="270" width="230" height="86" rx="6" class="c-mask"/>
-          <rect x="890" y="270" width="230" height="86" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(896 276) scale(0.6875)">
+        <g id="node-mission" data-node-id="mission" data-node-label="amr_p3020_mission" tabindex="0" role="button" aria-label="Focus amr_p3020_mission, Main Mission FSM, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Main Mission FSM" data-node-context="Host ROS 2 Jazzy">
+          <title>amr_p3020_mission · Main Mission FSM · Host ROS 2 Jazzy</title>
+          <rect x="500" y="535" width="200" height="78" rx="6" class="c-mask"/>
+          <rect x="500" y="535" width="200" height="78" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(506 541) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1005" y="311" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">P3020 IN Detector</text>
-        <text data-detail="context" x="1005" y="327" class="t-muted" font-size="9" text-anchor="middle">p3020_in_box_detector · YOLO ONNX</text>
-        <text data-detail="fine" x="1005" y="348" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="600" y="572" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">amr_p3020_mission</text>
+        <text data-detail="context" x="600" y="588" class="t-muted" font-size="9" text-anchor="middle">Main Mission FSM</text>
         </g>
 
-        <g id="node-vision_out" data-node-id="vision_out" data-node-label="P3020 OUT Detector" tabindex="0" role="button" aria-label="Focus P3020 OUT Detector, p3020_out_box_detector · YOLO ONNX, Host ROS 2 Jazzy — Mission / Navigation / Vision" aria-pressed="false" data-node-kind="backend" data-node-sublabel="p3020_out_box_detector · YOLO ONNX" data-node-tag="ROS Node" data-node-context="Host ROS 2 Jazzy — Mission / Navigation / Vision">
-          <title>P3020 OUT Detector · p3020_out_box_detector · YOLO ONNX · Host ROS 2 Jazzy — Mission / Navigation / Vision · ROS Node</title>
-          <rect x="1160" y="270" width="230" height="86" rx="6" class="c-mask"/>
-          <rect x="1160" y="270" width="230" height="86" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1166 276) scale(0.6875)">
+        <g id="node-action" data-node-id="action" data-node-label="PickPlace Action Server" tabindex="0" role="button" aria-label="Focus PickPlace Action Server, Action ↔ String, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Action ↔ String" data-node-context="Host ROS 2 Jazzy">
+          <title>PickPlace Action Server · Action ↔ String · Host ROS 2 Jazzy</title>
+          <rect x="810" y="535" width="220" height="78" rx="6" class="c-mask"/>
+          <rect x="810" y="535" width="220" height="78" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(816 541) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1275" y="311" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">P3020 OUT Detector</text>
-        <text data-detail="context" x="1275" y="327" class="t-muted" font-size="9" text-anchor="middle">p3020_out_box_detector · YOLO ONNX</text>
-        <text data-detail="fine" x="1275" y="348" class="t-backend" font-size="7" text-anchor="middle">ROS Node</text>
+          <text data-node-label="" data-detail-anchor="" x="920" y="572" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">PickPlace Action Server</text>
+        <text data-detail="context" x="920" y="588" class="t-muted" font-size="9" text-anchor="middle">Action ↔ String</text>
         </g>
 
-        <g id="node-iw_graph" data-node-id="iw_graph" data-node-label="IW Hub ROS2 Graphs" tabindex="0" role="button" aria-label="Focus IW Hub ROS2 Graphs, navigation I/O graph, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="navigation I/O graph" data-node-tag="Isaac ROS Graph" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>IW Hub ROS2 Graphs · navigation I/O graph · Isaac Sim 5.1 Runtime · Isaac ROS Graph</title>
-          <rect x="40" y="520" width="230" height="88" rx="6" class="c-mask"/>
-          <rect x="40" y="520" width="230" height="88" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(46 526) scale(0.6875)">
+        <g id="node-vision" data-node-id="vision" data-node-label="P3020 Vision Nodes" tabindex="0" role="button" aria-label="Focus P3020 Vision Nodes, IN + OUT detector nodes · YOLO ONNX, Host ROS 2 Jazzy" aria-pressed="false" data-node-kind="backend" data-node-sublabel="IN + OUT detector nodes · YOLO ONNX" data-node-context="Host ROS 2 Jazzy">
+          <title>P3020 Vision Nodes · IN + OUT detector nodes · YOLO ONNX · Host ROS 2 Jazzy</title>
+          <rect x="1140" y="535" width="220" height="78" rx="6" class="c-mask"/>
+          <rect x="1140" y="535" width="220" height="78" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1146 541) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1250" y="572" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">P3020 Vision Nodes</text>
+        <text data-detail="context" x="1250" y="588" class="t-muted" font-size="9" text-anchor="middle">IN + OUT detector nodes · YOLO ONNX</text>
+        </g>
+
+        <g id="node-bridge" data-node-id="bridge" data-node-label="isaac_amr_mission_bridge" tabindex="0" role="button" aria-label="Focus isaac_amr_mission_bridge, ROS 2 ↔ Isaac bridge, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="backend" data-node-sublabel="ROS 2 ↔ Isaac bridge" data-node-tag="rclpy Node" data-node-context="Isaac Sim 5.1 Runtime">
+          <title>isaac_amr_mission_bridge · ROS 2 ↔ Isaac bridge · Isaac Sim 5.1 Runtime · rclpy Node</title>
+          <rect x="460" y="830" width="230" height="82" rx="6" class="c-mask"/>
+          <rect x="460" y="830" width="230" height="82" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(466 836) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="575" y="869" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">isaac_amr_mission_bridge</text>
+        <text data-detail="context" x="575" y="885" class="t-muted" font-size="9" text-anchor="middle">ROS 2 ↔ Isaac bridge</text>
+        <text data-detail="fine" x="575" y="904" class="t-backend" font-size="7" text-anchor="middle">rclpy Node</text>
+        </g>
+
+        <g id="node-internal" data-node-id="internal" data-node-label="Isaac Internal Components" tabindex="0" role="button" aria-label="Focus Isaac Internal Components, AMR agent · P3020 agents/ROS bridges · equipment, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="AMR agent · P3020 agents/ROS bridges · equipment" data-node-tag="Python objects" data-node-context="Isaac Sim 5.1 Runtime">
+          <title>Isaac Internal Components · AMR agent · P3020 agents/ROS bridges · equipment · Isaac Sim 5.1 Runtime · Python objects</title>
+          <rect x="790" y="830" width="260" height="82" rx="6" class="c-mask"/>
+          <rect x="790" y="830" width="260" height="82" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(796 836) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="155" y="562" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IW Hub ROS2 Graphs</text>
-        <text data-detail="context" x="155" y="578" class="t-muted" font-size="9" text-anchor="middle">navigation I/O graph</text>
-        <text data-detail="fine" x="155" y="600" class="t-external" font-size="7" text-anchor="middle">Isaac ROS Graph</text>
+          <text data-node-label="" data-detail-anchor="" x="920" y="869" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Isaac Internal Components</text>
+        <text data-detail="context" x="920" y="885" class="t-muted" font-size="8.7" text-anchor="middle">AMR agent · P3020 agents/ROS bridges · equipment</text>
+        <text data-detail="fine" x="920" y="904" class="t-external" font-size="7" text-anchor="middle">Python objects</text>
         </g>
 
-        <g id="node-isaac_bridge" data-node-id="isaac_bridge" data-node-label="isaac_amr_mission_bridge" tabindex="0" role="button" aria-label="Focus isaac_amr_mission_bridge, AmrMissionBridge + attached ROS interfaces, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="backend" data-node-sublabel="AmrMissionBridge + attached ROS interfaces" data-node-tag="rclpy Node" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>isaac_amr_mission_bridge · AmrMissionBridge + attached ROS interfaces · Isaac Sim 5.1 Runtime · rclpy Node</title>
-          <rect x="320" y="520" width="270" height="88" rx="6" class="c-mask"/>
-          <rect x="320" y="520" width="270" height="88" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(326 526) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="455" y="562" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">isaac_amr_mission_bridge</text>
-        <text data-detail="context" x="455" y="578" class="t-muted" font-size="9" text-anchor="middle">AmrMissionBridge + attached ROS interfaces</text>
-        <text data-detail="fine" x="455" y="600" class="t-backend" font-size="7" text-anchor="middle">rclpy Node</text>
-        </g>
-
-        <g id="node-iw_agent" data-node-id="iw_agent" data-node-label="MissionIwHubAgent" tabindex="0" role="button" aria-label="Focus MissionIwHubAgent, wheel / lift / dock logic, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="wheel / lift / dock logic" data-node-tag="Python object" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>MissionIwHubAgent · wheel / lift / dock logic · Isaac Sim 5.1 Runtime · Python object</title>
-          <rect x="620" y="520" width="210" height="88" rx="6" class="c-mask"/>
-          <rect x="620" y="520" width="210" height="88" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(626 526) scale(0.6875)">
+        <g id="node-amr" data-node-id="amr" data-node-label="IW Hub AMR" tabindex="0" role="button" aria-label="Focus IW Hub AMR, Simulated robot, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="Simulated robot" data-node-context="Isaac Sim 5.1 Runtime">
+          <title>IW Hub AMR · Simulated robot · Isaac Sim 5.1 Runtime</title>
+          <rect x="1190" y="830" width="180" height="78" rx="6" class="c-mask"/>
+          <rect x="1190" y="830" width="180" height="78" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1196 836) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="725" y="562" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">MissionIwHubAgent</text>
-        <text data-detail="context" x="725" y="578" class="t-muted" font-size="9" text-anchor="middle">wheel / lift / dock logic</text>
-        <text data-detail="fine" x="725" y="600" class="t-external" font-size="7" text-anchor="middle">Python object</text>
+          <text data-node-label="" data-detail-anchor="" x="1280" y="867" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IW Hub AMR</text>
+        <text data-detail="context" x="1280" y="883" class="t-muted" font-size="9" text-anchor="middle">Simulated robot</text>
         </g>
 
-        <g id="node-p3020_in" data-node-id="p3020_in" data-node-label="P3020 IN Runtime" tabindex="0" role="button" aria-label="Focus P3020 IN Runtime, OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent" data-node-tag="2 Python objects" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>P3020 IN Runtime · OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent · Isaac Sim 5.1 Runtime · 2 Python objects</title>
-          <rect x="838" y="520" width="335" height="96" rx="6" class="c-mask"/>
-          <rect x="838" y="520" width="335" height="96" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(844 526) scale(0.6875)">
+        <g id="node-sensor" data-node-id="sensor" data-node-label="IW Hub ROS2 Graphs" tabindex="0" role="button" aria-label="Focus IW Hub ROS2 Graphs, Nav I/O graph · cmd_vel / sensor / odom / TF, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="Nav I/O graph · cmd_vel / sensor / odom / TF" data-node-context="Isaac Sim 5.1 Runtime">
+          <title>IW Hub ROS2 Graphs · Nav I/O graph · cmd_vel / sensor / odom / TF · Isaac Sim 5.1 Runtime</title>
+          <rect x="180" y="990" width="220" height="82" rx="6" class="c-mask"/>
+          <rect x="180" y="990" width="220" height="82" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(186 996) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1005.5" y="566" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">P3020 IN Runtime</text>
-        <text data-detail="context" x="1005.5" y="582" class="t-muted" font-size="9" text-anchor="middle">OptimizedP3020RosBridge + OptimizedP3020PickPlaceAgent</text>
-        <text data-detail="fine" x="1005.5" y="608" class="t-external" font-size="7" text-anchor="middle">2 Python objects</text>
-        </g>
-
-        <g id="node-p3020_out" data-node-id="p3020_out" data-node-label="P3020 OUT Runtime" tabindex="0" role="button" aria-label="Focus P3020 OUT Runtime, P3020OutRosBridge + P3020UnloadToBinAgent, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="P3020OutRosBridge + P3020UnloadToBinAgent" data-node-tag="2 Python objects" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>P3020 OUT Runtime · P3020OutRosBridge + P3020UnloadToBinAgent · Isaac Sim 5.1 Runtime · 2 Python objects</title>
-          <rect x="1181" y="520" width="310" height="96" rx="6" class="c-mask"/>
-          <rect x="1181" y="520" width="310" height="96" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1187 526) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1336" y="566" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">P3020 OUT Runtime</text>
-        <text data-detail="context" x="1336" y="582" class="t-muted" font-size="9" text-anchor="middle">P3020OutRosBridge + P3020UnloadToBinAgent</text>
-        <text data-detail="fine" x="1336" y="608" class="t-external" font-size="7" text-anchor="middle">2 Python objects</text>
-        </g>
-
-        <g id="node-process_runtime" data-node-id="process_runtime" data-node-label="ProcessEquipmentBridge" tabindex="0" role="button" aria-label="Focus ProcessEquipmentBridge, attached to isaac_amr_mission_bridge, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="attached to isaac_amr_mission_bridge" data-node-tag="Python object" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>ProcessEquipmentBridge · attached to isaac_amr_mission_bridge · Isaac Sim 5.1 Runtime · Python object</title>
-          <rect x="1505" y="520" width="220" height="88" rx="6" class="c-mask"/>
-          <rect x="1505" y="520" width="220" height="88" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1511 526) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1615" y="562" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ProcessEquipmentBridge</text>
-        <text data-detail="context" x="1615" y="578" class="t-muted" font-size="9" text-anchor="middle">attached to isaac_amr_mission_bridge</text>
-        <text data-detail="fine" x="1615" y="600" class="t-external" font-size="7" text-anchor="middle">Python object</text>
-        </g>
-
-        <g id="node-amr" data-node-id="amr" data-node-label="IW Hub AMR" tabindex="0" role="button" aria-label="Focus IW Hub AMR, simulated articulation, Isaac Sim 5.1 Runtime" aria-pressed="false" data-node-kind="external" data-node-sublabel="simulated articulation" data-node-tag="Isaac object" data-node-context="Isaac Sim 5.1 Runtime">
-          <title>IW Hub AMR · simulated articulation · Isaac Sim 5.1 Runtime · Isaac object</title>
-          <rect x="620" y="756" width="200" height="88" rx="6" class="c-mask"/>
-          <rect x="620" y="756" width="200" height="88" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(626 762) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="720" y="798" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IW Hub AMR</text>
-        <text data-detail="context" x="720" y="814" class="t-muted" font-size="9" text-anchor="middle">simulated articulation</text>
-        <text data-detail="fine" x="720" y="836" class="t-external" font-size="7" text-anchor="middle">Isaac object</text>
+          <text data-node-label="" data-detail-anchor="" x="290" y="1029" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IW Hub ROS2 Graphs</text>
+        <text data-detail="context" x="290" y="1045" class="t-muted" font-size="8" text-anchor="middle">Nav I/O graph · cmd_vel / sensor / odom / TF</text>
         </g>
 
         <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="nav_adapter" data-edge-to="nav2" data-edge-label="ACTION /navigate_to_pose" data-edge-key="0" data-edge-id="nav-adapter-nav2">
-          <rect x="206.12500000000003" y="176" width="125.19999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="268.725" y="186" class="t-edge-emphasis" font-size="8" text-anchor="middle">ACTION /navigate_to_pose</text>
+        <g data-detail="context" data-edge-from="web" data-edge-to="api" data-edge-label="HTTP / REST" data-edge-key="0" data-edge-id="web-api">
+          <rect x="243.6" y="70" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="275" y="80" class="t-edge-emphasis" font-size="8" text-anchor="middle">HTTP / REST</text>
         </g>
-        <g data-detail="context" data-edge-from="nav_adapter" data-edge-to="iw_graph" data-edge-label="TOPIC /cmd_vel (STOP)" data-edge-key="1" data-edge-id="nav-adapter-cmdvel">
-          <rect x="309.6" y="430" width="110.8" height="14" rx="3" class="c-mask"/>
-          <text x="365" y="440" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /cmd_vel (STOP)</text>
+        <g data-detail="context" data-edge-from="api" data-edge-to="mqtt" data-edge-label="MQTT" data-edge-key="1" data-edge-id="api-mqtt">
+          <rect x="520" y="70" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="535" y="80" class="t-edge-dashed" font-size="8" text-anchor="middle">MQTT</text>
         </g>
-        <g data-detail="context" data-edge-from="nav_adapter" data-edge-to="isaac_bridge" data-edge-label="TOPIC /amr_a/lift_command" data-edge-key="2" data-edge-id="nav-adapter-lift">
-          <rect x="284.25" y="144" width="130" height="14" rx="3" class="c-mask"/>
-          <text x="349.25" y="154" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/lift_command</text>
+        <g data-detail="context" data-edge-from="api" data-edge-to="db" data-edge-label="SQL" data-edge-key="2" data-edge-id="api-db">
+          <rect x="390" y="135" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="405" y="145" class="t-edge-default" font-size="8" text-anchor="middle">SQL</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="nav_adapter" data-edge-label="TOPICS /amr_a/lift_state · /amr_a/lift_result" data-edge-key="3" data-edge-id="lift-feedback">
-          <rect x="227" y="490" width="226" height="14" rx="3" class="c-mask"/>
-          <text x="340" y="500" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPICS /amr_a/lift_state · /amr_a/lift_result</text>
+        <g data-detail="context" data-edge-from="mqtt" data-edge-to="mqtt_nav" data-edge-label="MQTT channel · navigation/lift" data-edge-key="3" data-edge-id="mqtt-nav">
+          <rect x="469" y="239" width="154" height="14" rx="3" class="c-mask"/>
+          <text x="546" y="249" class="t-edge-dashed" font-size="8" text-anchor="middle">MQTT channel · navigation/lift</text>
         </g>
-        <g data-detail="context" data-edge-from="manual_adapter" data-edge-to="iw_graph" data-edge-label="TOPIC /cmd_vel" data-edge-key="4" data-edge-id="manual-cmdvel">
-          <rect x="441.4" y="235" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="480" y="245" class="t-edge-emphasis" font-size="8" text-anchor="middle">TOPIC /cmd_vel</text>
+        <g data-detail="context" data-edge-from="mqtt" data-edge-to="mqtt_manual" data-edge-label="MQTT channel · manual velocity" data-edge-key="4" data-edge-id="mqtt-manual">
+          <rect x="595" y="168.5" width="154" height="14" rx="3" class="c-mask"/>
+          <text x="672" y="178.5" class="t-edge-dashed" font-size="8" text-anchor="middle">MQTT channel · manual velocity</text>
         </g>
-        <g data-detail="context" data-edge-from="process_adapter" data-edge-to="process_runtime" data-edge-label="TOPIC /controltower/equipment/command" data-edge-key="5" data-edge-id="process-command">
-          <rect x="1474.2" y="325" width="187.6" height="14" rx="3" class="c-mask"/>
-          <text x="1568" y="335" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /controltower/equipment/command</text>
+        <g data-detail="context" data-edge-from="mqtt" data-edge-to="mqtt_process" data-edge-label="MQTT channel · process/control" data-edge-key="5" data-edge-id="mqtt-process">
+          <rect x="618" y="256" width="154" height="14" rx="3" class="c-mask"/>
+          <text x="695" y="266" class="t-edge-dashed" font-size="8" text-anchor="middle">MQTT channel · process/control</text>
         </g>
-        <g data-detail="context" data-edge-from="process_runtime" data-edge-to="process_adapter" data-edge-label="TOPICS equipment/status · process/event" data-edge-key="6" data-edge-id="process-feedback">
-          <rect x="1483.4" y="126" width="197.2" height="14" rx="3" class="c-mask"/>
-          <text x="1582" y="136" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPICS equipment/status · process/event</text>
+        <g data-detail="context" data-edge-from="mqtt" data-edge-to="pose_sync" data-edge-label="MQTT channel · pose persistence" data-edge-key="6" data-edge-id="mqtt-pose">
+          <rect x="940.6" y="175" width="158.79999999999998" height="14" rx="3" class="c-mask"/>
+          <text x="1020" y="185" class="t-edge-dashed" font-size="8" text-anchor="middle">MQTT channel · pose persistence</text>
         </g>
-        <g data-detail="context" data-edge-from="process_adapter" data-edge-to="mission" data-edge-label="TOPIC /amr_a/p3020_arrival_confirm*" data-edge-key="7" data-edge-id="arrival-confirm">
-          <rect x="891" y="155" width="178" height="14" rx="3" class="c-mask"/>
-          <text x="980" y="165" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/p3020_arrival_confirm*</text>
+        <g data-detail="context" data-edge-from="mqtt_manual" data-edge-to="sensor" data-edge-label="manual /cmd_vel" data-edge-key="7" data-edge-id="manual-graph">
+          <rect x="361" y="617" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="402" y="627" class="t-edge-emphasis" font-size="8" text-anchor="middle">manual /cmd_vel</text>
         </g>
-        <g data-detail="context" data-edge-from="mission" data-edge-to="process_adapter" data-edge-label="TOPIC /amr_a/mission_state" data-edge-key="8" data-edge-id="mission-state">
-          <rect x="912.6" y="210" width="134.8" height="14" rx="3" class="c-mask"/>
-          <text x="980" y="220" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/mission_state</text>
+        <g data-detail="context" data-edge-from="mission" data-edge-to="nav" data-edge-label="NavigateToPose" data-edge-key="8" data-edge-id="mission-nav">
+          <rect x="401.4" y="554" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="440" y="564" class="t-edge-emphasis" font-size="8" text-anchor="middle">NavigateToPose</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="process_adapter" data-edge-label="TOPIC /amr_a/pickup_state" data-edge-key="9" data-edge-id="pickup-process-status">
-          <rect x="835" y="235" width="130" height="14" rx="3" class="c-mask"/>
-          <text x="900" y="245" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/pickup_state</text>
+        <g data-detail="context" data-edge-from="mission" data-edge-to="action" data-edge-label="PickPlace action*" data-edge-key="9" data-edge-id="mission-action">
+          <rect x="709.2" y="554" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="755" y="564" class="t-edge-emphasis" font-size="8" text-anchor="middle">PickPlace action*</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_in" data-edge-to="process_adapter" data-edge-label="BRIDGE PUB /arm_a/pick_place_status" data-edge-key="10" data-edge-id="arm-a-process-status">
-          <rect x="1121" y="430" width="178" height="14" rx="3" class="c-mask"/>
-          <text x="1210" y="440" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /arm_a/pick_place_status</text>
+        <g data-detail="context" data-edge-from="bridge" data-edge-to="internal" data-edge-label="Python object attachment / method calls" data-edge-key="10" data-edge-id="bridge-internal">
+          <rect x="641.4" y="916" width="197.2" height="14" rx="3" class="c-mask"/>
+          <text x="740" y="926" class="t-edge-dashed" font-size="8" text-anchor="middle">Python object attachment / method calls</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_out" data-edge-to="process_adapter" data-edge-label="BRIDGE PUB /arm_b/pick_place_status" data-edge-key="11" data-edge-id="arm-b-process-status">
-          <rect x="1266" y="490" width="178" height="14" rx="3" class="c-mask"/>
-          <text x="1355" y="500" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /arm_b/pick_place_status</text>
+        <g data-detail="context" data-edge-from="internal" data-edge-to="amr" data-edge-label="agent articulation / lift control" data-edge-key="11" data-edge-id="internal-amr">
+          <rect x="1025.8" y="916" width="168.4" height="14" rx="3" class="c-mask"/>
+          <text x="1110" y="926" class="t-edge-dashed" font-size="8" text-anchor="middle">agent articulation / lift control</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="pose_sync" data-edge-label="TOPICS /amr_a/map_pose · /amr_a/pose_source_session" data-edge-key="12" data-edge-id="pose-from-isaac">
-          <rect x="27.60000000000001" y="440" width="254.79999999999998" height="14" rx="3" class="c-mask"/>
-          <text x="155" y="450" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPICS /amr_a/map_pose · /amr_a/pose_source_session</text>
+        <g data-detail="context" data-edge-from="sensor" data-edge-to="amr" data-edge-label="ROS graph I/O / actuation" data-edge-key="12" data-edge-id="sensor-amr">
+          <rect x="1215" y="949.5" width="130" height="14" rx="3" class="c-mask"/>
+          <text x="1280" y="959.5" class="t-edge-default" font-size="8" text-anchor="middle">ROS graph I/O / actuation</text>
         </g>
-        <g data-detail="context" data-edge-from="pose_sync" data-edge-to="isaac_bridge" data-edge-label="TOPIC /amr_a/restore_pose" data-edge-key="13" data-edge-id="restore-to-isaac">
-          <rect x="110" y="460" width="130" height="14" rx="3" class="c-mask"/>
-          <text x="175" y="470" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/restore_pose</text>
+        <g data-detail="context" data-edge-from="web" data-edge-to="vision" data-edge-label="HTTP MJPEG IN/OUT (:8091/:8093)" data-edge-key="13" data-edge-id="web-vision-mjpeg">
+          <rect x="1120.6" y="140" width="158.79999999999998" height="14" rx="3" class="c-mask"/>
+          <text x="1200" y="150" class="t-edge-dashed" font-size="8" text-anchor="middle">HTTP MJPEG IN/OUT (:8091/:8093)</text>
         </g>
-        <g data-detail="context" data-edge-from="pose_sync" data-edge-to="nav2" data-edge-label="TOPIC /initialpose" data-edge-key="14" data-edge-id="initialpose">
-          <rect x="93.80000000000001" y="126" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="142" y="136" class="t-edge-emphasis" font-size="8" text-anchor="middle">TOPIC /initialpose</text>
+        <g data-detail="context" data-edge-from="mqtt_nav" data-edge-to="nav" data-edge-label="ACTION /navigate_to_pose" data-edge-key="14" data-edge-id="adapter-nav">
+          <rect x="167.4" y="430" width="125.19999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="230" y="440" class="t-edge-emphasis" font-size="8" text-anchor="middle">ACTION /navigate_to_pose</text>
         </g>
-        <g data-detail="context" data-edge-from="iw_graph" data-edge-to="pose_sync" data-edge-label="TF input to composed lookup†" data-edge-key="15" data-edge-id="tf-sync">
-          <rect x="-17.200000000000003" y="210" width="144.4" height="14" rx="3" class="c-mask"/>
-          <text x="55" y="220" class="t-edge-dashed" font-size="8" text-anchor="middle">TF input to composed lookup†</text>
+        <g data-detail="context" data-edge-from="mqtt_nav" data-edge-to="sensor" data-edge-label="TOPIC /cmd_vel (STOP)" data-edge-key="15" data-edge-id="adapter-stop">
+          <rect x="16.6" y="690" width="110.8" height="14" rx="3" class="c-mask"/>
+          <text x="72" y="700" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /cmd_vel (STOP)</text>
         </g>
-        <g data-detail="context" data-edge-from="mission" data-edge-to="nav2" data-edge-label="ACTION /navigate_to_pose" data-edge-key="16" data-edge-id="mission-nav2">
-          <rect x="222.4" y="370" width="125.19999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="285" y="380" class="t-edge-emphasis" font-size="8" text-anchor="middle">ACTION /navigate_to_pose</text>
+        <g data-detail="context" data-edge-from="nav" data-edge-to="sensor" data-edge-label="velocity control (/cmd_vel)‡" data-edge-key="16" data-edge-id="nav-graph">
+          <rect x="142.8" y="710" width="144.4" height="14" rx="3" class="c-mask"/>
+          <text x="215" y="720" class="t-edge-emphasis" font-size="8" text-anchor="middle">velocity control (/cmd_vel)‡</text>
         </g>
-        <g data-detail="context" data-edge-from="mission" data-edge-to="pickplace" data-edge-label="ACTION /p3020/pick_place*" data-edge-key="17" data-edge-id="mission-pickplace">
-          <rect x="510" y="370" width="130" height="14" rx="3" class="c-mask"/>
-          <text x="575" y="380" class="t-edge-emphasis" font-size="8" text-anchor="middle">ACTION /p3020/pick_place*</text>
+        <g data-detail="context" data-edge-from="sensor" data-edge-to="nav" data-edge-label="sensor · odom · TF · clock inputs‡" data-edge-key="17" data-edge-id="graph-nav">
+          <rect x="298.4" y="740" width="173.2" height="14" rx="3" class="c-mask"/>
+          <text x="385" y="750" class="t-edge-dashed" font-size="8" text-anchor="middle">sensor · odom · TF · clock inputs‡</text>
         </g>
-        <g data-detail="context" data-edge-from="mission" data-edge-to="isaac_bridge" data-edge-label="TOPIC /amr_a/pickup_command" data-edge-key="18" data-edge-id="mission-pickup">
-          <rect x="320.2" y="415" width="139.6" height="14" rx="3" class="c-mask"/>
-          <text x="390" y="425" class="t-edge-emphasis" font-size="8" text-anchor="middle">TOPIC /amr_a/pickup_command</text>
+        <g data-detail="context" data-edge-from="mission" data-edge-to="bridge" data-edge-label="TOPIC /amr_a/pickup_command" data-edge-key="18" data-edge-id="mission-pickup-command">
+          <rect x="450.2" y="725" width="139.6" height="14" rx="3" class="c-mask"/>
+          <text x="520" y="735" class="t-edge-emphasis" font-size="8" text-anchor="middle">TOPIC /amr_a/pickup_command</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="mission" data-edge-label="TOPIC /amr_a/pickup_state" data-edge-key="19" data-edge-id="pickup-feedback">
-          <rect x="455" y="445" width="130" height="14" rx="3" class="c-mask"/>
-          <text x="520" y="455" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/pickup_state</text>
+        <g data-detail="context" data-edge-from="bridge" data-edge-to="mission" data-edge-label="TOPIC /amr_a/pickup_state" data-edge-key="19" data-edge-id="pickup-state-feedback">
+          <rect x="600" y="725" width="130" height="14" rx="3" class="c-mask"/>
+          <text x="665" y="735" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/pickup_state</text>
         </g>
-        <g data-detail="context" data-edge-from="pickplace" data-edge-to="p3020_in" data-edge-label="BRIDGE SUB /arm_a/pick_place_command" data-edge-key="20" data-edge-id="pickplace-command">
-          <rect x="723.6" y="460" width="182.79999999999998" height="14" rx="3" class="c-mask"/>
-          <text x="815" y="470" class="t-edge-emphasis" font-size="8" text-anchor="middle">BRIDGE SUB /arm_a/pick_place_command</text>
+        <g data-detail="context" data-edge-from="mqtt_nav" data-edge-to="bridge" data-edge-label="TOPIC /amr_a/lift_command" data-edge-key="20" data-edge-id="lift-command">
+          <rect x="115" y="755" width="130" height="14" rx="3" class="c-mask"/>
+          <text x="180" y="765" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/lift_command</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_in" data-edge-to="pickplace" data-edge-label="BRIDGE PUB /arm_a/pick_place_status" data-edge-key="21" data-edge-id="pickplace-status">
-          <rect x="771.25" y="440" width="178" height="14" rx="3" class="c-mask"/>
-          <text x="860.25" y="450" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /arm_a/pick_place_status</text>
+        <g data-detail="context" data-edge-from="bridge" data-edge-to="mqtt_nav" data-edge-label="TOPICS /amr_a/lift_state · /amr_a/lift_result" data-edge-key="21" data-edge-id="lift-feedback">
+          <rect x="32" y="835" width="226" height="14" rx="3" class="c-mask"/>
+          <text x="145" y="845" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPICS /amr_a/lift_state · /amr_a/lift_result</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_in" data-edge-to="vision_in" data-edge-label="BRIDGE PUB /arm_a/rgb" data-edge-key="22" data-edge-id="in-rgb">
-          <rect x="974.6" y="460" width="110.8" height="14" rx="3" class="c-mask"/>
-          <text x="1030" y="470" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /arm_a/rgb</text>
+        <g data-detail="context" data-edge-from="mqtt_process" data-edge-to="bridge" data-edge-label="TOPIC /controltower/equipment/command" data-edge-key="22" data-edge-id="equipment-command">
+          <rect x="666.2" y="680" width="187.6" height="14" rx="3" class="c-mask"/>
+          <text x="760" y="690" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /controltower/equipment/command</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="vision_in" data-edge-label="NODE PUB /arm_a/preview · main_mission" data-edge-key="23" data-edge-id="in-preview">
-          <rect x="593.8" y="400" width="192.4" height="14" rx="3" class="c-mask"/>
-          <text x="690" y="410" class="t-edge-dashed" font-size="8" text-anchor="middle">NODE PUB /arm_a/preview · main_mission</text>
+        <g data-detail="context" data-edge-from="bridge" data-edge-to="mqtt_process" data-edge-label="TOPICS /controltower/equipment/status · /controltower/process/event" data-edge-key="23" data-edge-id="process-feedback">
+          <rect x="634.2" y="640" width="331.59999999999997" height="14" rx="3" class="c-mask"/>
+          <text x="800" y="650" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPICS /controltower/equipment/status · /controltower/process/event</text>
         </g>
-        <g data-detail="context" data-edge-from="vision_in" data-edge-to="p3020_in" data-edge-label="BRIDGE SUB /box_pixel · /box_pixel/result" data-edge-key="24" data-edge-id="in-detect">
-          <rect x="986.6" y="380" width="206.79999999999998" height="14" rx="3" class="c-mask"/>
-          <text x="1090" y="390" class="t-edge-emphasis" font-size="8" text-anchor="middle">BRIDGE SUB /box_pixel · /box_pixel/result</text>
+        <g data-detail="context" data-edge-from="mqtt_process" data-edge-to="mission" data-edge-label="TOPIC /amr_a/p3020_arrival_confirm*" data-edge-key="24" data-edge-id="arrival-confirm">
+          <rect x="586" y="405" width="178" height="14" rx="3" class="c-mask"/>
+          <text x="675" y="415" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/p3020_arrival_confirm*</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_in" data-edge-to="vision_in" data-edge-label="BRIDGE PUB /box_pixel/validated" data-edge-key="25" data-edge-id="in-validated">
-          <rect x="1020.6" y="475" width="158.79999999999998" height="14" rx="3" class="c-mask"/>
-          <text x="1100" y="485" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /box_pixel/validated</text>
+        <g data-detail="context" data-edge-from="mission" data-edge-to="mqtt_process" data-edge-label="TOPIC /amr_a/mission_state" data-edge-key="25" data-edge-id="mission-state">
+          <rect x="667.6" y="505" width="134.8" height="14" rx="3" class="c-mask"/>
+          <text x="735" y="515" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/mission_state</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_out" data-edge-to="vision_out" data-edge-label="BRIDGE PUB /arm_b/rgb" data-edge-key="26" data-edge-id="out-rgb">
-          <rect x="1114.6" y="620" width="110.8" height="14" rx="3" class="c-mask"/>
-          <text x="1170" y="630" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /arm_b/rgb</text>
+        <g data-detail="context" data-edge-from="pose_sync" data-edge-to="bridge" data-edge-label="TOPIC /amr_a/restore_pose" data-edge-key="26" data-edge-id="restore-pose">
+          <rect x="1030" y="690" width="130" height="14" rx="3" class="c-mask"/>
+          <text x="1095" y="700" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /amr_a/restore_pose</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="vision_out" data-edge-label="NODE PUB /arm_b/preview · main_mission" data-edge-key="27" data-edge-id="out-preview">
-          <rect x="1118.8" y="355" width="192.4" height="14" rx="3" class="c-mask"/>
-          <text x="1215" y="365" class="t-edge-dashed" font-size="8" text-anchor="middle">NODE PUB /arm_b/preview · main_mission</text>
+        <g data-detail="context" data-edge-from="bridge" data-edge-to="pose_sync" data-edge-label="TOPICS /amr_a/map_pose · /amr_a/pose_source_session" data-edge-key="27" data-edge-id="canonical-pose">
+          <rect x="1262.6" y="810" width="254.79999999999998" height="14" rx="3" class="c-mask"/>
+          <text x="1390" y="820" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPICS /amr_a/map_pose · /amr_a/pose_source_session</text>
         </g>
-        <g data-detail="context" data-edge-from="vision_out" data-edge-to="p3020_out" data-edge-label="BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result" data-edge-key="28" data-edge-id="out-detect">
-          <rect x="1217.8" y="375" width="264.4" height="14" rx="3" class="c-mask"/>
-          <text x="1350" y="385" class="t-edge-emphasis" font-size="8" text-anchor="middle">BRIDGE SUB /arm_b/box_pixel · /arm_b/box_pixel/result</text>
+        <g data-detail="context" data-edge-from="pose_sync" data-edge-to="nav" data-edge-label="TOPIC /initialpose" data-edge-key="28" data-edge-id="initialpose">
+          <rect x="591.8" y="465" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="640" y="475" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /initialpose</text>
         </g>
-        <g data-detail="context" data-edge-from="p3020_out" data-edge-to="vision_out" data-edge-label="BRIDGE PUB /arm_b/box_pixel/validated" data-edge-key="29" data-edge-id="out-validated">
-          <rect x="1396.2" y="445" width="187.6" height="14" rx="3" class="c-mask"/>
-          <text x="1490" y="455" class="t-edge-dashed" font-size="8" text-anchor="middle">BRIDGE PUB /arm_b/box_pixel/validated</text>
+        <g data-detail="context" data-edge-from="sensor" data-edge-to="pose_sync" data-edge-label="TF map→base_link lookup†" data-edge-key="29" data-edge-id="tf-pose">
+          <rect x="1397.4" y="690" width="125.19999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="1460" y="700" class="t-edge-dashed" font-size="8" text-anchor="middle">TF map→base_link lookup†</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="iw_agent" data-edge-label="PYTHON method calls" data-edge-key="30" data-edge-id="bridge-agent">
-          <rect x="554.4" y="495" width="101.2" height="14" rx="3" class="c-mask"/>
-          <text x="605" y="505" class="t-edge-dashed" font-size="8" text-anchor="middle">PYTHON method calls</text>
+        <g data-detail="context" data-edge-from="action" data-edge-to="internal" data-edge-label="TOPIC /arm_a/pick_place_command" data-edge-key="30" data-edge-id="action-command">
+          <rect x="740.6" y="715" width="158.79999999999998" height="14" rx="3" class="c-mask"/>
+          <text x="820" y="725" class="t-edge-emphasis" font-size="8" text-anchor="middle">TOPIC /arm_a/pick_place_command</text>
         </g>
-        <g data-detail="context" data-edge-from="iw_agent" data-edge-to="amr" data-edge-label="PYTHON articulation / wheel / lift control" data-edge-key="31" data-edge-id="agent-amr">
-          <rect x="644.2" y="676" width="211.6" height="14" rx="3" class="c-mask"/>
-          <text x="750" y="686" class="t-edge-dashed" font-size="8" text-anchor="middle">PYTHON articulation / wheel / lift control</text>
+        <g data-detail="context" data-edge-from="internal" data-edge-to="action" data-edge-label="TOPIC /arm_a/pick_place_status" data-edge-key="31" data-edge-id="action-status">
+          <rect x="938" y="715" width="154" height="14" rx="3" class="c-mask"/>
+          <text x="1015" y="725" class="t-edge-dashed" font-size="8" text-anchor="middle">TOPIC /arm_a/pick_place_status</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="process_runtime" data-edge-label="OBJECT attachment: same rclpy Node" data-edge-key="32" data-edge-id="bridge-process">
-          <rect x="1308.4" y="690" width="173.2" height="14" rx="3" class="c-mask"/>
-          <text x="1395" y="700" class="t-edge-dashed" font-size="8" text-anchor="middle">OBJECT attachment: same rclpy Node</text>
+        <g data-detail="context" data-edge-from="vision" data-edge-to="internal" data-edge-label="TOPICS detection / result" data-edge-key="32" data-edge-id="vision-detection">
+          <rect x="1070" y="675" width="130" height="14" rx="3" class="c-mask"/>
+          <text x="1135" y="685" class="t-edge-emphasis" font-size="8" text-anchor="middle">TOPICS detection / result</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="p3020_in" data-edge-label="OBJECT OptimizedP3020RosBridge attached to same rclpy Node" data-edge-key="33" data-edge-id="bridge-p3020-in">
-          <rect x="645.8" y="630" width="288.4" height="14" rx="3" class="c-mask"/>
-          <text x="790" y="640" class="t-edge-dashed" font-size="8" text-anchor="middle">OBJECT OptimizedP3020RosBridge attached to same rclpy Node</text>
+        <g data-detail="context" data-edge-from="internal" data-edge-to="vision" data-edge-label="RGB · P3020 ROS Bridge PUB" data-edge-key="33" data-edge-id="vision-rgb">
+          <rect x="1142.6" y="785" width="134.8" height="14" rx="3" class="c-mask"/>
+          <text x="1210" y="795" class="t-edge-dashed" font-size="8" text-anchor="middle">RGB · P3020 ROS Bridge PUB</text>
         </g>
-        <g data-detail="context" data-edge-from="isaac_bridge" data-edge-to="p3020_out" data-edge-label="OBJECT P3020OutRosBridge attached to same rclpy Node" data-edge-key="34" data-edge-id="bridge-p3020-out">
-          <rect x="950.2" y="660" width="259.6" height="14" rx="3" class="c-mask"/>
-          <text x="1080" y="670" class="t-edge-dashed" font-size="8" text-anchor="middle">OBJECT P3020OutRosBridge attached to same rclpy Node</text>
+        <g data-detail="context" data-edge-from="bridge" data-edge-to="vision" data-edge-label="Preview · shared Node PUB (main_mission)" data-edge-key="34" data-edge-id="vision-preview">
+          <rect x="799" y="735" width="202" height="14" rx="3" class="c-mask"/>
+          <text x="900" y="745" class="t-edge-dashed" font-size="8" text-anchor="middle">Preview · shared Node PUB (main_mission)</text>
         </g>
-        <g data-detail="context" data-edge-from="nav2" data-edge-to="iw_graph" data-edge-label="velocity control (/cmd_vel)‡" data-edge-key="35" data-edge-id="nav2-graph">
-          <rect x="-17.174999999999997" y="405" width="144.4" height="14" rx="3" class="c-mask"/>
-          <text x="55.025000000000006" y="415" class="t-edge-emphasis" font-size="8" text-anchor="middle">velocity control (/cmd_vel)‡</text>
-        </g>
-        <g data-detail="context" data-edge-from="iw_graph" data-edge-to="nav2" data-edge-label="sensor · odom · TF · clock inputs‡" data-edge-key="36" data-edge-id="graph-nav2">
-          <rect x="0.2750000000000057" y="651" width="173.2" height="14" rx="3" class="c-mask"/>
-          <text x="86.875" y="661" class="t-edge-dashed" font-size="8" text-anchor="middle">sensor · odom · TF · clock inputs‡</text>
-        </g>
-        <g data-detail="context" data-edge-from="iw_graph" data-edge-to="amr" data-edge-label="ROS graph I/O / actuation" data-edge-key="37" data-edge-id="graph-amr">
-          <rect x="370" y="711" width="130" height="14" rx="3" class="c-mask"/>
-          <text x="435" y="721" class="t-edge-dashed" font-size="8" text-anchor="middle">ROS graph I/O / actuation</text>
+        <g data-detail="context" data-edge-from="internal" data-edge-to="vision" data-edge-label="Validated result → detector HUD" data-edge-key="35" data-edge-id="vision-validated">
+          <rect x="1240.6" y="765" width="158.79999999999998" height="14" rx="3" class="c-mask"/>
+          <text x="1320" y="775" class="t-edge-dashed" font-size="8" text-anchor="middle">Validated result → detector HUD</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Host ROS 2 Jazzy — Adapters">
-          <rect data-graph-role="structural-frame-label-mask" x="22" y="17" width="196.97937103870967" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="26" y="32.54193648387097" class="t-cloud" font-size="11.541936483870968" font-weight="600">Host ROS 2 Jazzy — Adapters</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Control Tower / Web">
+          <rect data-graph-role="structural-frame-label-mask" x="46" y="33" width="124.95614043225805" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="50" y="47.083871967741935" class="t-cloud" font-size="10.083871967741935" font-weight="600">Control Tower / Web</text>
         </g>
 
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="1" data-composition-frame-kind="region" data-composition-frame-label="Host ROS 2 Jazzy — Mission / Navigation / Vision">
-          <rect data-graph-role="structural-frame-label-mask" x="20" y="247" width="342.40777073548384" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="24" y="262.541936483871" class="t-cloud" font-size="11.541936483870968" font-weight="600">Host ROS 2 Jazzy — Mission / Navigation / Vision</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="1" data-composition-frame-kind="region" data-composition-frame-label="Host ROS 2 Jazzy">
+          <rect data-graph-role="structural-frame-label-mask" x="54" y="278" width="106.80517089032257" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="58" y="292.0838719677419" class="t-cloud" font-size="10.083871967741935" font-weight="600">Host ROS 2 Jazzy</text>
         </g>
 
         <g data-graph-role="structural-frame-label" data-composition-frame-id="2" data-composition-frame-kind="region" data-composition-frame-label="Isaac Sim 5.1 Runtime">
-          <rect data-graph-role="structural-frame-label-mask" x="20" y="497" width="155.4283996967742" height="19" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="24" y="512.5419364838709" class="t-cloud" font-size="11.541936483870968" font-weight="600">Isaac Sim 5.1 Runtime</text>
+          <rect data-graph-role="structural-frame-label-mask" x="164" y="808" width="137.05678679354838" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="168" y="822.083871967742" class="t-cloud" font-size="10.083871967741935" font-weight="600">Isaac Sim 5.1 Runtime</text>
         </g>
 
         <!-- Legend -->
         <g data-legend="" data-legend-bridge="">
-          <text x="40" y="896" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="40" data-legend-baseline="916" data-legend-width="78">
-            <rect x="40" y="907" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="62" y="916" class="t-muted" font-size="10" font-weight="500">Backend</text>
+          <text x="40" y="1124" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="1144" data-legend-width="83">
+            <rect x="40" y="1135" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
+            <text x="62" y="1144" class="t-muted" font-size="10" font-weight="500">Frontend</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="140" data-legend-baseline="916" data-legend-width="83">
-            <rect x="140" y="907" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="162" y="916" class="t-muted" font-size="10" font-weight="500">External</text>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="1144" data-legend-width="78">
+            <rect x="145" y="1135" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="167" y="1144" class="t-muted" font-size="10" font-weight="500">Backend</text>
+          </g>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="1144" data-legend-width="83">
+            <rect x="245" y="1135" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="267" y="1144" class="t-muted" font-size="10" font-weight="500">Database</text>
+          </g>
+          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="350" data-legend-baseline="1144" data-legend-width="98">
+            <rect x="350" y="1135" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
+            <text x="372" y="1144" class="t-muted" font-size="10" font-weight="500">Message bus</text>
+          </g>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="470" data-legend-baseline="1144" data-legend-width="83">
+            <rect x="470" y="1135" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="492" y="1144" class="t-muted" font-size="10" font-weight="500">External</text>
           </g>
         </g>
       </svg>
@@ -5698,12 +5637,58 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <div class="card">
         <div class="card-header">
           <div class="card-dot cyan"></div>
-          <h3>ROS interface ownership</h3>
+          <h3>Runtime boundaries</h3>
         </div>
         <ul>
-          <li>AmrMissionBridge is the independent rclpy Node. P3020 ROS Bridge objects and ProcessEquipmentBridge register interfaces on that shared Node.</li>
-          <li>RGB publishers are created by the P3020 ROS Bridge objects. /arm_a/preview and /arm_b/preview publishers are created in main_mission.py on the shared AmrMissionBridge Node.</li>
-          <li>P3020 PickPlace/Unload agents are simulation-control Python objects, not ROS nodes.</li>
+          <li>Web / Host ROS 2 / Isaac Sim are logical execution regions; this diagram does not claim three physical PCs.</li>
+          <li>ProcessEquipmentBridge and P3020/IW-Hub agents are Python objects in Isaac, not independent ROS nodes.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Control responsibility</h3>
+        </div>
+        <ul>
+          <li>ros2_manual_mqtt_adapter publishes manual velocity only.</li>
+          <li>ros2_mqtt_adapter owns MQTT-driven NavigateToPose, STOP /cmd_vel, and manual lift command/state bridging.</li>
+          <li>System edges below the MQTT layer preserve command/feedback direction; broker edges summarize MQTT channels rather than implying one-way-only transport.</li>
+          <li>amr_p3020_mission drives lift-related mission phases through /amr_a/pickup_command; it is not the /amr_a/lift_command publisher.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>Mission conditions</h3>
+        </div>
+        <ul>
+          <li>PickPlace Action is used when simulate_p3020=false; default is simulate_p3020=true.</li>
+          <li>manual_delivery=true waits for /amr_a/p3020_arrival_confirm; default manual_delivery=false follows Nav2 delivery arrival.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Navigation / pose scope</h3>
+        </div>
+        <ul>
+          <li>Nav2 ↔ IW Hub ROS2 Graphs is shown at control/sensor-flow level. Exact topic remaps and TF broadcasters require runtime graph/external iw_hub_navigation configuration to confirm.</li>
+          <li>pose_sync_manager publishes /initialpose and separately looks up map→base_link for consistency; this diagram does not assert a single TF publisher.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Vision scope</h3>
+        </div>
+        <ul>
+          <li>P3020 ROS Bridge objects create/manage RGB publishers; main_mission.py creates /arm_a/preview and /arm_b/preview publishers on the shared AmrMissionBridge rclpy Node.</li>
+          <li>Detector nodes publish pixel/result back to the P3020 ROS Bridge objects; the bridge objects publish validated results back to detector HUD.</li>
+          <li>Legacy locate_box service/relay is not shown as an active main_mission runtime edge.</li>
         </ul>
       </div>
     </div>
