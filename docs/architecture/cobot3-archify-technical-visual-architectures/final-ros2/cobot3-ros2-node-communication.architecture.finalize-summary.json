@@ -1,0 +1,346 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "standard",
+  "specification": {
+    "path": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/candidate.json",
+    "sha256": "7aa52c6b7e0b4aa4688775fb5033fade0cd924f5634b5974d930a83c41dd3eae",
+    "bytes": 17241
+  },
+  "artifact": {
+    "path": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/cobot3-ros2-node-communication.architecture.html",
+    "sha256": "b83631c6157e48011c8b662aa2f769266cac2c0f2be50c1c6e2d2af381b43f47",
+    "bytes": 807689
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/cobot3-ros2-node-communication.architecture.finalize.json",
+    "summaryReceipt": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/cobot3-ros2-node-communication.architecture.finalize-summary.json",
+    "browserCheckReceipt": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/cobot3-ros2-node-communication.architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-03T18:16:58.679Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2695,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 11,
+      "routesOverSuggestedBends": 18,
+      "routesOverSuggestedStretch": 6
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "nav-adapter-cmdvel",
+            "from": "nav_adapter",
+            "to": "iw_graph",
+            "label": "TOPIC /cmd_vel (STOP)",
+            "collectionIndex": 1,
+            "artifactIndex": 2
+          },
+          "right": {
+            "id": "mission-nav2",
+            "from": "mission",
+            "to": "nav2",
+            "label": "ACTION /navigate_to_pose",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "point": [
+            285,
+            313
+          ]
+        },
+        {
+          "left": {
+            "id": "nav-adapter-lift",
+            "from": "nav_adapter",
+            "to": "isaac_bridge",
+            "label": "TOPIC /amr_a/lift_command",
+            "collectionIndex": 2,
+            "artifactIndex": 3
+          },
+          "right": {
+            "id": "mission-nav2",
+            "from": "mission",
+            "to": "nav2",
+            "label": "ACTION /navigate_to_pose",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "point": [
+            296,
+            313
+          ]
+        },
+        {
+          "left": {
+            "id": "lift-feedback",
+            "from": "isaac_bridge",
+            "to": "nav_adapter",
+            "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "mission-nav2",
+            "from": "mission",
+            "to": "nav2",
+            "label": "ACTION /navigate_to_pose",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "point": [
+            296,
+            313
+          ]
+        },
+        {
+          "left": {
+            "id": "pickplace-command",
+            "from": "pickplace",
+            "to": "p3020_in",
+            "label": "BRIDGE SUB /arm_a/pick_place_command",
+            "collectionIndex": 20,
+            "artifactIndex": 21
+          },
+          "right": {
+            "id": "in-preview",
+            "from": "isaac_bridge",
+            "to": "vision_in",
+            "label": "NODE PUB /arm_a/preview · main_mission",
+            "collectionIndex": 23,
+            "artifactIndex": 24
+          },
+          "point": [
+            715,
+            380
+          ]
+        },
+        {
+          "left": {
+            "id": "pickplace-command",
+            "from": "pickplace",
+            "to": "p3020_in",
+            "label": "BRIDGE SUB /arm_a/pick_place_command",
+            "collectionIndex": 20,
+            "artifactIndex": 21
+          },
+          "right": {
+            "id": "out-preview",
+            "from": "isaac_bridge",
+            "to": "vision_out",
+            "label": "NODE PUB /arm_b/preview · main_mission",
+            "collectionIndex": 27,
+            "artifactIndex": 28
+          },
+          "point": [
+            715,
+            380
+          ]
+        },
+        {
+          "left": {
+            "id": "pickplace-status",
+            "from": "p3020_in",
+            "to": "pickplace",
+            "label": "BRIDGE PUB /arm_a/pick_place_status",
+            "collectionIndex": 21,
+            "artifactIndex": 22
+          },
+          "right": {
+            "id": "in-preview",
+            "from": "isaac_bridge",
+            "to": "vision_in",
+            "label": "NODE PUB /arm_a/preview · main_mission",
+            "collectionIndex": 23,
+            "artifactIndex": 24
+          },
+          "point": [
+            715,
+            380
+          ]
+        },
+        {
+          "left": {
+            "id": "pickplace-status",
+            "from": "p3020_in",
+            "to": "pickplace",
+            "label": "BRIDGE PUB /arm_a/pick_place_status",
+            "collectionIndex": 21,
+            "artifactIndex": 22
+          },
+          "right": {
+            "id": "out-preview",
+            "from": "isaac_bridge",
+            "to": "vision_out",
+            "label": "NODE PUB /arm_b/preview · main_mission",
+            "collectionIndex": 27,
+            "artifactIndex": 28
+          },
+          "point": [
+            715,
+            380
+          ]
+        },
+        {
+          "left": {
+            "id": "in-rgb",
+            "from": "p3020_in",
+            "to": "vision_in",
+            "label": "BRIDGE PUB /arm_a/rgb",
+            "collectionIndex": 22,
+            "artifactIndex": 23
+          },
+          "right": {
+            "id": "out-preview",
+            "from": "isaac_bridge",
+            "to": "vision_out",
+            "label": "NODE PUB /arm_b/preview · main_mission",
+            "collectionIndex": 27,
+            "artifactIndex": 28
+          },
+          "point": [
+            1005.5,
+            380
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "nav-adapter-nav2",
+            "from": "nav_adapter",
+            "to": "nav2",
+            "label": "ACTION /navigate_to_pose",
+            "collectionIndex": 0,
+            "artifactIndex": 1
+          },
+          "bends": 3,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "nav-adapter-lift",
+            "from": "nav_adapter",
+            "to": "isaac_bridge",
+            "label": "TOPIC /amr_a/lift_command",
+            "collectionIndex": 2,
+            "artifactIndex": 3
+          },
+          "bends": 3,
+          "stretch": 1.092
+        },
+        {
+          "relationship": {
+            "id": "lift-feedback",
+            "from": "isaac_bridge",
+            "to": "nav_adapter",
+            "label": "TOPICS /amr_a/lift_state · /amr_a/lift_result",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "bends": 3,
+          "stretch": 1.092
+        },
+        {
+          "relationship": {
+            "id": "manual-cmdvel",
+            "from": "manual_adapter",
+            "to": "iw_graph",
+            "label": "TOPIC /cmd_vel",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "bends": 3,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "pickup-process-status",
+            "from": "isaac_bridge",
+            "to": "process_adapter",
+            "label": "TOPIC /amr_a/pickup_state",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "bends": 3,
+          "stretch": 1.048
+        },
+        {
+          "relationship": {
+            "id": "arm-a-process-status",
+            "from": "p3020_in",
+            "to": "process_adapter",
+            "label": "BRIDGE PUB /arm_a/pick_place_status",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "bends": 4,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "arm-b-process-status",
+            "from": "p3020_out",
+            "to": "process_adapter",
+            "label": "BRIDGE PUB /arm_b/pick_place_status",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "bends": 4,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "pose-from-isaac",
+            "from": "isaac_bridge",
+            "to": "pose_sync",
+            "label": "TOPICS /amr_a/map_pose · /amr_a/pose_source_session",
+            "collectionIndex": 12,
+            "artifactIndex": 13
+          },
+          "bends": 3,
+          "stretch": 1.117
+        }
+      ],
+      "truncated": true
+    },
+    "hints": [
+      "isaac_bridge has 7 relationships facing its right side, which fits 5 ports: make that side at least 116px, or move some of those neighbours so they face another side of isaac_bridge.",
+      "nav_adapter → iw_graph crosses mission → nav2: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "nav_adapter → isaac_bridge crosses mission → nav2: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "isaac_bridge → nav_adapter crosses mission → nav2: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "pickplace → p3020_in crosses isaac_bridge → vision_in: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "pickplace → p3020_in crosses isaac_bridge → vision_out: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "p3020_in → pickplace crosses isaac_bridge → vision_in: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "p3020_in → pickplace crosses isaac_bridge → vision_out: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

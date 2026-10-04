@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "standard",
+  "specification": {
+    "path": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/candidate.json",
+    "sha256": "f238a4057686df14cbc4190f5c8ea3906b143fd69187c23105141a21af0d10af",
+    "bytes": 20830
+  },
+  "artifact": {
+    "path": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/cobot3-system.architecture.html",
+    "sha256": "4688be0c004de4358f59046782981a96f640c4055c392a997cc1645f9ceeffe7",
+    "bytes": 797395
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/cobot3-system.architecture.finalize.json",
+    "summaryReceipt": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/cobot3-system.architecture.finalize-summary.json",
+    "browserCheckReceipt": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/cobot3-system.architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-03T18:16:58.679Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 8506,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 1,
+      "routesOverSuggestedBends": 22,
+      "routesOverSuggestedStretch": 5
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "mqtt-manual",
+            "from": "mqtt",
+            "to": "mqtt_manual",
+            "label": "MQTT channel · manual velocity",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "mqtt-process",
+            "from": "mqtt",
+            "to": "mqtt_process",
+            "label": "MQTT channel · process/control",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "point": [
+            665,
+            188.5
+          ],
+          "sharedNode": "mqtt"
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "mqtt-manual",
+            "from": "mqtt",
+            "to": "mqtt_manual",
+            "label": "MQTT channel · manual velocity",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "bends": 4,
+          "stretch": 1.207
+        },
+        {
+          "relationship": {
+            "id": "manual-graph",
+            "from": "mqtt_manual",
+            "to": "sensor",
+            "label": "manual /cmd_vel",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "bends": 5,
+          "stretch": 1.289
+        },
+        {
+          "relationship": {
+            "id": "web-vision-mjpeg",
+            "from": "web",
+            "to": "vision",
+            "label": "HTTP MJPEG IN/OUT (:8091/:8093)",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "bends": 4,
+          "stretch": 1.112
+        },
+        {
+          "relationship": {
+            "id": "nav-graph",
+            "from": "nav",
+            "to": "sensor",
+            "label": "velocity control (/cmd_vel)‡",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "bends": 4,
+          "stretch": 1.262
+        },
+        {
+          "relationship": {
+            "id": "graph-nav",
+            "from": "sensor",
+            "to": "nav",
+            "label": "sensor · odom · TF · clock inputs‡",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "bends": 4,
+          "stretch": 1.288
+        },
+        {
+          "relationship": {
+            "id": "mission-pickup-command",
+            "from": "mission",
+            "to": "bridge",
+            "label": "TOPIC /amr_a/pickup_command",
+            "collectionIndex": 18,
+            "artifactIndex": 19
+          },
+          "bends": 4,
+          "stretch": 1.248
+        },
+        {
+          "relationship": {
+            "id": "pickup-state-feedback",
+            "from": "bridge",
+            "to": "mission",
+            "label": "TOPIC /amr_a/pickup_state",
+            "collectionIndex": 19,
+            "artifactIndex": 20
+          },
+          "bends": 4,
+          "stretch": 1.207
+        },
+        {
+          "relationship": {
+            "id": "lift-command",
+            "from": "mqtt_nav",
+            "to": "bridge",
+            "label": "TOPIC /amr_a/lift_command",
+            "collectionIndex": 20,
+            "artifactIndex": 21
+          },
+          "bends": 4,
+          "stretch": 1.065
+        }
+      ],
+      "truncated": true
+    },
+    "hints": [
+      "vision has 5 relationships facing its left side, which fits 4 ports: make that side at least 88px, or move some of those neighbours so they face another side of vision.",
+      "mqtt → mqtt_manual and mqtt → mqtt_process cross next to mqtt: move node mqtt_manual or mqtt_process so the two reach mqtt from different sides (for example one level with it, one directly above or below it).",
+      "mqtt → mqtt_manual needs 4 bends: move node mqtt or mqtt_manual so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "mqtt_manual → sensor needs 5 bends: move node mqtt_manual or sensor so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "web → vision needs 4 bends: move node web or vision so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "nav → sensor needs 4 bends: move node nav or sensor so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "sensor → nav needs 4 bends: move node sensor or nav so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "mission → bridge needs 4 bends: move node mission or bridge so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

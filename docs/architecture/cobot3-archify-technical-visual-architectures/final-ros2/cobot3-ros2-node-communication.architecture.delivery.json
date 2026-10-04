@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "7f8ad0ad-ef47-47ea-b0bb-34cbde5bedb9",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/candidate.json",
+  "output": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-ros2/cobot3-ros2-node-communication.architecture.html",
+  "specification": {
+    "sha256": "7aa52c6b7e0b4aa4688775fb5033fade0cd924f5634b5974d930a83c41dd3eae",
+    "bytes": 17241
+  },
+  "artifact": {
+    "sha256": "b83631c6157e48011c8b662aa2f769266cac2c0f2be50c1c6e2d2af381b43f47",
+    "bytes": 807689
+  }
+}
