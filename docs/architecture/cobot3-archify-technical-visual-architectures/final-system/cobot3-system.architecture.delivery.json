@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "9fba5d85-f166-4350-a1ed-c24ae73c6f86",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/candidate.json",
+  "output": "/home/runner/work/cobot3-ws-c2/cobot3-ws-c2/.archify/final-system/cobot3-system.architecture.html",
+  "specification": {
+    "sha256": "f238a4057686df14cbc4190f5c8ea3906b143fd69187c23105141a21af0d10af",
+    "bytes": 20830
+  },
+  "artifact": {
+    "sha256": "4688be0c004de4358f59046782981a96f640c4055c392a997cc1645f9ceeffe7",
+    "bytes": 797395
+  }
+}
