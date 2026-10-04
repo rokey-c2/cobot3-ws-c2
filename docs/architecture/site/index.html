@@ -1,0 +1,85 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=556b0957-b0b2-4f24-8f98-6a1f80b144d1
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. --><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><title>Cobot3 · Architecture Workspace</title><meta name="description" content="AMR, 협동로봇, Isaac Sim과 관제 시스템의 아키텍처 및 ROS 2 통신 뷰어."><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111b2a'/%3E%3Cpath d='M8 8h16v16H8zM16 8v16M8 16h16' fill='none' stroke='%239ab9ff' stroke-width='2'/%3E%3C/svg%3E"><style>html,body{margin:0;background:#08111e}#cobot-preview{border-radius:0;min-height:100vh}#cobot-preview .themes{margin-right:0}button{cursor:pointer}#cobot-preview .viewer-slot{background:var(--canvas);border-block:1px solid var(--line)}#cobot-preview .viewer-slot iframe{display:block;width:100%;height:960px;border:0;background:var(--canvas)}#cobot-preview .viewer-slot iframe[hidden]{display:none}#cobot-preview .native-open{color:var(--blue);text-decoration:none;font-size:12px;white-space:nowrap;padding:8px 10px;border:1px solid var(--line);border-radius:5px}#cobot-preview .native-open:hover{text-decoration:underline}@media(max-width:740px){#cobot-preview .viewer-slot iframe{height:900px}}
+</style></head><body><style>
+#cobot-preview{--ink:#18243b;--sub:#66768e;--line:#e1e6ef;--blue:#315de5;--surface:#fff;--canvas:#f7f9fc;--dot:#dce3ed;--soft:#eef3ff;background:var(--surface);color:var(--ink);color-scheme:light;font:14px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;border-radius:0;overflow:clip}#cobot-preview[data-theme=dark]{--ink:#edf2fa;--sub:#a1afc4;--line:#28364a;--blue:#9ab9ff;--surface:#111b2a;--canvas:#08111e;--dot:#243146;--soft:#1b2c46;color-scheme:dark}#cobot-preview *{box-sizing:border-box}#cobot-preview button,#cobot-preview select{font:inherit;color:inherit}#cobot-preview button:focus-visible,#cobot-preview select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}#cobot-preview .top{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid var(--line)}#cobot-preview .mark{display:grid;place-items:center;background:var(--soft);color:var(--blue);width:36px;height:36px;border-radius:8px}#cobot-preview .project{font-size:15px;font-weight:600;letter-spacing:-.4px}#cobot-preview .muted{font-size:12px;color:var(--sub)}#cobot-preview .themes{display:flex;margin-left:auto;gap:4px;margin-right:70px}#cobot-preview .theme{border:0;background:transparent;padding:7px 10px;border-radius:6px;color:var(--sub);font-size:12px}#cobot-preview .theme[aria-pressed=true]{background:var(--soft);color:var(--blue)}#cobot-preview .layout{display:grid;grid-template-columns:176px minmax(0,1fr)}#cobot-preview .rail{border-right:1px solid var(--line);padding:24px 12px;display:flex;flex-direction:column;gap:7px;background:var(--surface)}#cobot-preview .rail-label{font-size:10px;letter-spacing:1.6px;color:var(--sub);padding:0 12px;margin-bottom:10px}#cobot-preview .view{display:flex;align-items:center;gap:10px;text-align:left;border:0;background:transparent;padding:12px;border-radius:7px;color:var(--sub)}#cobot-preview .view[aria-selected=true]{background:var(--soft);color:var(--blue)}#cobot-preview .view span{display:block;font-size:13px}#cobot-preview .view small{display:block;font-size:10px;margin-top:2px;color:var(--sub)}#cobot-preview .rail-bottom{margin-top:auto;padding:30px 12px 0;font-size:11px;color:var(--sub);line-height:1.9}#cobot-preview .main{min-width:0}#cobot-preview .page-head{padding:21px 24px 17px;display:flex;justify-content:space-between;align-items:center;gap:12px}#cobot-preview .breadcrumb{font-size:11px;color:var(--sub);margin-bottom:6px}#cobot-preview h2{font-size:22px;letter-spacing:-.6px;line-height:1.3;margin:0;font-weight:600}#cobot-preview .subtitle{font-size:12px;color:var(--sub);margin:6px 0 0}#cobot-preview .tools{display:flex;gap:3px;align-items:center;flex-wrap:wrap}#cobot-preview .tool{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:5px 9px;min-width:31px;font-size:12px}#cobot-preview .zoom{width:42px;text-align:center;font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}#cobot-preview .canvas{height:590px;position:relative;overflow:hidden;touch-action:none;background:var(--canvas);background-image:radial-gradient(var(--dot) .7px,transparent .7px);background-size:16px 16px;cursor:grab;border-block:1px solid var(--line)}#cobot-preview .canvas:active{cursor:grabbing}#cobot-preview .diagram{position:absolute;top:0;left:0;transform-origin:0 0;max-width:none;pointer-events:none;user-select:none}#cobot-preview .hint{position:absolute;bottom:12px;left:16px;font-size:10px;color:var(--sub);padding:5px 9px;border-radius:5px;background:var(--surface)}#cobot-preview .inspector{padding:17px 24px}#cobot-preview .inspect-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}#cobot-preview .inspect-label{color:var(--sub);font-size:11px;letter-spacing:1px}#cobot-preview select{padding:7px 9px;max-width:100%;font-size:12px;border:1px solid var(--line);border-radius:5px;background:var(--surface)}#cobot-preview .component-title{font-size:14px;font-weight:500;margin:0;overflow-wrap:anywhere}#cobot-preview .role{font-size:12px;color:var(--sub);margin-top:3px}#cobot-preview .connections{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}#cobot-preview .connection{font-size:11px;overflow-wrap:anywhere}#cobot-preview .connection small{display:block;color:var(--sub);font-size:10px;margin-top:2px}#cobot-preview footer{padding:10px 24px;border-top:1px solid var(--line);font-size:10px;color:var(--sub);display:flex;justify-content:space-between;gap:10px}#cobot-preview.expanded .rail{display:none}#cobot-preview.expanded .layout{grid-template-columns:1fr}#cobot-preview.expanded .canvas{height:720px}@media(max-width:740px){#cobot-preview .layout{grid-template-columns:1fr}#cobot-preview .rail{flex-direction:row;padding:10px 18px;border-right:0;border-bottom:1px solid var(--line);flex-wrap:wrap}#cobot-preview .rail-label,#cobot-preview .rail-bottom{display:none}#cobot-preview .view{padding:7px 11px}#cobot-preview .view small{display:none}#cobot-preview .themes{margin-right:0}#cobot-preview .page-head{flex-wrap:wrap;padding:18px}#cobot-preview .canvas{height:470px}#cobot-preview .inspector{padding:16px 18px}#cobot-preview .top{padding:15px 18px}#cobot-preview .theme{padding:8px}#cobot-preview footer{flex-wrap:wrap}}@media(pointer:coarse){#cobot-preview button{min-height:44px}}
+</style>
+<div id="cobot-preview" data-theme="dark">
+<header class="top"><span class="mark"><span aria-hidden="true">▦</span></span><div><div class="project">cobot3-ws-c2</div><div class="muted">Architecture workspace</div></div><div class="themes" role="group" aria-label="화면 테마"><button class="theme" data-theme-choice="light" aria-pressed="false">라이트</button><button class="theme" data-theme-choice="dark" aria-pressed="true">다크</button></div></header>
+<div class="layout"><nav class="rail" aria-label="아키텍처 관점"><div class="rail-label">EXPLORE</div><button class="view" data-mode="system" aria-selected="true"><span aria-hidden="true">▤</span><div><span>시스템 아키텍쳐</span><small>System architecture</small></div></button><button class="view" data-mode="ros" aria-selected="false"><span aria-hidden="true">⇄</span><div><span>ROS 2 통신 아키텍쳐</span><small>Node communication</small></div></button><button class="view" data-mode="erd" aria-selected="false"><span aria-hidden="true">▦</span><div><span>ERD</span><small>Entity relationships</small></div></button><button class="view" data-mode="flow" aria-selected="false"><span aria-hidden="true">⑂</span><div><span>공정 플로우차트</span><small>Process flow</small></div></button><div class="rail-bottom">AMR × 협동로봇<br>Isaac Sim Digital Twin<br><br>Source · cf7feac</div></nav>
+<main class="main"><div class="page-head"><div><div class="breadcrumb"><span class="current-name">System Architecture</span></div><h2 class="view-title">시스템 아키텍쳐</h2><p class="subtitle">관제부터 로봇 실행까지, 구성 요소와 연결을 한눈에.</p></div></div>
+<div class="viewer-slot"><iframe id="system-viewer" title="Archify 시스템 아키텍처 뷰어" src="01_system_architecture.html?theme=dark&rev=flow-top-bottom-1" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen scrolling="no"></iframe><iframe id="ros-viewer" title="Archify ROS 2 통신 뷰어" data-src="02_ros2_node_communication_architecture.html?theme=dark&rev=flow-top-bottom-1" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen scrolling="no" hidden></iframe><iframe id="erd-viewer" title="Archify ERD 뷰어" data-src="03_erd_v2.html?theme=dark" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen scrolling="no" hidden></iframe><iframe id="flow-viewer" title="Archify Flow Chart 뷰어" data-src="04_flow_chart_v2.html?theme=dark" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen scrolling="no" hidden></iframe></div><footer><span>React · FastAPI · MQTT · ROS 2 · Isaac Sim</span><span>cobot3-ws-c2 · Architecture</span></footer></main></div>
+</div>
+<script>(()=>{
+  const root=document.getElementById('cobot-preview');
+  const frames={system:document.getElementById('system-viewer'),ros:document.getElementById('ros-viewer'),erd:document.getElementById('erd-viewer'),flow:document.getElementById('flow-viewer')};
+  const paths={system:'01_system_architecture.html',ros:'02_ros2_node_communication_architecture.html',erd:'03_erd_v2.html',flow:'04_flow_chart_v2.html'};
+  const views={system:['시스템 아키텍쳐','System Architecture','관제부터 로봇 실행까지, 구성 요소와 연결을 한눈에.'],ros:['ROS 2 통신 아키텍쳐','ROS 2 Communication Architecture','노드 사이의 토픽·액션과 프로세스 내부 연결을 살펴보세요.'],erd:['ERD','Entity Relationship Diagram','물류 관제의 8개 테이블과 컬럼·키·관계를 살펴보세요.'],flow:['공정 플로우차트','Flow Chart','운반 → IN 작업 → 분류 및 AMR 복귀, 조건과 오류 분기까지.']};
+  let mode='system',theme='dark';
+  function syncFrame(frame){
+    const doc=frame.contentDocument;
+    if(!doc||!doc.getElementById('btn-theme'))return;
+    if(doc.documentElement.getAttribute('data-theme')!==theme)doc.getElementById('btn-theme').click();
+  }
+  function setTheme(next){
+    if(next!=='light'&&next!=='dark')return;
+    theme=next;root.dataset.theme=theme;
+    document.documentElement.style.colorScheme=theme;
+    document.body.style.background=theme==='dark'?'#08111e':'#f7f9fc';
+    root.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===theme)));
+    for(const frame of Object.values(frames))syncFrame(frame);
+  }
+  for(const frame of Object.values(frames)){
+    frame.addEventListener('load',()=>{
+      syncFrame(frame);
+      const doc=frame.contentDocument;
+      if(!doc||!doc.getElementById('btn-theme'))return;
+      const style=doc.createElement('style');
+      style.textContent='html:not([data-present="true"]),html:not([data-present="true"]) body{min-height:0!important}html:not([data-present="true"]){overflow:hidden!important}';
+      doc.head.append(style);
+      // Measure the normal document flow, not floating toolbars or popovers.
+      // Scroll-driven style changes must never change the iframe's height.
+      let resizeTimer=0;
+      const resize=()=>{
+        clearTimeout(resizeTimer);
+        if(frame.hidden)return;
+        resizeTimer=setTimeout(()=>{
+          if(frame.hidden||doc.documentElement.getAttribute('data-present')==='true')return;
+          const bodyStyle=frame.contentWindow.getComputedStyle(doc.body);
+          const shell=doc.querySelector('.container');
+          const normalHeight=shell
+            ? shell.offsetHeight+(parseFloat(bodyStyle.paddingTop)||0)+(parseFloat(bodyStyle.paddingBottom)||0)
+            : doc.body.offsetHeight;
+          const height=Math.ceil(Math.max(normalHeight,doc.body.offsetHeight))+4;
+          if(Math.abs(parseFloat(frame.style.height||'0')-height)>4)frame.style.height=height+'px';
+        },100);
+      };
+      frame.resizeToContent=resize;
+      const sizeObserver=new ResizeObserver(resize);
+      sizeObserver.observe(doc.body);
+      const shell=doc.querySelector('.container');
+      if(shell)sizeObserver.observe(shell);
+      doc.fonts.ready.then(resize);
+      frame.contentWindow.addEventListener('resize',resize);
+      new MutationObserver(resize).observe(doc.documentElement,{attributes:true,attributeFilter:['data-present']});
+      resize();
+      new MutationObserver(()=>{const next=doc.documentElement.getAttribute('data-theme');if(next!==theme)setTheme(next)}).observe(doc.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    });
+  }
+  root.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.themeChoice)));
+  root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+    mode=b.dataset.mode;window.scrollTo({top:0,behavior:'instant'});
+    root.querySelectorAll('[data-mode]').forEach(t=>t.setAttribute('aria-selected',String(t===b)));
+    for(const [key,frame] of Object.entries(frames))frame.hidden=key!==mode;
+    const frame=frames[mode];
+    if(!frame.getAttribute('src'))frame.src=paths[mode]+'?theme='+theme+'&rev=flow-top-bottom-1';
+    else {syncFrame(frame);frame.contentWindow.dispatchEvent(new Event('resize'));if(frame.resizeToContent)frame.resizeToContent();}
+    root.querySelector('.view-title').textContent=views[mode][0];
+    root.querySelector('.current-name').textContent=views[mode][1];
+    root.querySelector('.subtitle').textContent=views[mode][2];
+  }));
+  setTheme('dark');
+})();
+</script>
+</body></html>
