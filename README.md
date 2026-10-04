@@ -189,125 +189,66 @@ P3020 IN·OUT의 RGB/Depth 카메라와 YOLO 결과를 이용해 Pick & Place �
 
 # 1. 시스템 설계
 
-## System Architecture
+> **[Archify 아키텍쳐 뷰어 열기](https://cobot3-ws-c2-architectures.netlify.app/)** — 시스템 아키텍쳐, ROS 2 통신 아키텍쳐, 플로우차트, ERD를 로그인 없이 확인할 수 있습니다. 아래 그림을 클릭하면 뷰어로 이동하며, 메뉴에서 각 다이어그램을 선택해 검색·경로 탐색·확대 및 내보내기를 사용할 수 있습니다.
 
-```mermaid
-flowchart LR
-    SIM[Isaac Sim 5.1\nWarehouse / IW Hub / P3020 / Conveyor] --> BRIDGE[Isaac ROS2 Bridge\nROS2 Jazzy]
+## 시스템 아키텍쳐 · System Architecture
 
-    BRIDGE --> AMR[IW Hub AMR\nLiDAR / Odom / Lift]
-    BRIDGE --> ARM[P3020 IN / OUT\nRGB-Depth Camera / VGP20]
-    BRIDGE --> PROC[Conveyor / Wheel Sorter]
+React Control Tower부터 FastAPI·PostgreSQL·MQTT, Host ROS 2, Isaac Sim까지 전체 구성 요소와 연결을 보여줍니다. Web / Host ROS 2 / Isaac Sim은 논리적 실행 영역이며, 물리 PC 세 대를 의미하지 않습니다.
 
-    AMR --> NAV[Nav2 / AMCL]
-    ARM -->|"/arm_a/rgb · /depth"| VISION[Box Detector\nYOLO ONNX Runtime\n시스템 Python]
-    VISION -->|"/box_pixel"| ARM
-
-    NAV --> MISSION[AMR-P3020 Mission]
-    PROC --> MISSION
-    MISSION -->|"/p3020/pick_place Action"| ACTION[P3020 PickPlace\nAction Server\n시스템 Python]
-    ACTION -->|"/arm_a/pick_place_command"| ARM
-    ARM -->|"/arm_a/pick_place_status"| ACTION
-
-    MISSION --> ADAPTER[ROS2-MQTT Adapter]
-    ADAPTER --> MQTT[Mosquitto MQTT]
-    MQTT --> API[FastAPI Backend]
-    API --> DB[(PostgreSQL)]
-    API --> WEB[React Control Tower]
-
-    ARM --> STREAM[MJPEG Vision Stream\n8091 / 8093]
-    SIM --> STREAM2[AMR / Top View Stream\n8090 / 8092]
-    STREAM --> WEB
-    STREAM2 --> WEB
-```
+<p align="center">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
+    <img src="docs/architecture/diagrams/system-architecture.svg" width="900" alt="시스템 아키텍쳐 — Control Tower, MQTT, Host ROS 2 및 Isaac Sim 구성과 연결">
+  </a>
+</p>
 
 ### 데이터 흐름
 
-- **로봇/공정 상태**: Isaac Sim → ROS2 → MQTT Adapter → Mosquitto → FastAPI → PostgreSQL / React
-- **AMR 자율주행**: Isaac Sim LiDAR/Odom → ROS2 → Nav2/AMCL → AMR velocity command
-- **P3020 작업**: AMR-P3020 Mission → `/p3020/pick_place` Action Server → `/arm_a/pick_place_command`(JSON) → Isaac Sim P3020 에이전트 → `/arm_a/pick_place_status` → Action result
-- **박스 검출**: Isaac Sim 카메라(`/arm_a/rgb`, `/depth`) → Box Detector(ONNX Runtime) → `/box_pixel` → P3020 에이전트가 Pixel + Depth로 3D 좌표 계산
-- Isaac Sim 내장 Python(3.11)에서는 시스템 ROS 2(3.12)로 빌드한 커스텀 타입을 쓸 수 없어서, Action Server와 Box Detector는 시스템 Python 프로세스로 분리하고 Isaac Sim과는 표준 타입(`Image`, `PointStamped`, `String`)으로만 통신합니다.
-- **실시간 영상**: ROS Image → MJPEG stream → React Control Tower
+- **관제·제어**: React ↔ FastAPI ↔ Mosquitto ↔ ROS 2 MQTT Adapter ↔ 로봇·공정 실행
+- **AMR Mission**: Cargo 도킹·Lift → Nav2 이동 → P3020 작업 → Cargo 및 Spawn 복귀
+- **Vision·P3020**: RGB/Depth 기반 박스 검출과 Pick & Place 명령·상태 연결
+- **실시간 영상**: 카메라 이미지 → MJPEG Stream → React Control Tower
+
+## ROS 2 통신 아키텍쳐 · ROS 2 Communication Architecture
+
+ROS 2 노드 사이의 토픽·액션과 Isaac Sim 프로세스 내부 연결을 구분합니다. 명령·피드백 방향, Nav2·Lift·Vision·P3020·MQTT Adapter의 연결을 확인할 수 있습니다.
+
+<p align="center">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
+    <img src="docs/architecture/diagrams/ros2-communication-architecture.svg" width="900" alt="ROS 2 통신 아키텍쳐 — 노드별 토픽, 액션, 명령 및 피드백 연결">
+  </a>
+</p>
+
+## ERD · 데이터 구조
+
+장비·상태·명령, 구역, Mission·진행 단계, 택배·처리 이력을 저장하는 **8개 테이블과 7개 관계**입니다. 컬럼과 PK·FK·UK, 관계의 수를 함께 표시합니다.
+
+<p align="center">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
+    <img src="docs/architecture/diagrams/erd.svg" width="900" alt="물류 관제 ERD — 8개 테이블의 컬럼, PK, FK, UK 및 관계">
+  </a>
+</p>
 
 ---
 
 # 2. 전체 Flow Chart
 
-> FigJam 원본: [P3020 Pick & Place Mission Flow](https://www.figma.com/board/1833sIkwqEzvNOsQS1MEag/P3020-Pick---Place-Mission-Flow?node-id=0-1)
->
-> 제출본에서도 전체 흐름과 YES/NO 분기를 바로 확인할 수 있도록 FigJam의 Mission Flow를 Mermaid로 재구성했습니다.
+AMR 운반 → P3020 IN 작업 → Conveyor·Sorter 분류 / AMR 복귀 순서로 공정을 보여줍니다. **START는 맨 위, END는 맨 아래**에 배치했으며, 대기·오류·Reject Bin 분기와 분류 / AMR 복귀의 병렬 흐름을 포함합니다.
 
-```mermaid
-flowchart TD
-    START([START]) --> READY[Isaac Sim / ROS2 / Nav2 / YOLO 준비]
-    READY --> SPAWN[IW Hub Spawn]
-    SPAWN --> DOCK[Cargo Pod 접근 및 정밀 도킹]
-    DOCK --> LIFT[Lift Up]
-
-    LIFT --> PICKUP{PICKUP_DONE?}
-    PICKUP -- NO --> PICKUP_RETRY[재도킹 / Lift 재시도]
-    PICKUP_RETRY --> PICKUP
-    PICKUP -- YES --> NAV_GOAL[Nav2 Goal 전송]
-
-    NAV_GOAL --> NAV[장애물 회피 자율주행]
-    NAV --> ARRIVE{P3020 작업 위치 도착?}
-    ARRIVE -- NO --> NAV_RECOVERY[Nav2 Recovery / 재시도]
-    NAV_RECOVERY --> NAV
-    ARRIVE -- YES --> DOCK_OK[CONVEYOR_DOCK 확인 및 작업 높이 조정]
-
-    DOCK_OK --> ACTION[PickPlace Action Goal 수신]
-    ACTION --> SCAN[SCANNING\nYOLO + Local Depth 탐지]
-    SCAN --> PIXEL{box_pixel 수신?}
-    PIXEL -- NO --> SCAN
-    PIXEL -- YES --> XYZ[Pixel + Depth 기반 3D 좌표 계산]
-
-    XYZ --> VALID{P3020 가동 범위 및 Parcel Prim 유효?}
-    VALID -- NO --> CHECK_EMPTY[CHECKING_EMPTY\n5초 재확인]
-    VALID -- YES --> APPROACH[APPROACH → DESCEND]
-    APPROACH --> GRASP[GRASP → LIFT]
-    GRASP --> MOVE[MOVE → PLACE]
-
-    MOVE --> RESULT{박스 1개 처리 성공?}
-    RESULT -- NO --> BOX_FAIL[DONE_FAIL\n재Scan / 재확인]
-    RESULT -- YES --> PACKAGE[DONE_SUCCESS\nPACKAGE_ENTERED]
-    BOX_FAIL --> CHECK_EMPTY
-
-    PACKAGE --> MORE{다음 박스 검출?}
-    MORE -- YES --> SCAN
-    MORE -- NO --> CHECK_EMPTY
-    CHECK_EMPTY --> EMPTY{CARGO_EMPTY?}
-    EMPTY -- NO --> SCAN
-    EMPTY -- YES --> RETURN_NAV[PickPlace Action Success\nNav2로 Cargo 복귀]
-
-    RETURN_NAV --> REDOCK[Cargo 원위치 정밀 도킹]
-    REDOCK --> VERIFY[Cargo Pose 검증]
-    VERIFY --> LIFT_DOWN[Lift Down]
-    LIFT_DOWN --> HOME[IW Hub Spawn 복귀]
-    HOME --> COMPLETE([AMR MISSION COMPLETE])
-
-    PACKAGE --> CONVEYOR[Main Conveyor 이송]
-    CONVEYOR --> SORT_ID{Wheel Sorter box_id}
-    SORT_ID -- 1 --> REGION_A[Region A 분류]
-    SORT_ID -- 2 --> REGION_B[Region B 분류]
-    SORT_ID -- 3 --> REGION_C[Region C 분류]
-    SORT_ID -- 4 --> STRAIGHT[직진 / Reject Line]
-
-    STRAIGHT --> P3020_OUT[P3020 OUT Pick & Place]
-    P3020_OUT --> BIN{Reject Bin 2×2 빈 Slot?}
-    BIN -- YES --> BIN_PLACE[빈 Slot에 Place]
-    BIN -- NO --> BIN_FULL[BIN_FULL\nBin 교체 로직 미구현]
-
-    REGION_A --> CONTROL[Control Tower 상태 반영]
-    REGION_B --> CONTROL
-    REGION_C --> CONTROL
-    BIN_PLACE --> CONTROL
-    BIN_FULL --> CONTROL
-```
+<p align="center">
+  <a href="https://cobot3-ws-c2-architectures.netlify.app/">
+    <img src="docs/architecture/diagrams/process-flowchart.svg" width="760" alt="전체 공정 플로우차트 — START부터 운반, IN 작업, 분류 및 AMR 복귀 후 END까지">
+  </a>
+</p>
 
 ### 핵심 Mission 흐름
 
-`IW Hub Spawn → Cargo Pod 접근 → Lift Up → PICKUP_DONE → Nav2 자율주행 → P3020 작업 위치 → YOLO 박스 검출 → box_pixel → Pixel + Depth → 3D 좌표 → P3020 반복 Pick & Place → CARGO_EMPTY → Cargo 원위치 복귀/정밀 도킹 → Lift Down → IW Hub Spawn 복귀 → COMPLETE`
+`START → Cargo 도킹·Lift Up → PICKUP_DONE → Nav2 이동 → 정밀 도킹·Cargo 하강 → P3020 반복 Pick & Place → CARGO_EMPTY → 빈 Cargo Lift Up → Cargo 위치 복귀·정밀 도킹 → Lift Down·Pose 검증 → Spawn 복귀 → END`
+
+- **공정 분류**: `PACKAGE_ENTERED → Main Conveyor → box_id → Region A/B/C 또는 Reject Line → P3020 OUT → Reject Bin`
+- **오류 분기**: Nav2 실패, 비전 응답 오류, `DONE_FAIL`은 `MISSION ERROR`로 연결됩니다. Reject Bin에 빈 Slot이 없으면 `BIN_FULL`로 분기합니다.
+- **실행 조건**: PickPlace Action을 사용하는 `simulate_p3020=false` 기준입니다.
+
+[전체 다이어그램을 Archify 뷰어에서 살펴보기](https://cobot3-ws-c2-architectures.netlify.app/)
 
 ---
 
@@ -1029,3 +970,4 @@ cobot3-ws-c2/
 - `.env`에는 개인 환경값이 들어갈 수 있으므로 `.env.example`을 제출합니다.
 - 최초 실행 전에는 `.env` 생성, Python/Frontend dependency 설치, `colcon build`를 먼저 수행해야 합니다.
 - README의 실행 명령은 특정 사용자의 홈 디렉터리에 의존하지 않으며, 프로젝트 root를 기준으로 합니다.
+
