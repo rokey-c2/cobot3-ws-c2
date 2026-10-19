@@ -1,4 +1,4 @@
-# 📦 AMR–협동로봇 연계 택배 분류 자동화 및 실시간 관제 시스템
+# 📦 AMR–협동로봇 연계 대형 택배 분류 자동화 및 실시간 관제 시스템
 
 <p align="center">
   <img src="https://img.shields.io/badge/Isaac_Sim-5.1-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="Isaac Sim 5.1">
@@ -15,7 +15,7 @@
 
 <p align="center"><b>Isaac Sim 5.1 + ROS 2 Jazzy 기반 End-to-End 물류 자동화 Digital Twin</b><br>IW Hub AMR · Doosan P3020 · VGP20 · RGB-D Vision · Conveyor · Wheel Sorter · Nav2 · MQTT · FastAPI · PostgreSQL · React</p>
 
-택배가 담긴 **Cargo Pod를 IW Hub AMR이 운반**하고, **P3020 IN이 RGB-D + YOLO로 박스를 인식해 Conveyor에 올리면**, **Wheel Sorter가 지역별로 분류**하고 Reject Line의 박스는 **P3020 OUT이 Reject Bin에 적재**합니다. 전 과정을 **Isaac Sim 5.1 + ROS 2 Jazzy 디지털 트윈**에서 하나의 미션으로 연결하고, **React Control Tower**에서 실시간으로 관제합니다.
+대형 택배가 담긴 **Cargo Pod를 IW Hub AMR이 운반**하고, **P3020 IN이 RGB-D + YOLO로 박스를 인식해 Conveyor에 올리면**, **Wheel Sorter가 지역별로 분류**하고 Reject Line의 박스는 **P3020 OUT이 Reject Bin에 적재**합니다. 전 과정을 **Isaac Sim 5.1 + ROS 2 Jazzy 디지털 트윈**에서 하나의 미션으로 연결하고, **React Control Tower**에서 실시간으로 관제합니다.
 
 > 두산 로보틱스 ROKEY Boot Camp 9기 · 협동-3 · C2조 **4명** — 정의석(팀장) · 정동휘 · 황인재 · 서진우 · 2026.08.14 ~ 08.28
 
