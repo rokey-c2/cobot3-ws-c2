@@ -1,5 +1,7 @@
 import json
 import os
+import threading
+import uuid
 
 import paho.mqtt.client as mqtt
 from psycopg.rows import dict_row
@@ -11,6 +13,44 @@ MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 
 SUBSCRIBE_TOPIC = "controltower/#"
+SYSTEM_COMMAND_RESULT_TOPIC = "controltower/system/command/result"
+_system_waiters = {}
+_system_waiters_lock = threading.Lock()
+
+
+class SystemCommandRejected(RuntimeError):
+    pass
+
+
+def _request_system_command(topic: str, command: str, payload: dict, timeout: float = 30.0):
+    request_id = uuid.uuid4().hex
+    waiter = {"event": threading.Event(), "result": None}
+    with _system_waiters_lock:
+        _system_waiters[request_id] = waiter
+    try:
+        _publish_command(topic, {**payload, "request_id": request_id}, command)
+        if not waiter["event"].wait(timeout):
+            raise TimeoutError(f"{command} did not receive an Isaac Sim acknowledgement")
+        result = waiter["result"]
+        if result.get("status") != "SUCCESS":
+            raise SystemCommandRejected(result.get("error") or f"{command} failed")
+        return result
+    finally:
+        with _system_waiters_lock:
+            _system_waiters.pop(request_id, None)
+
+
+def request_simulation_reset():
+    return _request_system_command(
+        "controltower/command/system/reset", "SYSTEM_RESET", {},
+    )
+
+
+def start_physical_mission(mission_code: str, package_code: str, region: str):
+    return _request_system_command(
+        "controltower/command/system/mission-start", "MISSION_START",
+        {"mission_code": mission_code, "package_code": package_code, "region": region},
+    )
 
 
 def update_equipment_status(equipment_code: str, payload: dict):
@@ -353,6 +393,15 @@ def publish_equipment_control_command(
 
 
 def handle_message(topic: str, payload: dict):
+    if topic == SYSTEM_COMMAND_RESULT_TOPIC:
+        request_id = str(payload.get("request_id", ""))
+        with _system_waiters_lock:
+            waiter = _system_waiters.get(request_id)
+            if waiter is not None:
+                waiter["result"] = payload
+                waiter["event"].set()
+        return
+
     if topic == "controltower/result/command":
         update_command_result(payload)
         return

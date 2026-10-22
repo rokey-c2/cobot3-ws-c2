@@ -57,6 +57,19 @@ class OutfeedCenterStop:
         self._last_motion = None
         print(f'[OUTFEED] center={self.center_xy}; stop tolerance={self.CENTER_TOLERANCE:.3f}m')
 
+    def reset(self):
+        """Release a held parcel and clear routing state for a new run."""
+        if self.held_path:
+            prim = self.stage.GetPrimAtPath(self.held_path)
+            if prim.IsValid():
+                body = UsdPhysics.RigidBodyAPI(prim)
+                body.CreateKinematicEnabledAttr().Set(False)
+        self.held_path = None
+        self._held_z = None
+        self._served.clear()
+        self._last_motion = None
+        self._set_motion((1., 0., 0.), 0.)
+
     def _set_motion(self, direction, speed):
         motion = (tuple(round(v, 4) for v in direction), round(float(speed), 4))
         if motion == self._last_motion:

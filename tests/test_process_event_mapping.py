@@ -134,6 +134,17 @@ class ProcessEventMappingTest(unittest.TestCase):
             self.assertIsNone(result)
             self.assertEqual(cursor.execute.call_count, 1)
 
+    def test_pickup_or_registration_does_not_start_mission_before_create(self):
+        for payload in (
+            {"event_type": "AMR_STATE", "state": "ROTATE_TO_DOCK"},
+            {"event_type": "PACKAGE_REGISTERED", "state": "REGISTERED"},
+        ):
+            with self.subTest(payload=payload):
+                cursor = Mock()
+                cursor.fetchone.return_value = None
+                self.assertIsNone(self.module._find_or_create_active_tracking(cursor, payload))
+                self.assertEqual(cursor.execute.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

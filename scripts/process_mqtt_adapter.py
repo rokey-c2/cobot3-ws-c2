@@ -24,11 +24,16 @@ MQTT_COMMAND_TOPIC = "controltower/command/equipment/+/control"
 MQTT_COMMAND_RESULT_TOPIC = "controltower/result/command"
 MQTT_PROCESS_EVENT_TOPIC = "controltower/process/event"
 MQTT_P3020_ARRIVAL_TOPIC = "controltower/command/mission/p3020-arrival"
+MQTT_SYSTEM_RESET_TOPIC = "controltower/command/system/reset"
+MQTT_MISSION_START_TOPIC = "controltower/command/system/mission-start"
+MQTT_SYSTEM_RESULT_TOPIC = "controltower/system/command/result"
 
 ROS_EQUIPMENT_COMMAND_TOPIC = "/controltower/equipment/command"
 ROS_EQUIPMENT_STATUS_TOPIC = "/controltower/equipment/status"
 ROS_PROCESS_EVENT_TOPIC = "/controltower/process/event"
 ROS_P3020_ARRIVAL_TOPIC = "/amr_a/p3020_arrival_confirm"
+ROS_SYSTEM_COMMAND_TOPIC = "/controltower/system/command"
+ROS_SYSTEM_RESULT_TOPIC = "/controltower/system/command/result"
 
 SUPPORTED_EQUIPMENT = {
     "P3020_IN",
@@ -47,12 +52,23 @@ class Ros2ProcessMqttAdapter(Node):
         self.pending_commands = {}
         self.last_process_state = {}
         self.pending_arrival_command = None
+        self.pending_reset = {}
 
         self.equipment_command_publisher = self.create_publisher(
             String, ROS_EQUIPMENT_COMMAND_TOPIC, 10
         )
         self.p3020_arrival_publisher = self.create_publisher(
             String, ROS_P3020_ARRIVAL_TOPIC, 10
+        )
+        self.system_command_publisher = self.create_publisher(
+            String, ROS_SYSTEM_COMMAND_TOPIC, 10
+        )
+        self.create_subscription(
+            String, ROS_SYSTEM_RESULT_TOPIC, self._on_system_result, 10,
+        )
+        self.create_subscription(
+            String, "/controltower/system/mission_reset_ack",
+            self._on_mission_reset_ack, 10,
         )
         self.create_subscription(
             String, ROS_EQUIPMENT_STATUS_TOPIC,
@@ -97,6 +113,8 @@ class Ros2ProcessMqttAdapter(Node):
         )
         client.subscribe(MQTT_COMMAND_TOPIC, qos=1)
         client.subscribe(MQTT_P3020_ARRIVAL_TOPIC, qos=1)
+        client.subscribe(MQTT_SYSTEM_RESET_TOPIC, qos=1)
+        client.subscribe(MQTT_MISSION_START_TOPIC, qos=1)
 
     def _on_mqtt_message(self, client, userdata, message):
         del client, userdata
@@ -115,8 +133,63 @@ class Ros2ProcessMqttAdapter(Node):
                 return
             if topic == MQTT_P3020_ARRIVAL_TOPIC:
                 self.process_p3020_arrival_command(payload)
+            elif topic in {MQTT_SYSTEM_RESET_TOPIC, MQTT_MISSION_START_TOPIC}:
+                message = String()
+                message.data = json.dumps({
+                    **payload,
+                    "command": "RESET" if topic == MQTT_SYSTEM_RESET_TOPIC else "MISSION_START",
+                })
+                if topic == MQTT_SYSTEM_RESET_TOPIC:
+                    self.pending_reset[str(payload["request_id"])] = {
+                        "isaac_result": None,
+                        "mission_ack": False,
+                        "deadline": time.monotonic() + 25.0,
+                    }
+                self.system_command_publisher.publish(message)
             else:
                 self.process_control_command(topic, payload)
+
+    def _on_system_result(self, message):
+        try:
+            payload = json.loads(message.data)
+        except json.JSONDecodeError:
+            return
+        request_id = str(payload.get("request_id", ""))
+        if payload.get("command") == "RESET":
+            pending = self.pending_reset.get(request_id)
+            if pending is None:
+                return
+            if payload.get("status") != "SUCCESS":
+                self.pending_reset.pop(request_id, None)
+                self._publish_system_result(payload)
+                return
+            pending["isaac_result"] = payload
+            self._finish_reset_if_ready(request_id)
+        else:
+            self._publish_system_result(payload)
+
+    def _on_mission_reset_ack(self, message):
+        request_id = message.data.strip()
+        pending = self.pending_reset.get(request_id)
+        if pending is None:
+            return
+        pending["mission_ack"] = True
+        self._finish_reset_if_ready(request_id)
+
+    def _finish_reset_if_ready(self, request_id):
+        pending = self.pending_reset.get(request_id)
+        if not pending or not pending["mission_ack"] or not pending["isaac_result"]:
+            return
+        self.pending_reset.pop(request_id, None)
+        self.last_process_state.clear()
+        self.pending_commands.clear()
+        self.pending_arrival_command = None
+        self._publish_system_result(pending["isaac_result"])
+
+    def _publish_system_result(self, payload):
+        self.mqtt_client.publish(
+            MQTT_SYSTEM_RESULT_TOPIC, json.dumps(payload), qos=1,
+        )
 
     def process_p3020_arrival_command(self, payload):
         command_id = payload.get("command_id")
@@ -267,7 +340,7 @@ class Ros2ProcessMqttAdapter(Node):
 
     def _on_p3020_state(self, message):
         state = message.data.strip()
-        if not state:
+        if not state or state == "DONE_FAIL:RESET":
             return
         self._publish_state_change(
             "p3020", state,
@@ -295,6 +368,13 @@ class Ros2ProcessMqttAdapter(Node):
 
     def _expire_commands(self):
         now = time.monotonic()
+        for request_id, pending in list(self.pending_reset.items()):
+            if pending["deadline"] <= now:
+                self.pending_reset.pop(request_id, None)
+                self._publish_system_result({
+                    "request_id": request_id, "command": "RESET", "status": "FAILED",
+                    "error": "Timed out waiting for Isaac and mission reset acknowledgements",
+                })
         if (self.pending_arrival_command is not None and
                 self.pending_arrival_command["deadline"] <= now):
             pending = self.pending_arrival_command

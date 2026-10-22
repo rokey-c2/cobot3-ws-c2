@@ -152,6 +152,12 @@ class LiveViewAmrMissionBridge(mission.AmrMissionBridge):
             # camera cannot be created on a particular Isaac installation.
             self.get_logger().error(f"top-view camera disabled: {error}")
 
+    def post_world_reset(self):
+        super().post_world_reset()
+        if self._top_view_camera is not None:
+            self._top_view_camera.post_reset()
+            self._top_view_camera.resume()
+
     def _publish_top_view(self):
         if self._top_view_camera is None or self._top_view_pub is None:
             return

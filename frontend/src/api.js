@@ -46,6 +46,7 @@ export const api = {
 
   startSystem: () => request("/api/system/start", { method: "POST" }),
   stopSystem: () => request("/api/system/stop", { method: "POST" }),
+  resetSystem: () => request("/api/system/reset", { method: "POST" }),
   startEquipment: (equipmentCode) =>
     request(`/api/equipment/${encodeURIComponent(equipmentCode)}/start`, {
       method: "POST",
