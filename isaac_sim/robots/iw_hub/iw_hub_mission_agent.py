@@ -111,6 +111,9 @@ PICKUP_TIMEOUT = 8.0
 
 CARGO_RETURN_POS_TOLERANCE = 0.07
 CARGO_RETURN_YAW_TOLERANCE = math.radians(2.0)
+LOWER_SETTLE_SECONDS = 0.75
+LOWER_VERIFY_TIMEOUT = 3.0
+LOWER_VALID_SECONDS = 0.2
 
 
 def _wrap_angle(angle):
@@ -137,6 +140,8 @@ class MissionIwHubAgent(IwHubAgent):
         self._state_elapsed = 0.0
         self._cargo_before_z = None
         self._last_error = ""
+        self._lower_down_elapsed = 0.0
+        self._lower_valid_elapsed = 0.0
 
         # Manual lift control used by Control Tower / ROS2 lift commands.
         # Terminal mission states also allow explicit manual recovery.
@@ -340,6 +345,9 @@ class MissionIwHubAgent(IwHubAgent):
             # A mission transition relinquishes any earlier manual target.
             self._manual_lift_active = False
             print(f"[MISSION IW HUB] {self.mission_state} -> {state}")
+        if state == "LOWERING" and state != self.mission_state:
+            self._lower_down_elapsed = 0.0
+            self._lower_valid_elapsed = 0.0
         self.mission_state = state
         self._state_elapsed = 0.0
 
@@ -519,7 +527,7 @@ class MissionIwHubAgent(IwHubAgent):
         angular = float(np.clip(1.3 * yaw_error, -0.10, 0.10))
         self._drive(linear, angular)
 
-    def _verify_cargo_home_pose(self):
+    def _verify_cargo_home_pose(self, log_pose=False):
         pose = self._world_pose(CARGO_PRIM_PATH)
         if pose is None:
             return False, "cargo prim not found"
@@ -528,19 +536,20 @@ class MissionIwHubAgent(IwHubAgent):
         pos_error = math.hypot(x - CARGO_HOME_X, y - CARGO_HOME_Y)
         yaw_error = abs(_wrap_angle(yaw - CARGO_HOME_YAW))
 
-        print(
-            "[MISSION IW HUB] cargo return pose: "
+        pose_detail = (
             f"x={x:.4f}, y={y:.4f}, z={z:.4f}, "
             f"yaw={math.degrees(yaw):.2f} deg, "
             f"xy_error={pos_error:.4f} m, "
             f"yaw_error={math.degrees(yaw_error):.2f} deg"
         )
+        if log_pose:
+            print(f"[MISSION IW HUB] cargo return pose: {pose_detail}")
 
         if pos_error > CARGO_RETURN_POS_TOLERANCE:
-            return False, f"cargo return position error {pos_error:.4f} m"
+            return False, f"cargo return position error ({pose_detail})"
         if yaw_error > CARGO_RETURN_YAW_TOLERANCE:
             return False, (
-                f"cargo return yaw error {math.degrees(yaw_error):.2f} deg"
+                f"cargo return yaw error ({pose_detail})"
             )
         return True, ""
 
@@ -700,12 +709,27 @@ class MissionIwHubAgent(IwHubAgent):
             self._stop()
             self._hold_lift(0.0)
 
-            if self._joint_position() <= 0.005:
-                ok, reason = self._verify_cargo_home_pose()
-                if not ok:
-                    self._fail(reason)
-                    return
+            if self._joint_position() > 0.005:
+                self._lower_down_elapsed = 0.0
+                self._lower_valid_elapsed = 0.0
+                return
+
+            # The joint reaching its target precedes the cargo settling in
+            # physics. Require a settled interval and sustained valid pose.
+            self._lower_down_elapsed += float(dt)
+            if self._lower_down_elapsed < LOWER_SETTLE_SECONDS:
+                return
+
+            ok, reason = self._verify_cargo_home_pose()
+            self._lower_valid_elapsed = (
+                self._lower_valid_elapsed + float(dt) if ok else 0.0
+            )
+            if self._lower_valid_elapsed >= LOWER_VALID_SECONDS:
+                self._verify_cargo_home_pose(log_pose=True)
                 self._set_state("LOWER_DONE")
+            elif self._lower_down_elapsed >= LOWER_VERIFY_TIMEOUT:
+                self._verify_cargo_home_pose(log_pose=True)
+                self._fail(reason or "cargo return pose did not remain valid")
             return
 
         if self.mission_state == "RETURN_TO_SPAWN":

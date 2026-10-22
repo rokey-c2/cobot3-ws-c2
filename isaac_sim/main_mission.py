@@ -193,6 +193,11 @@ class AmrMissionBridge(Node):
             "/amr_a/pickup_state",
             10,
         )
+        self.pickup_error_pub = self.create_publisher(
+            String,
+            "/amr_a/pickup_error",
+            10,
+        )
         self.lift_state_pub = self.create_publisher(
             String,
             "/amr_a/lift_state",
@@ -343,8 +348,14 @@ class AmrMissionBridge(Node):
         msg.data = state
         self.state_pub.publish(msg)
 
+        error_msg = String()
+        error_msg.data = self.agent.get_last_error() if state == "ERROR" else ""
+        self.pickup_error_pub.publish(error_msg)
+
         if state != self.last_state:
             self.get_logger().info(f"pickup state: {state}")
+            if state == "ERROR":
+                self.get_logger().error(f"IW Hub mission error: {error_msg.data}")
             self.last_state = state
 
         lift_state = self.agent.get_lift_state()

@@ -112,6 +112,12 @@ class AmrP3020Mission(Node):
         )
         self.create_subscription(
             String,
+            "/amr_a/pickup_error",
+            self._pickup_error_callback,
+            10,
+        )
+        self.create_subscription(
+            String,
             "/amr_a/p3020_arrival_confirm",
             self._manual_arrival_callback,
             10,
@@ -119,6 +125,7 @@ class AmrP3020Mission(Node):
 
         self.state = "WAIT_READY"
         self.pickup_state = "UNKNOWN"
+        self.pickup_error = ""
         self.current_nav_purpose = None
         self.phase_started_at = self._now_seconds()
         self.goal_in_flight = False
@@ -150,6 +157,12 @@ class AmrP3020Mission(Node):
 
     def _pickup_state_callback(self, message):
         self.pickup_state = message.data.strip().upper()
+
+    def _pickup_error_callback(self, message):
+        reason = message.data.strip()
+        if reason and reason != self.pickup_error:
+            self.get_logger().error(f"Isaac IW Hub detail: {reason}")
+        self.pickup_error = reason
 
     def _manual_arrival_callback(self, message):
         del message
@@ -471,8 +484,8 @@ class AmrP3020Mission(Node):
 
             if self.pickup_state == "RETURN_DOCK_DONE":
                 self.get_logger().info(
-                    "IW Hub restored to cargo dock: "
-                    "x=9, y=-3, yaw=90 deg"
+                    "IW Hub dock motion complete; lowering and verifying "
+                    "cargo home pose"
                 )
                 self._set_state("REQUEST_LOWER")
             elif self.pickup_state == "ERROR":

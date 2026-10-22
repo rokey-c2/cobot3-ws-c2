@@ -85,6 +85,57 @@ class ManualLiftTest(unittest.TestCase):
             self.assertEqual(self.agent.get_lift_state(), "MOVING_DOWN")
 
 
+class CargoReturnVerificationTest(unittest.TestCase):
+    def setUp(self):
+        namespace = {
+            "LOWER_SETTLE_SECONDS": 0.75,
+            "LOWER_VERIFY_TIMEOUT": 3.0,
+            "LOWER_VALID_SECONDS": 0.2,
+            "MANUAL_LIFT_STATES": {"IDLE", "LOWER_DONE", "SPAWN_DONE", "ERROR"},
+        }
+        cls, _ = load_methods(
+            ROOT / "isaac_sim/robots/iw_hub/iw_hub_mission_agent.py",
+            "MissionIwHubAgent",
+            {"on_physics_step", "_set_state"}, namespace,
+        )
+        self.agent = cls()
+        self.agent.mission_state = "RETURN_DOCK_DONE"
+        self.agent._state_elapsed = 0.0
+        self.agent._manual_lift_active = False
+        self.agent._stop = Mock()
+        self.agent._hold_lift = Mock()
+        self.agent._joint_position = Mock(return_value=0.0)
+        self.agent._verify_cargo_home_pose = Mock(return_value=(True, ""))
+        self.agent._fail = Mock()
+        self.agent._set_state("LOWERING")
+
+    def test_waits_for_settling_and_sustained_valid_pose(self):
+        for _ in range(7):
+            self.agent.on_physics_step(0.1)
+        self.agent._verify_cargo_home_pose.assert_not_called()
+
+        self.agent._verify_cargo_home_pose.return_value = (False, "cargo offset")
+        self.agent.on_physics_step(0.1)
+        self.assertEqual(self.agent.mission_state, "LOWERING")
+
+        self.agent._verify_cargo_home_pose.return_value = (True, "")
+        for _ in range(3):
+            self.agent.on_physics_step(0.1)
+        self.assertEqual(self.agent.mission_state, "LOWER_DONE")
+        self.agent._fail.assert_not_called()
+
+    def test_persistent_pose_error_reports_reason(self):
+        self.agent._fail.side_effect = lambda reason: self.agent._set_state("ERROR")
+        self.agent._verify_cargo_home_pose.return_value = (
+            False, "cargo return position error (xy_error=0.1000 m)"
+        )
+        for _ in range(31):
+            self.agent.on_physics_step(0.1)
+        self.agent._fail.assert_called_once_with(
+            "cargo return position error (xy_error=0.1000 m)"
+        )
+
+
 class LiftBridgeTest(unittest.TestCase):
     def setUp(self):
         cls, _ = load_methods(ROOT / "isaac_sim/main_mission.py", "AmrMissionBridge",
