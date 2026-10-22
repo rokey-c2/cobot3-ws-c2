@@ -111,9 +111,7 @@ PICKUP_TIMEOUT = 8.0
 
 CARGO_RETURN_POS_TOLERANCE = 0.07
 CARGO_RETURN_YAW_TOLERANCE = math.radians(2.0)
-LOWER_SETTLE_SECONDS = 0.75
 LOWER_VERIFY_TIMEOUT = 3.0
-LOWER_VALID_SECONDS = 0.2
 
 
 def _wrap_angle(angle):
@@ -141,7 +139,6 @@ class MissionIwHubAgent(IwHubAgent):
         self._cargo_before_z = None
         self._last_error = ""
         self._lower_down_elapsed = 0.0
-        self._lower_valid_elapsed = 0.0
 
         # Manual lift control used by Control Tower / ROS2 lift commands.
         # Terminal mission states also allow explicit manual recovery.
@@ -313,6 +310,7 @@ class MissionIwHubAgent(IwHubAgent):
             return True
         if self.mission_state != "RETURN_DOCK_DONE":
             return False
+        self._lower_down_elapsed = 0.0
         self._set_state("LOWERING")
         return True
 
@@ -345,9 +343,6 @@ class MissionIwHubAgent(IwHubAgent):
             # A mission transition relinquishes any earlier manual target.
             self._manual_lift_active = False
             print(f"[MISSION IW HUB] {self.mission_state} -> {state}")
-        if state == "LOWERING" and state != self.mission_state:
-            self._lower_down_elapsed = 0.0
-            self._lower_valid_elapsed = 0.0
         self.mission_state = state
         self._state_elapsed = 0.0
 
@@ -711,20 +706,13 @@ class MissionIwHubAgent(IwHubAgent):
 
             if self._joint_position() > 0.005:
                 self._lower_down_elapsed = 0.0
-                self._lower_valid_elapsed = 0.0
                 return
 
-            # The joint reaching its target precedes the cargo settling in
-            # physics. Require a settled interval and sustained valid pose.
+            # Leave immediately when the cargo is correctly placed. Only
+            # wait for physics to settle if the first pose check fails.
             self._lower_down_elapsed += float(dt)
-            if self._lower_down_elapsed < LOWER_SETTLE_SECONDS:
-                return
-
             ok, reason = self._verify_cargo_home_pose()
-            self._lower_valid_elapsed = (
-                self._lower_valid_elapsed + float(dt) if ok else 0.0
-            )
-            if self._lower_valid_elapsed >= LOWER_VALID_SECONDS:
+            if ok:
                 self._verify_cargo_home_pose(log_pose=True)
                 self._set_state("LOWER_DONE")
             elif self._lower_down_elapsed >= LOWER_VERIFY_TIMEOUT:

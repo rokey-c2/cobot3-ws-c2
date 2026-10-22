@@ -6,7 +6,11 @@ from psycopg.rows import dict_row
 
 from app.database import get_db_connection
 from app.process_events import create_tracking_mission
-from app.mqtt_client import publish_p3020_arrival_command
+from app.mqtt_client import (
+    SystemCommandRejected,
+    publish_p3020_arrival_command,
+    start_physical_mission,
+)
 
 
 router = APIRouter(
@@ -25,12 +29,44 @@ class MissionCreate(BaseModel):
 def create_mission(request: MissionCreate):
     """Create the active tracking mission used by live ROS2 events."""
 
+    result = None
     try:
-        return create_tracking_mission(
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT EXISTS (SELECT 1 FROM mission)")
+                if cursor.fetchone()[0]:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Reset All before creating the next mission",
+                    )
+        result = create_tracking_mission(
             package_code=request.package_code,
             region=request.region,
             mission_code=request.mission_code,
         )
+        start_physical_mission(
+            result["mission"]["mission_code"],
+            result["package"]["package_code"],
+            result["package"]["region"],
+        )
+        return result
+    except SystemCommandRejected as error:
+        if result is not None:
+            mission_id = result["mission"]["id"]
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        DELETE FROM package_event WHERE package_id IN (
+                            SELECT id FROM package WHERE mission_id = %s
+                        )
+                    """, (mission_id,))
+                    cursor.execute("DELETE FROM package WHERE mission_id = %s", (mission_id,))
+                    cursor.execute("DELETE FROM mission_stage WHERE mission_id = %s", (mission_id,))
+                    cursor.execute("DELETE FROM mission WHERE id = %s", (mission_id,))
+                conn.commit()
+        raise HTTPException(status_code=503, detail=str(error))
+    except HTTPException:
+        raise
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error))
     except Exception as error:

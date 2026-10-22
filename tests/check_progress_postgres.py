@@ -48,10 +48,7 @@ try:
                                                ("D", True, False), ("D", False, True)]:
         package = "test-" + uuid.uuid4().hex
         send = lambda kind, state: emit(package, region, kind, state)
-        registration = {"package_code": package, "region": region,
-                        "event_type": "PACKAGE_REGISTERED", "state": "REGISTERED",
-                        "event_key": "register:" + package}
-        events.handle_process_event(registration)
+        events.create_tracking_mission(package_code=package, region=region)
         for state in ("ENTER_CARGO", "PICKUP_DONE", "CONVEYOR_DOCK_DONE"):
             send("AMR_STATE", state)
         # IN/AMR topics have no package identifier in the live adapter.
@@ -95,7 +92,9 @@ try:
             assert result["mission_status"] == "COMPLETED"
             assert all(v == "COMPLETED" for v in stages(package).values())
             assert send("P3020_OUT_STATE", "DONE_SUCCESS")["ignored"]
-        assert events.handle_process_event(registration)["duplicate"]
+        assert events.handle_process_event({"package_code": package, "region": region,
+            "event_type": "PACKAGE_REGISTERED", "state": "REGISTERED",
+            "event_key": "register:" + package})["ignored"]
         print(f"PASS region={region} retreat_failed={retreat_failed} missing_pick={omit_pick}")
     with isolated_connection() as conn:
         assert conn.execute("SELECT count(*) FROM mission").fetchone()[0] == 6

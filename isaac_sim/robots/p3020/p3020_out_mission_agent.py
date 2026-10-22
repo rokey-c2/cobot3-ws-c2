@@ -379,8 +379,16 @@ class P3020UnloadToBinAgent:
         if not self._camera_initialized:
             self.camera.initialize()
             self._camera_initialized = True
+        self.camera.set_enabled(True)
         self.camera_enabled = True
         print("[P3020_OUT] D detected by sorter; OUT camera and vision enabled")
+
+    def reset_camera(self):
+        """Restore lazy OUT rendering after a D mission finishes or is reset."""
+        if self._camera_initialized:
+            self.camera.post_reset()
+            self.camera.set_enabled(False)
+        self.camera_enabled = False
 
     def post_reset(self):
         self._configure_arm_drives()

@@ -116,7 +116,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .metric-box span { color: #8a97aa; font-size: 9px; }
 .metric-box strong { display: block; margin-top: 4px; font-size: 24px; }
 .filter-bar { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: end; gap: 12px; }
-.mission-create-bar { display: grid; grid-template-columns: minmax(260px, 1fr) 220px 150px auto; align-items: end; gap: 16px; }
+.mission-create-bar { display: grid; grid-template-columns: minmax(260px, 1fr) 220px 150px auto auto; align-items: end; gap: 16px; }
 .mission-create-bar > div { display: grid; gap: 6px; align-self: center; }
 .mission-create-bar label { display: grid; gap: 6px; color: #697386; font-size: 10px; font-weight: 700; }
 .mission-create-bar input, .mission-create-bar select { min-height: 40px; border: 1px solid #d8dee9; border-radius: 8px; background: #fff; padding: 0 12px; color: #172033; }

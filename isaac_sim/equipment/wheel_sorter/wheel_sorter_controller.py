@@ -159,6 +159,9 @@ class WheelSorterController:
 
         self._triggered_pairs.clear()
         self._completed_pairs.clear()
+        self._diverted_pairs.clear()
+        self._process_events.clear()
+        self._destination_d_detected = False
         print(
             "[SORTER] current-map sorters 01/02/03 ready; "
             f"approach={self.approach_threshold:.2f} m; "

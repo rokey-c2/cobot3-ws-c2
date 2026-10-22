@@ -29,6 +29,21 @@ class CameraInterface:
             return None
         return rgba
 
+    def post_reset(self):
+        """Reset acquisition timing while retaining RGB/depth render products."""
+        self._camera.post_reset()
+        self._camera.resume()
+
+    def set_enabled(self, enabled):
+        """Suspend this camera's render product as well as frame collection."""
+        product = self._camera._render_product
+        if product is not None:
+            product.hydra_texture.set_updates_enabled(bool(enabled))
+        if enabled:
+            self._camera.resume()
+        else:
+            self._camera.pause()
+
     def get_depth(self):
         """(H, W) float32, 미터 단위 거리(distance_to_image_plane)."""
         return self._camera.get_depth()

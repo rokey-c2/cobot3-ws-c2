@@ -252,28 +252,9 @@ def _find_or_create_active_tracking(cursor, payload):
     if active is not None and active["package_id"] is not None:
         return active
 
-    # Only registration or initial AMR pickup may create a package. Late
-    # rescan, OUT completion and AMR return events must not invent missions.
-    if payload.get("event_type") != "PACKAGE_REGISTERED" and not (
-        payload.get("event_type") == "AMR_STATE"
-        and payload.get("state") in {"ROTATE_TO_DOCK", "ENTER_CARGO", "LIFTING"}
-    ):
-        return None
-
-    mission, package = _create_tracking_records(
-        cursor,
-        payload.get("package_code"),
-        payload.get("region"),
-        payload.get("mission_code"),
-    )
-    return {
-        "id": mission["id"],
-        "mission_code": mission["mission_code"],
-        "status": mission["status"],
-        "package_id": package["id"],
-        "package_code": package["package_code"],
-        "region": package["region"],
-    }
+    # Dashboard Create Mission owns mission creation. In-flight ROS events
+    # after a reset must never start a new tracking mission on their own.
+    return None
 
 
 def _equipment_status_from_event(payload, interpretation):

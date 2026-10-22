@@ -133,6 +133,7 @@ class PoseSyncManager(Node):
         self.next_initial_pose_publish_time = 0.0
 
         self.mqtt_connected = False
+        self.last_system_reset_id = None
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(
@@ -152,6 +153,14 @@ class PoseSyncManager(Node):
             ROS_POSE_SOURCE_SESSION_TOPIC,
             self.pose_source_session_callback,
             pose_source_session_qos(),
+        )
+        self.create_subscription(
+            String, "/controltower/system/command",
+            self.system_command_callback, 10,
+        )
+        self.create_subscription(
+            String, "/controltower/system/command/result",
+            self.system_result_callback, 10,
         )
         self.initial_pose_publisher = self.create_publisher(
             PoseWithCovarianceStamped,
@@ -275,6 +284,53 @@ class PoseSyncManager(Node):
             return
 
         self.restore_response_queue.put(payload)
+
+    def system_command_callback(self, message: String):
+        try:
+            payload = json.loads(message.data)
+        except json.JSONDecodeError:
+            return
+        if payload.get("command") != "RESET":
+            return
+        request_id = str(payload.get("request_id", ""))
+        if request_id and request_id == self.last_system_reset_id:
+            return
+        self.last_system_reset_id = request_id
+        self.session_epoch_ms = time.time_ns() // 1_000_000
+        self.session_id = f"{self.session_epoch_ms}-{uuid.uuid4().hex[:8]}"
+        self.pose_seq = 0
+        self.latest_pose = None
+        self.last_pose_rx_time = None
+        self.last_pose_publish_time = 0.0
+        self.restore_state = "RESETTING"
+        self.restore_request_id = None
+        self.restore_target = None
+        self.restore_attempts = 0
+        self.restore_verified_samples = 0
+        self.restore_response_queue = queue.Queue()
+        self.initial_pose_retries_remaining = 0
+        self.nav2_needs_initial_pose = True
+        self.last_sync_status = None
+        self.get_logger().info("System reset: waiting for Isaac's initial map pose")
+
+    def system_result_callback(self, message: String):
+        try:
+            payload = json.loads(message.data)
+        except json.JSONDecodeError:
+            return
+        if (payload.get("command") != "RESET"
+                or payload.get("request_id") != self.last_system_reset_id):
+            return
+        if payload.get("status") != "SUCCESS":
+            self.restore_state = RESTORE_FAILED
+            return
+        # A command arrives before the physics reset. Discard poses sampled
+        # during that interval so AMCL initializes only from the restored pose.
+        self.latest_pose = None
+        self.last_pose_rx_time = None
+        self.restore_state = RESTORE_READY
+        self.nav2_needs_initial_pose = True
+        self.initial_pose_retries_remaining = 0
 
     def pose_source_session_callback(self, message: String):
         isaac_session_id = message.data.strip()
