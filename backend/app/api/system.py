@@ -6,6 +6,7 @@ from app.api.equipment import (
     change_equipment_state,
 )
 from app.database import get_db_connection
+from app.mqtt_client import request_simulation_reset
 
 
 router = APIRouter(
@@ -122,3 +123,40 @@ def start_system():
 @router.post("/stop")
 def stop_system():
     return change_system_state("STOP")
+
+
+@router.post("/reset")
+def reset_system():
+    """Reset Isaac first, then clear the Control Tower's runtime history."""
+    try:
+        result = request_simulation_reset()
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM package_event")
+                cursor.execute("DELETE FROM package")
+                cursor.execute("DELETE FROM mission_stage")
+                cursor.execute("DELETE FROM mission")
+                cursor.execute("DELETE FROM equipment_command")
+                cursor.execute("""
+                    UPDATE equipment_state
+                    SET status = 'IDLE',
+                        mode = CASE WHEN equipment_id IN (
+                            SELECT id FROM equipment WHERE type = 'AMR'
+                        ) THEN 'AUTO' ELSE NULL END,
+                        position_x = NULL, position_y = NULL, yaw = NULL,
+                        pose_frame = NULL, pose_source = NULL,
+                        pose_seq = pose_seq + 1,
+                        pose_session_id = NULL, pose_session_epoch_ms = 0,
+                        pose_updated_at = NULL, sync_status = 'OFFLINE',
+                        lift_state = CASE WHEN equipment_id IN (
+                            SELECT id FROM equipment WHERE type = 'AMR'
+                        ) THEN 'DOWN' ELSE NULL END,
+                        last_seen_at = NULL, updated_at = NOW()
+                """)
+                cursor.execute("UPDATE equipment_state SET pose_seq = 0")
+            conn.commit()
+        return {"status": "SUCCESS", "request_id": result["request_id"]}
+    except TimeoutError as error:
+        raise HTTPException(status_code=504, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=503, detail=f"System reset failed: {error}")

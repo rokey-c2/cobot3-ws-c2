@@ -11,6 +11,7 @@ import random
 import time
 import traceback
 import uuid
+from collections import deque
 from pathlib import Path
 
 from isaacsim import SimulationApp
@@ -55,6 +56,11 @@ VISION_RGB_PUBLISH_INTERVAL_STEPS = 6
 # section 7) -- box_id, not the "destination" attribute, decides which
 # ConveyorTrack a box gets diverted onto. box_id 4 passes every sorter.
 BOX_ID_TO_TRACK = {1: "01", 2: "02", 3: "03", 4: None}
+REGION_TO_BOX_ID = {"A": 1, "B": 2, "C": 3, "D": 4, "UNKNOWN": 4}
+
+
+class SystemResetInterrupt(Exception):
+    """Stop an active arm cycle at the next physics tick for a world reset."""
 
 enable_extension("isaacsim.ros2.bridge")
 enable_extension("isaacsim.sensors.rtx")
@@ -71,7 +77,7 @@ from cargo.cargo_pod_physics import add_parcel_asset_scaled
 from equipment.conveyor.conveyor_controller import ConveyorController
 from equipment.wheel_sorter.wheel_sorter_controller import WheelSorterController
 from equipment.wheel_sorter.outfeed_center_stop import OutfeedCenterStop
-from robots.iw_hub.iw_hub_mission_agent import MissionIwHubAgent
+from robots.iw_hub.iw_hub_mission_agent import CARGO_PRIM_PATH, MissionIwHubAgent
 from robots.p3020.p3020_mission_agent import (
     PARCEL_DESTINATION_ATTR,
     P3020PickPlaceAgent,
@@ -105,8 +111,34 @@ def _create_clock_graph():
                     "clock.inputs:timeStamp",
                 ),
             ],
+            og.Controller.Keys.SET_VALUES: [
+                ("sim_time.inputs:resetOnStop", False),
+            ],
         },
     )
+
+
+def _preserve_ros_time_on_stop():
+    """Keep the robot's authored clocks and sensor stamps on the same epoch."""
+    stage = omni.usd.get_context().get_stage()
+    for prim in stage.Traverse():
+        type_attribute = prim.GetAttribute("node:type")
+        node_type = type_attribute.Get() if type_attribute else None
+        required = set()
+        if node_type == "isaacsim.core.nodes.IsaacReadSimulationTime":
+            required.add("inputs:resetOnStop")
+        if node_type in {
+            "isaacsim.ros2.bridge.ROS2RtxLidarHelper",
+            "isaacsim.ros2.bridge.ROS2CameraHelper",
+            "isaacsim.ros2.bridge.ROS2CameraInfoHelper",
+        }:
+            required.add("inputs:resetSimulationTimeOnStop")
+        for name in ("inputs:resetOnStop", "inputs:resetSimulationTimeOnStop"):
+            attribute = prim.GetAttribute(name)
+            if name in required and not attribute:
+                attribute = prim.CreateAttribute(name, Sdf.ValueTypeNames.Bool)
+            if attribute and attribute.IsValid():
+                attribute.Set(False)
 
 
 def _spawn_parcels(parcel_configs):
@@ -193,11 +225,6 @@ class AmrMissionBridge(Node):
             "/amr_a/pickup_state",
             10,
         )
-        self.pickup_error_pub = self.create_publisher(
-            String,
-            "/amr_a/pickup_error",
-            10,
-        )
         self.lift_state_pub = self.create_publisher(
             String,
             "/amr_a/lift_state",
@@ -224,6 +251,9 @@ class AmrMissionBridge(Node):
         self.create_timer(0.2, self._publish_map_pose)
         self.create_timer(1.0, self._publish_pose_source_session)
         self._publish_pose_source_session()
+
+    def post_world_reset(self):
+        """Hook for camera streams added by the live-view bridge."""
 
     def _command_callback(self, message):
         command = message.data.strip().upper()
@@ -348,14 +378,8 @@ class AmrMissionBridge(Node):
         msg.data = state
         self.state_pub.publish(msg)
 
-        error_msg = String()
-        error_msg.data = self.agent.get_last_error() if state == "ERROR" else ""
-        self.pickup_error_pub.publish(error_msg)
-
         if state != self.last_state:
             self.get_logger().info(f"pickup state: {state}")
-            if state == "ERROR":
-                self.get_logger().error(f"IW Hub mission error: {error_msg.data}")
             self.last_state = state
 
         lift_state = self.agent.get_lift_state()
@@ -439,6 +463,7 @@ class ProcessEquipmentBridge:
         self.sorter = sorter
         self.p3020_enabled = True
         self.p3020_out_enabled = True
+        self.package_code = None
         self.status_pub = node.create_publisher(
             String, "/controltower/equipment/status", 10
         )
@@ -524,6 +549,7 @@ class ProcessEquipmentBridge:
             message.data = json.dumps(
                 {
                     **event,
+                    "package_code": self.package_code or event.get("package_code"),
                     "event_type": "SORTER_STATE",
                     "equipment_code": f"SORTER_{equipment_region}",
                     "state": state,
@@ -580,11 +606,13 @@ def main():
     p3020_out_agent = P3020UnloadToBinAgent(world)
     p3020_out_agent.setup()
 
+    _preserve_ros_time_on_stop()
     world.reset()
     for agent in agents:
         agent.post_reset()
     p3020_agent.post_reset()
     p3020_out_agent.post_reset()
+    p3020_agent.camera.post_reset()
 
     conveyor.setup()
     sorter.setup()
@@ -598,6 +626,18 @@ def main():
     for _ in range(30):
         world.step(render=True)
 
+    def prim_world_xyz(path):
+        prim = omni.usd.get_context().get_stage().GetPrimAtPath(path)
+        if not prim.IsValid():
+            raise RuntimeError(f"Reset target prim is missing: {path}")
+        position = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(0).ExtractTranslation()
+        return tuple(float(position[index]) for index in range(3))
+
+    initial_amr_xy = tuple(float(value) for value in agents[0].robot.get_world_pose()[0][:2])
+    initial_prim_xyz = {
+        path: prim_world_xyz(path) for path in [CARGO_PRIM_PATH, *parcel_paths]
+    }
+
     rclpy.init(args=None)
     # Every pub/sub below rides on this one node -- Isaac Sim's bundled
     # rclpy only bridges the first Node created after rclpy.init() to the
@@ -606,25 +646,150 @@ def main():
     # /arm_a/pick_place_command and /controltower/equipment/command never
     # arrived when p3020_bridge/equipment_bridge were their own Nodes).
     bridge = AmrMissionBridge(agents[0])
+    # Include steps performed inside the arm cycles as well as the outer loop.
+    # Measure first: a slow ROS callback and a slow physics/render step need
+    # different fixes. Report at most once per ten seconds.
+    original_world_step = world.step
+    timing = {
+        "start": time.perf_counter(), "last_end": None,
+        "steps": 0, "step": 0.0, "outside": 0.0,
+        "max_step": 0.0, "max_outside": 0.0,
+    }
+
+    def measured_world_step(*args, **kwargs):
+        begin = time.perf_counter()
+        outside = 0.0 if timing["last_end"] is None else begin - timing["last_end"]
+        result = original_world_step(*args, **kwargs)
+        end = time.perf_counter()
+        duration = end - begin
+        timing["last_end"] = end
+        timing["steps"] += 1
+        timing["step"] += duration
+        timing["outside"] += outside
+        timing["max_step"] = max(timing["max_step"], duration)
+        timing["max_outside"] = max(timing["max_outside"], outside)
+        elapsed = end - timing["start"]
+        if elapsed >= 10.0:
+            count = timing["steps"]
+            bridge.get_logger().info(
+                "[FRAME TIMING] "
+                f"state={agents[0].mission_state} steps/s={count / elapsed:.1f} "
+                f"physics/render_ms={1000 * timing['step'] / count:.1f} "
+                f"callbacks/control_ms={1000 * timing['outside'] / count:.1f} "
+                f"max_step_ms={1000 * timing['max_step']:.1f} "
+                f"max_callbacks_ms={1000 * timing['max_outside']:.1f}"
+            )
+            timing.update(start=end, steps=0, step=0.0, outside=0.0,
+                          max_step=0.0, max_outside=0.0)
+        return result
+
+    world.step = measured_world_step
     p3020_bridge = OptimizedP3020RosBridge(bridge)
     p3020_out_bridge = P3020OutRosBridge(bridge)
     equipment_bridge = ProcessEquipmentBridge(bridge, conveyor, sorter)
-    # Register the actual spawned destination before any AMR/IN state can
-    # create a default Region-A mission for a physical Region-D parcel.
-    stage = omni.usd.get_context().get_stage()
-    for parcel_path in parcel_paths:
-        box_id = int(stage.GetPrimAtPath(parcel_path).GetAttribute("box_id").Get())
-        registration = String()
-        registration.data = json.dumps({
-            "event_type": "PACKAGE_REGISTERED", "state": "REGISTERED",
-            "package_code": parcel_path.rsplit("/", 1)[-1],
-            "region": {1: "A", 2: "B", 3: "C", 4: "D"}[box_id],
-            "event_key": f"register:{bridge.pose_source_session_id}:{parcel_path}",
-        })
-        equipment_bridge.process_pub.publish(registration)
-        # ROS discovery may not be ready for the initial publish. Retrying the
-        # same event key is idempotent, including after the mission completes.
-        bridge.create_timer(2.0, lambda msg=registration: equipment_bridge.process_pub.publish(msg))
+    system_commands = deque()
+    system_results = {}
+    system_result_pub = bridge.create_publisher(
+        String, "/controltower/system/command/result", 10,
+    )
+    mission_start_pub = bridge.create_publisher(String, "/amr_a/mission_start", 10)
+
+    def on_system_command(message):
+        try:
+            command = json.loads(message.data)
+        except json.JSONDecodeError:
+            return
+        if command.get("request_id") and command.get("command") in {"RESET", "MISSION_START"}:
+            system_commands.append(command)
+
+    bridge.create_subscription(
+        String, "/controltower/system/command", on_system_command, 10,
+    )
+
+    def publish_system_result(request, status, error=None):
+        result = {
+            "request_id": request["request_id"],
+            "command": request["command"],
+            "status": status,
+            "error": error,
+        }
+        system_results[request["request_id"]] = result
+        if len(system_results) > 32:
+            del system_results[next(iter(system_results))]
+        message = String()
+        message.data = json.dumps(result)
+        system_result_pub.publish(message)
+
+    def reset_world():
+        p3020_bridge.publish_status("DONE_FAIL:RESET")
+        p3020_agent.gripper.detach()
+        p3020_out_agent.gripper.detach()
+        outfeed.reset()
+        _preserve_ros_time_on_stop()
+        world.stop()
+        world.reset()
+        for agent in agents:
+            agent.post_reset()
+            agent.reset_mission()
+        p3020_agent.post_reset()
+        p3020_out_agent.post_reset()
+        # These cameras are not registered in world.scene, so world.reset()
+        # does not reset their frame timing. Reuse existing render products.
+        p3020_agent.camera.post_reset()
+        bridge.post_world_reset()
+        p3020_out_agent._placed_parcel_paths.clear()
+        p3020_out_agent._detected_parcel_path = None
+        p3020_out_agent.camera_enabled = False
+        conveyor.setup()
+        sorter.enabled = {track_id: True for track_id in sorter.TRACK_IDS}
+        sorter.setup()
+        p3020_bridge.pending_command = None
+        p3020_bridge.latest_pixel = None
+        p3020_bridge.detection_results.clear()
+        equipment_bridge.package_code = None
+        equipment_bridge.p3020_enabled = True
+        equipment_bridge.p3020_out_enabled = True
+        stage = omni.usd.get_context().get_stage()
+        for path in parcel_paths:
+            prim = stage.GetPrimAtPath(path)
+            prim.GetAttribute("box_id").Set(4)
+            prim.GetAttribute(PARCEL_DESTINATION_ATTR).Set("D")
+        world.play()
+        # PLAY resumes camera acquisition callbacks. Disable OUT afterwards
+        # so a previous D run cannot keep rendering through A/B/C missions.
+        p3020_out_agent.reset_camera()
+        conveyor.start()
+        sorter.start()
+        outfeed.reset()
+        for _ in range(30):
+            world.step(render=True)
+        amr_xy = tuple(float(value) for value in agents[0].robot.get_world_pose()[0][:2])
+        if math.dist(amr_xy, initial_amr_xy) > 0.10:
+            raise RuntimeError(f"IW Hub did not return to its initial pose: {amr_xy}")
+        for path, initial_xyz in initial_prim_xyz.items():
+            current_xyz = prim_world_xyz(path)
+            if math.dist(current_xyz, initial_xyz) > 0.10:
+                raise RuntimeError(f"{path} did not return to its initial pose: {current_xyz}")
+
+    def start_mission(request):
+        region = str(request.get("region", "")).strip().upper()
+        if region not in REGION_TO_BOX_ID:
+            raise ValueError(f"Unsupported mission region: {region}")
+        if mission_start_pub.get_subscription_count() < 1:
+            raise RuntimeError("AMR mission controller is not connected")
+        if agents[0].mission_state != "IDLE":
+            raise RuntimeError(f"IW Hub is not idle: {agents[0].mission_state}")
+        if len(parcel_paths) != 1:
+            raise RuntimeError("Dashboard mission selection requires one parcel")
+        prim = omni.usd.get_context().get_stage().GetPrimAtPath(parcel_paths[0])
+        if not prim.IsValid():
+            raise RuntimeError("Mission parcel is missing")
+        prim.GetAttribute("box_id").Set(REGION_TO_BOX_ID[region])
+        prim.GetAttribute(PARCEL_DESTINATION_ATTR).Set(region)
+        equipment_bridge.package_code = str(request["package_code"])
+        message = String()
+        message.data = str(request["mission_code"])
+        mission_start_pub.publish(message)
     preview_pub = bridge.create_publisher(Image, "/arm_a/preview", 1)
     out_preview_pub = bridge.create_publisher(Image, "/arm_b/preview", 1)
     last_preview_at = 0.0
@@ -697,6 +862,17 @@ def main():
                 msg.data = rgb.tobytes()
                 publisher.publish(msg)
 
+    cycle_ticks = 0
+
+    def tick_during_arm_cycle(step_dt):
+        nonlocal cycle_ticks
+        cycle_ticks += 1
+        if cycle_ticks % 12 == 0:
+            rclpy.spin_once(bridge, timeout_sec=0.0)
+            if any(item["command"] == "RESET" for item in system_commands):
+                raise SystemResetInterrupt()
+        tick_iw_hub_agents(step_dt)
+
     try:
         while simulation_app.is_running():
             # bridge is now the single Node backing all four bridges above
@@ -708,6 +884,26 @@ def main():
             # only one callback while the rest wait for the next pass.
             for _ in range(20):
                 rclpy.spin_once(bridge, timeout_sec=0.0)
+
+            if system_commands:
+                request = system_commands.popleft()
+                if request["request_id"] in system_results:
+                    message = String()
+                    message.data = json.dumps(system_results[request["request_id"]])
+                    system_result_pub.publish(message)
+                else:
+                    try:
+                        if request["command"] == "RESET":
+                            reset_world()
+                        else:
+                            start_mission(request)
+                        publish_system_result(request, "SUCCESS")
+                    except Exception as error:
+                        bridge.get_logger().error(
+                            f"{request['command']} failed: {error}"
+                        )
+                        publish_system_result(request, "FAILED", str(error))
+                continue
 
             dt = float(world.get_physics_dt())
             tick_iw_hub_agents(dt)
@@ -741,23 +937,29 @@ def main():
                     equipment_bridge.publish_conveyor_event("PACKAGE_ENTERED")
                     print(f"[P3020] result: success=True message={message}")
 
-                p3020_agent.run_until_cargo_empty(
-                    p3020_bridge,
-                    place_xy_world=place_xy,
-                    amr_agent=agents[0],
-                    scan_xy_world=scan_hint,
-                    tick_others=tick_iw_hub_agents,
-                    dt=dt,
-                    on_box_placed=_on_box_placed,
-                )
+                try:
+                    p3020_agent.run_until_cargo_empty(
+                        p3020_bridge,
+                        place_xy_world=place_xy,
+                        amr_agent=agents[0],
+                        scan_xy_world=scan_hint,
+                        tick_others=tick_during_arm_cycle,
+                        dt=dt,
+                        on_box_placed=_on_box_placed,
+                    )
+                except SystemResetInterrupt:
+                    continue
 
             if (equipment_bridge.p3020_out_enabled and p3020_out_agent.camera_enabled
                     and outfeed.held_path is not None):
-                out_success, out_message = p3020_out_agent.try_unload_cycle(
-                    p3020_out_bridge,
-                    tick_others=tick_iw_hub_agents,
-                    dt=dt,
-                )
+                try:
+                    out_success, out_message = p3020_out_agent.try_unload_cycle(
+                        p3020_out_bridge,
+                        tick_others=tick_during_arm_cycle,
+                        dt=dt,
+                    )
+                except SystemResetInterrupt:
+                    continue
                 if out_success:
                     print(f"[P3020_OUT] result: {out_message}")
 

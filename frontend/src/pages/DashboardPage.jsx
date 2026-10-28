@@ -61,7 +61,7 @@ export default function DashboardPage() {
   const missionLabel = missionActive
     ? `Active: ${mission.mission_code}`
     : mission
-      ? `Last: ${mission.mission_code} (${mission.status})`
+      ? `Last: ${mission.mission_code} (${mission.status}) · Reset All to start again`
       : "Start a package mission";
 
   async function changeSystem(action) {
@@ -95,6 +95,21 @@ export default function DashboardPage() {
     setBusy(true);
     try {
       await api.createMission({ package_code: packageCode, region });
+      await loadDashboard();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetSystem() {
+    if (!window.confirm("Stop the current mission and reset robots, cargo, equipment, and tracking history to the initial state?")) return;
+    setBusy(true);
+    try {
+      await api.resetSystem();
+      setPackageCode(`PKG-${Date.now()}`);
+      setRegion("A");
       await loadDashboard();
     } catch (requestError) {
       setError(requestError.message);
@@ -143,25 +158,32 @@ export default function DashboardPage() {
           <input
             value={packageCode}
             onChange={(event) => setPackageCode(event.target.value)}
-            disabled={missionActive || busy}
+            disabled={Boolean(mission) || busy}
           />
         </label>
         <label>
-          <span>Region</span>
+          <span>Box region</span>
           <select
             value={region}
             onChange={(event) => setRegion(event.target.value)}
-            disabled={missionActive || busy}
+            disabled={Boolean(mission) || busy}
           >
             <option value="A">A</option>
             <option value="B">B</option>
             <option value="C">C</option>
-            <option value="D">D (OUT)</option>
-            <option value="UNKNOWN">Exception</option>
+            <option value="D">D (OUT / Exception)</option>
           </select>
         </label>
-        <button className="button button-primary" disabled={missionActive || busy}>
+        <button className="button button-primary" disabled={Boolean(mission) || busy}>
           CREATE MISSION
+        </button>
+        <button
+          type="button"
+          className="button button-danger"
+          disabled={busy}
+          onClick={resetSystem}
+        >
+          RESET ALL
         </button>
       </form>
 

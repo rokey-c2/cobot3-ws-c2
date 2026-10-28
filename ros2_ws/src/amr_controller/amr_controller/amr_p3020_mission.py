@@ -12,6 +12,7 @@ For AMR-only testing before the P3020 server is ready:
     simulate_p3020:=true
 """
 
+import json
 import math
 
 from action_msgs.msg import GoalStatus
@@ -104,6 +105,9 @@ class AmrP3020Mission(Node):
             "/amr_a/mission_state",
             10,
         )
+        self.reset_ack_pub = self.create_publisher(
+            String, "/controltower/system/mission_reset_ack", 10,
+        )
         self.create_subscription(
             String,
             "/amr_a/pickup_state",
@@ -112,23 +116,28 @@ class AmrP3020Mission(Node):
         )
         self.create_subscription(
             String,
-            "/amr_a/pickup_error",
-            self._pickup_error_callback,
-            10,
-        )
-        self.create_subscription(
-            String,
             "/amr_a/p3020_arrival_confirm",
             self._manual_arrival_callback,
             10,
         )
+        self.create_subscription(
+            String, "/controltower/system/command",
+            self._system_command_callback, 10,
+        )
+        self.create_subscription(
+            String, "/amr_a/mission_start",
+            self._mission_start_callback, 10,
+        )
 
-        self.state = "WAIT_READY"
+        self.state = "WAIT_MISSION_START"
         self.pickup_state = "UNKNOWN"
-        self.pickup_error = ""
         self.current_nav_purpose = None
         self.phase_started_at = self._now_seconds()
         self.goal_in_flight = False
+        self.nav_goal_handle = None
+        self.p3020_goal_handle = None
+        self._generation = 0
+        self._last_reset_request_id = None
         self.timer = self.create_timer(0.1, self._tick)
 
         self._publish_state()
@@ -158,11 +167,38 @@ class AmrP3020Mission(Node):
     def _pickup_state_callback(self, message):
         self.pickup_state = message.data.strip().upper()
 
-    def _pickup_error_callback(self, message):
-        reason = message.data.strip()
-        if reason and reason != self.pickup_error:
-            self.get_logger().error(f"Isaac IW Hub detail: {reason}")
-        self.pickup_error = reason
+    def _system_command_callback(self, message):
+        try:
+            command = json.loads(message.data)
+        except json.JSONDecodeError:
+            return
+        if command.get("command") != "RESET":
+            return
+        request_id = str(command.get("request_id", ""))
+        if request_id and request_id == self._last_reset_request_id:
+            return
+        self._last_reset_request_id = request_id
+        self._generation += 1
+        for handle in (self.nav_goal_handle, self.p3020_goal_handle):
+            if handle is not None:
+                try:
+                    handle.cancel_goal_async()
+                except Exception as error:
+                    self.get_logger().warning(f"Goal cancellation failed: {error}")
+        self.nav_goal_handle = None
+        self.p3020_goal_handle = None
+        self.goal_in_flight = False
+        self.current_nav_purpose = None
+        self.pickup_state = "UNKNOWN"
+        self._publish_pickup_command("RESET")
+        self._set_state("WAIT_MISSION_START")
+        ack = String()
+        ack.data = request_id
+        self.reset_ack_pub.publish(ack)
+
+    def _mission_start_callback(self, message):
+        if message.data.strip() and self.state == "WAIT_MISSION_START":
+            self._set_state("WAIT_READY")
 
     def _manual_arrival_callback(self, message):
         del message
@@ -222,14 +258,25 @@ class AmrP3020Mission(Node):
             goal,
             feedback_callback=self._nav_feedback,
         )
-        future.add_done_callback(self._nav_goal_response)
+        generation = self._generation
+        future.add_done_callback(
+            lambda result: self._nav_goal_response(result, generation)
+        )
 
         self.get_logger().info(
             f"Nav2 goal {purpose}: x={x:.3f}, y={y:.3f}, "
             f"yaw={math.degrees(yaw):.1f} deg"
         )
 
-    def _nav_goal_response(self, future):
+    def _nav_goal_response(self, future, generation):
+        if generation != self._generation:
+            try:
+                handle = future.result()
+                if handle.accepted:
+                    handle.cancel_goal_async()
+            except Exception:
+                pass
+            return
         try:
             handle = future.result()
         except Exception as error:
@@ -244,8 +291,11 @@ class AmrP3020Mission(Node):
             )
             return
 
+        self.nav_goal_handle = handle
         result_future = handle.get_result_async()
-        result_future.add_done_callback(self._nav_result)
+        result_future.add_done_callback(
+            lambda result: self._nav_result(result, generation)
+        )
 
     def _nav_feedback(self, feedback_message):
         feedback = feedback_message.feedback
@@ -255,9 +305,12 @@ class AmrP3020Mission(Node):
             throttle_duration_sec=2.0,
         )
 
-    def _nav_result(self, future):
+    def _nav_result(self, future, generation):
+        if generation != self._generation:
+            return
         purpose = self.current_nav_purpose
         self.goal_in_flight = False
+        self.nav_goal_handle = None
 
         try:
             wrapped = future.result()
@@ -295,10 +348,21 @@ class AmrP3020Mission(Node):
             goal,
             feedback_callback=self._p3020_feedback,
         )
-        future.add_done_callback(self._p3020_goal_response)
+        generation = self._generation
+        future.add_done_callback(
+            lambda result: self._p3020_goal_response(result, generation)
+        )
         self._set_state("P3020_GOAL_SENT")
 
-    def _p3020_goal_response(self, future):
+    def _p3020_goal_response(self, future, generation):
+        if generation != self._generation:
+            try:
+                handle = future.result()
+                if handle.accepted:
+                    handle.cancel_goal_async()
+            except Exception:
+                pass
+            return
         try:
             handle = future.result()
         except Exception as error:
@@ -311,8 +375,11 @@ class AmrP3020Mission(Node):
             self._fail("P3020 rejected PickPlace")
             return
 
+        self.p3020_goal_handle = handle
         result_future = handle.get_result_async()
-        result_future.add_done_callback(self._p3020_result)
+        result_future.add_done_callback(
+            lambda result: self._p3020_result(result, generation)
+        )
         self._set_state("P3020_WORKING")
 
     def _p3020_feedback(self, feedback_message):
@@ -323,7 +390,10 @@ class AmrP3020Mission(Node):
             throttle_duration_sec=1.0,
         )
 
-    def _p3020_result(self, future):
+    def _p3020_result(self, future, generation):
+        if generation != self._generation:
+            return
+        self.p3020_goal_handle = None
         try:
             wrapped = future.result()
         except Exception as error:
@@ -352,6 +422,8 @@ class AmrP3020Mission(Node):
         self._set_state("ERROR")
 
     def _tick(self):
+        if self.state == "WAIT_MISSION_START":
+            return
         if self.state == "WAIT_READY":
             if (
                 (bool(self.get_parameter("manual_delivery").value)
