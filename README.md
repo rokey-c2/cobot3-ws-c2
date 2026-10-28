@@ -1,4 +1,4 @@
-# 📦 AMR–협동로봇 연계 택배 분류 자동화 및 실시간 관제 시스템
+# 📦 AMR-협동로봇 연계 대형 택배 분류 자동화 및 실시간 관제 시스템
 
 <p align="center">
   <img src="https://img.shields.io/badge/Isaac_Sim-5.1-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="Isaac Sim 5.1">
