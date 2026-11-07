@@ -1,5 +1,10 @@
 # 📦 AMR-협동로봇 연계 대형 택배 분류 자동화 및 실시간 관제 시스템
 
+> [!IMPORTANT]
+> **라이선스 검토 중:** 지정 팀원에게 사용을 허용하는 [라이선스 초안](LICENSE)입니다.
+> [사용 가능 팀원](TEAM_ACCESS.md)과 [적용 기록](docs/licensing-adoption.md)을 참고하세요.
+> 기존 라이선스와 GitHub 약관에 따른 열람·포크 권한은 유지됩니다.
+
 <p align="center">
   <img src="https://img.shields.io/badge/Isaac_Sim-5.1-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="Isaac Sim 5.1">
   <img src="https://img.shields.io/badge/ROS_2-Jazzy-22314E?style=flat-square&logo=ros&logoColor=white" alt="ROS 2 Jazzy">
