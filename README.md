@@ -1,11 +1,9 @@
 # 📦 AMR-협동로봇 연계 대형 택배 분류 자동화 및 실시간 관제 시스템
 
 > [!IMPORTANT]
-> **이용 조건 검토 중:** Public 공개는 자유로운 재사용 허락을 뜻하지 않습니다.
-> 지정 팀원만 이용하도록 하는 [팀 전용 이용허락 제안](LICENSE)과
-> [사용 가능자 후보 명단](TEAM_ACCESS.md)을 검토 중이며, 아직 시행되지 않았습니다.
-> 기존 Apache-2.0 및 제3자 라이선스, GitHub 약관상 열람·포크 권한은 유지됩니다.
-> 적용 범위와 동의 확인은 [시행 기록](docs/licensing-adoption.md)을 참고하세요.
+> **라이선스 검토 중:** 지정 팀원에게 사용을 허용하는 [라이선스 초안](LICENSE)입니다.
+> [사용 가능 팀원](TEAM_ACCESS.md)과 [적용 기록](docs/licensing-adoption.md)을 참고하세요.
+> 기존 라이선스와 GitHub 약관에 따른 열람·포크 권한은 유지됩니다.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Isaac_Sim-5.1-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="Isaac Sim 5.1">
